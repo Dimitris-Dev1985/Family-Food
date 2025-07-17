@@ -10,7 +10,7 @@
 		<h4 class="card-title mb-3" id="profile-name">
 		  <i class="fa fa-user-circle fa-lg me-2"></i> {{ profile.first_name }} {{ profile.family_name }}
 		</h4>
-		<p><i class="fa fa-map-marker-alt text-muted"></i> <strong>Διεύθυνση!:</strong> <span id="profile-address">{{ profile.address }}</span></p>
+		<p><i class="fa fa-map-marker-alt text-muted"></i> <strong>Διεύθυνση:</strong> <span id="profile-address">{{ profile.address }}</span></p>
 		{% if profile.alt_address %}
 		<p><i class="fa fa-home text-muted"></i> <strong>Εναλλακτική:</strong> <span id="profile-alt-address">{{ profile.alt_address }}</span></p>
 		{% endif %}
