@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+{% block content %}
+{% macro greek_date(datestr) %}
+  {%- set days = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο', 'Κυριακή'] -%}
+  {%- set months = ['', 'Ιανουαρίου', 'Φεβρουαρίου', 'Μαρτίου', 'Απριλίου', 'Μαΐου', 'Ιουνίου', 'Ιουλίου', 'Αυγούστου', 'Σεπτεμβρίου', 'Οκτωβρίου', 'Νοεμβρίου', 'Δεκεμβρίου'] -%}
+  {%- set y, m, d = datestr.split('-') %}
+  {%- set date_obj = (y ~ '-' ~ m ~ '-' ~ d)|todate %}
+  {{ days[date_obj.weekday()] }}, {{ d|int }} {{ months[m|int] }} {{ y }}
+{% endmacro %}
+
+<div class="container">
+  <h2>Ιστορικό Πιάτων</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Ημερομηνία</th>
+        <th>Πιάτο</th>
+        <th>Σεφ</th>
+        <th>Κατηγορία</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in history %}
+      <tr id="row{{ row['id'] }}">
+        <td data-date="{{ row['date'] }}">{{ greek_date(row['date']) }}</td>
+        <td>
+          {{ row['title'] }}
+          {% if row.recipe_id %}
+            <a href="javascript:void(0);" onclick="toggleFavorite(this, {{ row.recipe_id }})"
+               class="favorite-btn ms-2" data-recipeid="{{ row.recipe_id }}" title="Αγαπημένο">
+              <i class="fa{{ 's' if row.is_favorite else 'r' }} fa-heart"
+                 style="color: {{ 'gray' if not row.is_favorite else '#c33' }}; font-size:18px; vertical-align:middle;"></i>
+            </a>
+          {% endif %}
+        </td>
+        <td>{{ row['chef'] or '-' }}</td>
+        <td>{{ row['basic_category'] }}</td>
+        <td>
+          <button class="btn btn-outline-danger btn-sm" title="Διαγραφή" onclick="deleteHistoryEntry({{ row['id'] }})">
+            <i class="fa fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-muted">Δεν υπάρχει καταχωρημένο ιστορικό.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Εβδομαδιαίοι στόχοι -->
+  <h4 class="mt-4">Εβδομαδιαίοι Στόχοι</h4>
+  <table class="table table-sm w-auto" id="weekly-goals-table">
+    <thead>
+      <tr>
+        <th>Κατηγορία</th>
+        <th>Στόχος</th>
+        <th>Επίτευξη</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- JS generated -->
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+
+{% block modals %}
+<!-- Modal για ελλείπουσες μέρες -->
+<div class="modal fade" id="missingDaysModal" tabindex="-1" aria-labelledby="missingDaysModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning bg-opacity-10">
+        <h5 class="modal-title" id="missingDaysModalLabel">Ενημέρωση Ιστορικού</h5>
+      </div>
+      <div class="modal-body">
+        <p>Δεν έχεις καταχωρήσει πιάτα για τις παρακάτω μέρες:</p>
+        <ul id="missingDaysList" class="list-group list-group-flush mb-2"></ul>
+        <div id="manualEntryPrompt">
+          <p>Θέλεις να προσθέσεις τι έφαγες αυτές τις μέρες;</p>
+          <button class="btn btn-success" id="yesManualBtn"><i class="fa fa-check"></i> Ναι</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="fa fa-times"></i> Όχι</button>
+        </div>
+        <div id="manualEntryBox" style="display:none;">
+          <label>Γράψε τι καλό έφαγες τη(ν) <b id="currentDay"></b></label>
+          <input type="text" id="manualDishTitle" class="form-control mb-2" autocomplete="off" placeholder="Αναζήτηση...">
+          <div id="manual-autocomplete" class="autocomplete-list"></div>
+          <div id="manualEntryFeedback" class="mb-2"></div>
+          <button class="btn btn-primary" onclick="submitManualDish()">Καταχώρηση</button>
+          <button class="btn btn-secondary" type="button" onclick="cancelManualEntry()">Άκυρο</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal για επιβεβαίωση προσθήκης στα αγαπημένα και συμπλήρωση -->
+<div class="modal fade" id="favDetailsModal" tabindex="-1" aria-labelledby="favDetailsModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-info bg-opacity-10">
+        <h5 class="modal-title" id="favDetailsModalLabel">Νέα Συνταγή</h5>
+      </div>
+      <div class="modal-body" id="favDetailsModalBody">
+        <!-- JS content -->
+      </div>
+      <div class="modal-footer" id="favDetailsModalFooter">
+        <!-- JS buttons -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+let missingDays = {{ missing_days|tojson }};
+let manualDayIdx = 0;
+let allRecipes = [];
+
+fetch('/get_recipes_for_autocomplete')
+  .then(function(r) { return r.json(); })
+  .then(function(data) { allRecipes = data; });
+
+function removeTonos(str) {
+  if (!str) return "";
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+function greekDate(dateStr) {
+  var days = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο', 'Κυριακή'];
+  var months = ['', 'Ιανουαρίου', 'Φεβρουαρίου', 'Μαρτίου', 'Απριλίου', 'Μαΐου', 'Ιουνίου', 'Ιουλίου', 'Αυγούστου', 'Σεπτεμβρίου', 'Οκτωβρίου', 'Νοεμβρίου', 'Δεκεμβρίου'];
+  var [y, m, d] = dateStr.split('-').map(Number);
+  var date = new Date(y, m - 1, d);
+  return days[date.getDay() === 0 ? 6 : date.getDay() - 1] + ', ' + d + ' ' + months[m] + ' ' + y;
+}
+
+function toggleFavorite(el, recipe_id) {
+  fetch('/toggle_favorite_recipe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({recipe_id: recipe_id})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.status === "added") {
+      el.querySelector('i').classList.remove('far');
+      el.querySelector('i').classList.add('fas');
+      el.querySelector('i').style.color = '#c33';
+    } else if(data.status === "removed") {
+      el.querySelector('i').classList.remove('fas');
+      el.querySelector('i').classList.add('far');
+      el.querySelector('i').style.color = 'gray';
+    }
+  });
+}
+
+function updateWeeklyGoalsTable() {
+  fetch('/get_weekly_goals_status')
+    .then(function(r){return r.json();})
+    .then(function(data) {
+      var tbody = document.querySelector("#weekly-goals-table tbody");
+      tbody.innerHTML = "";
+      data.forEach(function(g) {
+        var cat = g.category.charAt(0).toUpperCase() + g.category.slice(1);
+
+        // Ελληνική διατύπωση στόχου
+        var target = '';
+        if (g.min_times != g.max_times) {
+          target = 'Από ' + g.min_times + ' έως ' + g.max_times + ' φορές';
+        } else {
+          if (g.min_times == 1) {
+            target = 'Ακριβώς 1 φορά';
+          } else {
+            target = 'Ακριβώς ' + g.min_times + ' φορές';
+          }
+        }
+
+        // Ελληνική διατύπωση επίτευξης
+        var reached = '';
+        if (!g.count || g.count == 0) {
+          reached = 'καμία φορά';
+        } else if (g.count == 1) {
+          reached = '1 φορά';
+        } else {
+          reached = g.count + ' φορές';
+        }
+        var ok = (g.count >= g.min_times && g.count <= g.max_times);
+        reached += ok
+          ? ' <span style="color:#198754;font-weight:bold;">✔️</span>'
+          : ' <span style="color:#dc3545;font-weight:bold;">❌</span>';
+
+        var tr = document.createElement("tr");
+        tr.innerHTML = '<td>' + cat + '</td><td>' + target + '</td><td>' + reached + '</td>';
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+
+
+window.addEventListener('DOMContentLoaded', function() {
+  updateWeeklyGoalsTable()
+  if (missingDays.length > 0) {
+    let list = document.getElementById('missingDaysList');
+    list.innerHTML = '';
+    missingDays.forEach(function(d) {
+      var li = document.createElement("li");
+      li.className = "list-group-item";
+      li.textContent = greekDate(d);
+      list.appendChild(li);
+    });
+    var modal = new bootstrap.Modal(document.getElementById('missingDaysModal'));
+    modal.show();
+
+    document.getElementById('yesManualBtn').onclick = function() {
+      document.getElementById('manualEntryPrompt').style.display = 'none';
+      document.getElementById('manualEntryBox').style.display = 'block';
+      manualDayIdx = 0;
+      document.getElementById('currentDay').innerText = greekDate(missingDays[manualDayIdx]);
+      document.getElementById('manualDishTitle').focus();
+    };
+
+    // AUTOCOMPLETE για manualDishTitle
+    let manualInput = document.getElementById("manualDishTitle");
+    let manualAutocompleteDiv = document.getElementById("manual-autocomplete");
+    manualInput.addEventListener('input', function() {
+      let val = removeTonos(manualInput.value.trim());
+      if (val.length < 2) {
+        manualAutocompleteDiv.innerHTML = "";
+        return;
+      }
+      let found = allRecipes.filter(function(r) {
+        return removeTonos(r.title).includes(val)
+          || removeTonos(r.tags || "").includes(val)
+          || removeTonos(r.ingredients || "").includes(val)
+          || removeTonos(r.main_dish_tag || "").includes(val);
+      }).slice(0, 10);
+      manualAutocompleteDiv.innerHTML = "";
+      found.forEach(function(r) {
+        let opt = document.createElement("div");
+        opt.className = "autocomplete-option";
+        opt.textContent = r.title;
+        opt.onclick = function() {
+          manualInput.value = r.title;
+          manualAutocompleteDiv.innerHTML = "";
+        };
+        manualAutocompleteDiv.appendChild(opt);
+      });
+    });
+    manualInput.addEventListener('blur', function() {
+      setTimeout(function() { manualAutocompleteDiv.innerHTML = ""; }, 200);
+    });
+  }
+});
+
+function submitManualDish() {
+  let title = document.getElementById('manualDishTitle').value.trim();
+  let day = missingDays[manualDayIdx];
+  if (!title) {
+    document.getElementById('manualEntryFeedback').innerHTML = "<span class='text-danger'>Γράψε ένα πιάτο!</span>";
+    return;
+  }
+  fetch('/add_manual_recipe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({title: title, date: day})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    manualDayIdx++;
+    document.getElementById('manualDishTitle').value = '';
+    document.getElementById('manualEntryFeedback').innerHTML = "<span class='text-success'>Καταχωρήθηκε!</span>";
+
+    if (data.id && data.date && data.title) {
+      addDishToTable(data.id, data.date, data.title, data.chef, data.basic_category);
+    }
+
+    // ---- Αν έχει προταθεί modal για αγαπημένα ----
+    if (data.recipe_id) {
+      // Κλείσε το missingDaysModal πρώτα
+      var modal = bootstrap.Modal.getInstance(document.getElementById('missingDaysModal'));
+      if (modal) modal.hide();
+
+      // Άκου το event hidden του missingDaysModal, μετά άνοιξε το favDetailsModal
+      document.getElementById('missingDaysModal').addEventListener('hidden.bs.modal', function handler() {
+        this.removeEventListener('hidden.bs.modal', handler);
+        showAddFavoriteDialog(data.recipe_id, title); // <-- μόνο αυτό
+      });
+    } else if (manualDayIdx < missingDays.length) {
+      // Επανέφερε το modal για την επόμενη μέρα ΑΜΕΣΩΣ (δεν έχει ενδιάμεσο modal)
+      showNextMissingDayModal();
+    } else {
+      var modal = bootstrap.Modal.getInstance(document.getElementById('missingDaysModal'));
+      if (modal) modal.hide();
+    }
+  });
+}
+
+function showAddFavoriteDialog(recipe_id, title) {
+  var modalEl = document.getElementById('favDetailsModal');
+  var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+  // Αυτό είναι το callback που θα καλέσει το modal της επόμενης μέρας αφού κλείσει το favDetailsModal
+  function afterFavModalClosed() {
+    modalEl.removeEventListener('hidden.bs.modal', afterFavModalClosed);
+    if (typeof manualDayIdx !== "undefined" && typeof missingDays !== "undefined") {
+      if (manualDayIdx < missingDays.length) {
+        // Τώρα ανοίγει το modal για την επόμενη μέρα!
+        showNextMissingDayModal();
+      }
+    }
+  }
+  modalEl.addEventListener('hidden.bs.modal', afterFavModalClosed);
+
+  function showEditPrompt(add_to_favorites) {
+    document.getElementById('favDetailsModalBody').innerHTML =
+      "Θέλεις να συμπληρώσεις περισσότερες λεπτομέρειες για τη συνταγή;";
+    document.getElementById('favDetailsModalFooter').innerHTML =
+      '<button class="btn btn-primary" id="favEditYesBtn" type="button">Ναι</button>' +
+      '<button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Όχι</button>';
+    document.getElementById('favEditYesBtn').onclick = function() {
+      modal.hide();
+      window.location.href = "/favorites/edit/" + recipe_id + "?add_to_favorites=" + (add_to_favorites ? "1" : "0");
+    };
+    // "Όχι": απλά hide (χωρίς redirect)
+  }
+
+  document.getElementById('favDetailsModalLabel').innerText = "Νέα Συνταγή";
+  document.getElementById('favDetailsModalBody').innerHTML =
+    'Η νέα συνταγή "<b>' + title + '</b>" καταχωρήθηκε.<br>Θέλεις να την προσθέσεις στα αγαπημένα σου;';
+  document.getElementById('favDetailsModalFooter').innerHTML =
+    '<button class="btn btn-success" id="favAddYesBtn" type="button">Ναι</button>' +
+    '<button class="btn btn-secondary" id="favAddNoBtn" type="button">Όχι</button>';
+
+  modal.show();
+
+  document.getElementById('favAddYesBtn').onclick = function() {
+    fetch('/add_favorite_recipe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({recipe_id: recipe_id})
+    })
+    .then(function(r){return r.json();})
+    .then(function(){
+      showEditPrompt(true);
+    });
+  };
+
+  document.getElementById('favAddNoBtn').onclick = function() {
+    showEditPrompt(false);
+  };
+}
+
+function addDishToTable(row_id, date_str, title, chef, basic_category) {
+  // format ημερομηνίας (client)
+  let niceDate = greekDate(date_str);
+  let tbody = document.querySelector('table.table tbody');
+  let tr = document.createElement('tr');
+  tr.id = 'row' + row_id;
+  tr.innerHTML =
+    '<td data-date="' + date_str + '">' + niceDate + '</td>' +
+    '<td>' + title + '</td>' +
+    '<td>' + (chef || '-') + '</td>' +
+    '<td>' + (basic_category || '-') + '</td>' +
+    '<td>' +
+      '<button class="btn btn-outline-danger btn-sm" title="Διαγραφή" onclick="deleteHistoryEntry(' + row_id + ')">' +
+        '<i class="fa fa-trash"></i>' +
+      '</button>' +
+    '</td>';
+  tbody.appendChild(tr);
+  sortHistoryTableByDate(); // ← Νέα γραμμή, πάντα ταξινομημένα!
+}
+
+function showNextMissingDayModal() {
+  // Επανενεργοποίησε το prompt/box, ενημέρωσε ημερομηνία, καθάρισε feedback, ξαναδείξε το modal
+  document.getElementById('manualEntryPrompt').style.display = 'none';
+  document.getElementById('manualEntryBox').style.display = 'block';
+  document.getElementById('manualEntryFeedback').innerHTML = '';
+  document.getElementById('currentDay').innerText = greekDate(missingDays[manualDayIdx]);
+  document.getElementById('manualDishTitle').focus();
+
+  // ξαναεμφανισε το modal
+  var modal = new bootstrap.Modal(document.getElementById('missingDaysModal'));
+  modal.show();
+}
+
+function sortHistoryTableByDate() {
+  let tbody = document.querySelector('table.table tbody');
+  // Μάζεψε όλα τα <tr> που έχουν ημερομηνία στην πρώτη στήλη
+  let rows = Array.from(tbody.querySelectorAll('tr')).filter(tr => tr.children.length && tr.children[0]);
+  // Sort φθίνουσα βάση της ημερομηνίας (πρώτη στήλη)
+  rows.sort(function(a, b) {
+    // Παίρνεις το date string από το hidden attribute data-date ή από το textContent (δες παρακάτω)
+    let dateA = a.children[0].getAttribute('data-date') || a.children[0].textContent.trim();
+    let dateB = b.children[0].getAttribute('data-date') || b.children[0].textContent.trim();
+    // Αν έχεις κρατήσει το raw yyyy-mm-dd σε data-date, κάνε σύγκριση ως string
+    // αλλιώς αν είναι σε μορφή ελληνικής ημερομηνίας, μετατροπή σε Date:
+    // Υποθέτουμε ότι data-date υπάρχει και είναι YYYY-MM-DD
+    if (dateA > dateB) return -1;
+    if (dateA < dateB) return 1;
+    return 0;
+  });
+  // Ξαναβάλε τα rows με τη νέα σειρά!
+  rows.forEach(tr => tbody.appendChild(tr));
+  updateWeeklyGoalsTable();
+}
+
+function cancelManualEntry() {
+  document.getElementById('manualEntryBox').style.display = 'none';
+  document.getElementById('manualEntryPrompt').style.display = '';
+  document.getElementById('manualEntryFeedback').innerHTML = '';
+}
+
+function deleteHistoryEntry(id) {
+  if (!confirm('Θέλεις σίγουρα να διαγράψεις αυτό το πιάτο από το ιστορικό;')) return;
+  fetch('/delete_history_entry', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ id: id })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.status === 'ok') {
+      let row = document.getElementById('row' + id);
+      if (row) row.remove();
+	  updateWeeklyGoalsTable();
+    } else {
+      alert('Κάτι πήγε στραβά. Προσπάθησε ξανά!');
+    }
+  });
+}
+</script>
+{% endblock %}

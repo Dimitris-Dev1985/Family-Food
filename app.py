@@ -1,0 +1,1458 @@
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+import sqlite3, unicodedata, random
+from datetime import datetime, timedelta
+from jinja2 import pass_context
+
+app = Flask(__name__)
+app.secret_key = "d7gAq2d9bJz@7qK2kLxw!"
+DB = "family_food_app.db"
+
+WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"]
+
+# --- ADMIN PANEL ΓΙΑ ΣΥΝΤΑΓΕΣ ---
+# Λίστα συνταγών + διαγραφή
+@app.route("/admin/recipes")
+def admin_recipes():
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    recipes = conn.execute("SELECT * FROM recipes ORDER BY id DESC").fetchall()
+    conn.close()
+    return render_template("admin_recipes.html", recipes=recipes)
+
+# Προσθήκη νέας συνταγής
+@app.route("/admin/recipes/new", methods=["GET", "POST"])
+def new_recipe():
+    if request.method == "POST":
+        form = request.form
+        conn = sqlite3.connect(DB)
+        conn.execute("""
+            INSERT INTO recipes
+            (title, chef, ingredients, prep_time, cook_time, total_time, method, instructions, tags, allergens, url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            form["title"], form["chef"], form["ingredients"], form["prep_time"], form["cook_time"],
+            form["total_time"], form["method"], form["instructions"], form["tags"], form["allergens"], form["url"]
+        ))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("admin_recipes"))
+    return render_template("edit_recipe.html", recipe=None)
+
+# Επεξεργασία συνταγής
+@app.route("/admin/recipes/edit/<int:rid>", methods=["GET", "POST"])
+def edit_recipe(rid):
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    recipe = conn.execute("SELECT * FROM recipes WHERE id=?", (rid,)).fetchone()
+    if request.method == "POST":
+        form = request.form
+        conn.execute("""
+            UPDATE recipes
+            SET title=?, chef=?, ingredients=?, prep_time=?, cook_time=?, total_time=?, method=?, instructions=?, tags=?, allergens=?, url=?
+            WHERE id=?
+        """, (
+            form["title"], form["chef"], form["ingredients"], form["prep_time"], form["cook_time"],
+            form["total_time"], form["method"], form["instructions"], form["tags"], form["allergens"], form["url"], rid
+        ))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("admin_recipes"))
+    conn.close()
+    return render_template("edit_recipe.html", recipe=recipe)
+
+@app.route("/favorites/edit/<int:recipe_id>", methods=["GET", "POST"])
+def edit_favorite_recipe(recipe_id):
+    user, _ = get_user()
+    user_id = user["id"] if "id" in user else 1
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    # Φέρε τη συνταγή που γίνεται edit
+    recipe = conn.execute("SELECT * FROM recipes WHERE id=?", (recipe_id,)).fetchone()
+    if not recipe:
+        conn.close()
+        return "Recipe not found", 404
+
+    # Βρες όλα τα μοναδικά tags (multi-select)
+    BASIC_TAGS = [
+    'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα'
+    ]
+    tags_rows = conn.execute("SELECT tags FROM recipes WHERE tags IS NOT NULL AND tags != ''").fetchall()
+    all_tags_set = set()
+    for row in tags_rows:
+        for tag in row["tags"].split(","):
+            tag = tag.strip()
+            if tag:
+                all_tags_set.add(tag)
+    all_tags = sorted(all_tags_set)
+
+    add_to_favorites = request.args.get("add_to_favorites")
+    if request.method == "POST":
+        form = request.form
+        prep = int(form.get("prep_time") or 0)
+        cook = int(form.get("cook_time") or 0)
+        total_time = prep + cook
+
+        # MULTI-SELECT TAGS
+        tags_list = form.getlist("tags")
+        tags = ", ".join([t.strip() for t in tags_list if t.strip()])
+
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO recipes (title, ingredients, prep_time, cook_time, total_time, method, instructions, allergens, tags, created_by, parent_id, chef)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            form["title"], form["ingredients"], prep, cook, total_time,
+            form["method"], form["instructions"], form["allergens"], tags,
+            user_id, recipe["id"], "Me!!"
+        ))
+        new_recipe_id = cur.lastrowid
+        
+        flag = add_to_favorites
+        if flag is None:
+            flag = "1"
+        # Προσθήκη στα αγαπημένα ΜΟΝΟ αν έχει flag
+        if flag == "1":
+            cur.execute("INSERT OR IGNORE INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)", (user_id, new_recipe_id))
+        # ΠΑΝΤΑ αφαίρεσε τη μητρική από τα αγαπημένα
+        cur.execute("DELETE FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("cooked_history"))  
+
+    conn.close()
+    return render_template("edit_recipe.html", recipe=recipe, all_tags=all_tags, basic_tags=BASIC_TAGS)
+
+@app.route("/reset_favorite_recipe", methods=["POST"])
+def reset_favorite_recipe():
+    user, _ = get_user()
+    user_id = user["id"] if "id" in user else 1
+    data = request.get_json()
+    recipe_id = data.get("recipe_id")
+    parent_id = data.get("parent_id")
+    if not recipe_id or not parent_id:
+        return jsonify(success=False)
+    try:
+        conn = sqlite3.connect(DB)
+        cur = conn.cursor()
+        # Διαγραφή custom συνταγής
+        cur.execute("DELETE FROM recipes WHERE id=? AND created_by=?", (recipe_id, user_id))
+        # Βγάλε την custom από τα αγαπημένα
+        cur.execute("DELETE FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id))
+        # Βάλε πάλι την original (parent) στα αγαπημένα
+        cur.execute("INSERT OR IGNORE INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)", (user_id, parent_id))
+        conn.commit()
+        conn.close()
+        return jsonify(success=True)
+    except Exception as e:
+        print("RESET ERROR", e)
+        return jsonify(success=False)
+
+# Διαγραφή συνταγής
+@app.route("/admin/recipes/delete/<int:rid>")
+def delete_recipe(rid):
+    conn = sqlite3.connect(DB)
+    conn.execute("DELETE FROM recipes WHERE id=?", (rid,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("admin_recipes"))
+
+def get_user():
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    user = conn.execute("SELECT * FROM users LIMIT 1").fetchone()
+    members = conn.execute("SELECT * FROM family_members WHERE user_id=?", (user["id"],)).fetchall()
+    conn.close()
+    return user, members
+
+@app.route("/welcome")
+def welcome():
+    user, _ = get_user()
+    hour = datetime.now().hour
+    greeting = "Καλημέρα" if hour < 12 else "Καλησπέρα"
+    day_idx = datetime.now().weekday()  # 0 = Δευτέρα
+    day_name = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"][day_idx]
+
+    # Βρες το τρέχον εβδομαδιαίο μενού του χρήστη
+    week_start = (datetime.now() - timedelta(days=day_idx)).date()
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    c = conn.execute(
+        "SELECT * FROM weekly_menu WHERE user_id=? AND week_start_date=? ORDER BY day_of_week ASC",
+        (user["id"], str(week_start))
+    )
+    weekly_menu = c.fetchall()
+
+    # Ορισμοί για σήμερα & αύριο
+    today_menu = "-"
+    today_menu_id = ""
+    tomorrow_menu = "-"
+    tomorrow_menu_id = ""
+
+    if len(weekly_menu) == 7:
+        recipe_today, recipe_tomorrow = None, None
+        if weekly_menu[day_idx]["recipe_id"]:
+            recipe_today = conn.execute("SELECT * FROM recipes WHERE id=?", (weekly_menu[day_idx]["recipe_id"],)).fetchone()
+        if weekly_menu[(day_idx+1)%7]["recipe_id"]:
+            recipe_tomorrow = conn.execute("SELECT * FROM recipes WHERE id=?", (weekly_menu[(day_idx+1)%7]["recipe_id"],)).fetchone()
+        if recipe_today:
+            t = recipe_today["total_time"] if recipe_today["total_time"] else "-"
+            today_menu = f'{recipe_today["title"]} – χρόνος μαγειρέματος: {t}′'
+            today_menu_id = recipe_today["id"]   # <--- Σωστά περνάμε το ID
+        if recipe_tomorrow:
+            t = recipe_tomorrow["total_time"] if recipe_tomorrow["total_time"] else "-"
+            tomorrow_menu = f'{recipe_tomorrow["title"]} – χρόνος μαγειρέματος: {t}′'
+            tomorrow_menu_id = recipe_tomorrow["id"]
+
+    conn.close()
+
+    return render_template(
+        "welcome.html",
+        greeting=greeting,
+        user_name=user["first_name"],
+        day_name=day_name,
+        today_menu=today_menu,
+        today_menu_id=today_menu_id,
+        tomorrow_menu=tomorrow_menu,
+        tomorrow_menu_id=tomorrow_menu_id
+    )
+
+@app.route("/favorites")
+def favorites():
+    user, _ = get_user()
+    user_id = user["id"] if "id" in user else 1
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    favorites = conn.execute("""
+    SELECT r.id, r.title, r.chef, r.total_time, r.parent_id
+    FROM favorite_recipes f
+    JOIN recipes r ON r.id = f.recipe_id
+    WHERE f.user_id=?
+    ORDER BY r.title COLLATE NOCASE
+    """, (user_id,)).fetchall()
+
+    conn.close()
+    return render_template("favorites.html", favorites=favorites)
+
+@app.route('/toggle_favorite_recipe', methods=['POST'])
+def toggle_favorite_recipe():
+    user, _ = get_user()
+    user_id = 1
+    data = request.get_json()
+    recipe_id = data.get("recipe_id")
+    if not recipe_id:
+        return jsonify({"success": False})
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    found = conn.execute("SELECT * FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id)).fetchone()
+    if found:
+        conn.execute("DELETE FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "status": "removed"})
+    else:
+        conn.execute("INSERT INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)", (user_id, recipe_id))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "status": "added"})
+
+@app.route("/add_favorite_recipe", methods=["POST"])
+def add_favorite_recipe():
+    user, _ = get_user()
+    user_id = user["id"] if "id" in user else 1
+    data = request.get_json()
+    recipe_id = data.get("recipe_id")
+    print(recipe_id)
+    if not recipe_id:
+        return jsonify(success=False)
+    try:
+        conn = sqlite3.connect(DB)
+        conn.execute("INSERT OR IGNORE INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)", (user_id, recipe_id))
+        conn.commit()
+        conn.close()
+        return jsonify(success=True) 
+    except Exception as e:
+        return jsonify(success=False, error=str(e))
+
+@app.route("/delete_favorite_recipe", methods=["POST"])
+def delete_favorite_recipe():
+    user, _ = get_user()
+    user_id = user["id"] if "id" in user else 1
+    data = request.get_json()
+    recipe_id = data.get("recipe_id")
+    if not recipe_id:
+        return jsonify(success=False)
+    conn = sqlite3.connect(DB)
+    try:
+        conn.execute("DELETE FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify(success=True)
+
+@app.route('/delete_all_favorite_recipes', methods=['POST'])
+def delete_all_favorite_recipes():
+    user, _ = get_user()
+    user_id = 1  # Ή ό,τι λογική έχεις για user_id
+    conn = sqlite3.connect(DB)
+    conn.execute("DELETE FROM favorite_recipes WHERE user_id=?", (user_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route("/get_weekly_goals_status")
+def get_weekly_goals_status():
+    user, _ = get_user()
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    today = datetime.now().date()
+    last_7_days = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+
+    # Φέρε στόχους χρήστη από τον πίνακα weekly_goals (με min/max)
+    goals = conn.execute(
+        "SELECT * FROM weekly_goals WHERE user_id=?", (user["id"],)
+    ).fetchall()
+
+    # Φέρε όλα τα πιάτα των τελευταίων 7 ημερών
+    res = conn.execute("""
+        SELECT cd.*, r.tags
+        FROM cooked_dishes cd
+        LEFT JOIN recipes r ON cd.recipe_id = r.id
+        WHERE cd.user_id=?
+    """, (user["id"],)).fetchall()
+
+    # Υπολόγισε count ανά tag/κατηγορία
+    counts = {}
+    for row in res:
+        if row['date'] not in last_7_days:
+            continue
+        tags = row['tags'] or ""
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+        for tag in tag_list:
+            counts[tag] = counts.get(tag, 0) + 1
+
+    goals_achievement = []
+    for g in goals:
+        cat = g["category"]
+        min_times = g['min_times'] if ('min_times' in g.keys() and g['min_times'] is not None) else 1
+        max_times = g['max_times'] if ('max_times' in g.keys() and g['max_times'] is not None) else 1
+        n = counts.get(cat, 0)
+        goals_achievement.append({
+            "category": cat,
+            "min_times": min_times,
+            "max_times": max_times,
+            "count": n
+        })
+
+    conn.close()
+    return jsonify(goals_achievement)
+
+@app.route('/add_weekly_goal', methods=['POST'])
+def add_weekly_goal():
+    user, _ = get_user()
+    data = request.get_json()
+    category = data.get('category')
+    min_times = int(data.get('min_times', 1))
+    max_times = int(data.get('max_times', 1))
+    if not category or min_times < 0 or max_times < min_times:
+        return jsonify({'status': 'error', 'msg': 'Συμπλήρωσε σωστά τα πεδία!'})
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    # Έλεγχος αν υπάρχει ήδη στόχος για αυτή την κατηγορία
+    c.execute(
+        "SELECT COUNT(*) FROM weekly_goals WHERE user_id=? AND category=?",
+        (user['id'], category)
+    )
+    if c.fetchone()[0] > 0:
+        conn.close()
+        return jsonify({'status': 'error', 'msg': 'Υπάρχει ήδη στόχος για αυτή την κατηγορία!'})
+    c.execute(
+        "INSERT INTO weekly_goals (user_id, category, min_times, max_times) VALUES (?, ?, ?, ?)",
+        (user['id'], category, min_times, max_times)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'ok', 'id': c.lastrowid})
+
+@app.route('/edit_weekly_goal', methods=['POST'])
+def edit_weekly_goal():
+    user, _ = get_user()
+    data = request.get_json()
+    goal_id = data.get('id')
+    min_times = int(data.get('min_times', 1))
+    max_times = int(data.get('max_times', 1))
+    if not goal_id or min_times < 0 or max_times < min_times:
+        return jsonify({'status': 'error', 'msg': 'Συμπλήρωσε σωστά τα πεδία!'})
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute(
+        "UPDATE weekly_goals SET min_times=?, max_times=? WHERE id=? AND user_id=?",
+        (min_times, max_times, goal_id, user['id'])
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'ok'})
+
+@app.route('/delete_weekly_goal', methods=['POST'])
+def delete_weekly_goal():
+    user, _ = get_user()
+    data = request.get_json()
+    goal_id = data.get('id')
+    if not goal_id:
+        return jsonify({'status': 'error', 'msg': 'Δεν βρέθηκε στόχος!'})
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute(
+        "DELETE FROM weekly_goals WHERE id=? AND user_id=?",
+        (goal_id, user['id'])
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'ok'})
+
+@app.route('/delete_all_weekly_goals', methods=['POST'])
+def delete_all_weekly_goals():
+    user, _ = get_user()
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute(
+        "DELETE FROM weekly_goals WHERE user_id=?",
+        (user['id'],)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'ok'})
+
+@app.route('/ingredients')
+def show_ingredients():
+    missing_ingredients = session.get('missing_ingredients', [])
+    return render_template('ingredients.html', missing_ingredients=missing_ingredients)
+
+@app.route("/save_missing_ingredients", methods=["POST"])
+def save_missing_ingredients():
+    data = request.get_json()
+    session['missing_ingredients'] = data.get('missing', [])
+    return jsonify({"status":"ok"})
+
+# Βοηθητική συνάρτηση (για καθαρότητα)
+def get_missing_ingredients():
+    return session.get('missing_ingredients', [])
+
+def save_missing_ingredients(lst):
+    session['missing_ingredients'] = lst
+
+# Προσθήκη νέου υλικού
+@app.route('/add_missing_ingredient', methods=['POST'])
+def add_missing_ingredient():
+    item = request.json.get('item', '').strip()
+    if not item:
+        return jsonify({'error': 'empty'}), 400
+    missing = get_missing_ingredients()
+    if item not in missing:
+        missing.append(item)
+        save_missing_ingredients(missing)
+    return jsonify({'status': 'ok'})
+
+# Διαγραφή συγκεκριμένου υλικού
+@app.route('/delete_missing_ingredient', methods=['POST'])
+def delete_missing_ingredient():
+    item = request.json.get('item', '').strip()
+    missing = get_missing_ingredients()
+    if item in missing:
+        missing.remove(item)
+        save_missing_ingredients(missing)
+    return jsonify({'status': 'ok'})
+
+# Διαγραφή όλων
+@app.route('/delete_all_missing_ingredients', methods=['POST'])
+def delete_all_missing():
+    save_missing_ingredients([])
+    return jsonify({'status': 'ok'})
+
+@app.route("/profile")
+def profile():
+    user, members = get_user()
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    # Φέρε τους weekly_goals του χρήστη
+    goals = conn.execute(
+        "SELECT * FROM weekly_goals WHERE user_id=? ORDER BY id",
+        (user["id"],)
+    ).fetchall()
+
+    # Κατηγορίες διαθέσιμες για στόχους
+    categories = [
+        'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα', 'Delivery'
+    ]
+    comparisons = ['τουλάχιστον', 'το πολύ']
+
+    # Βρες ΟΛΑ τα αλλεργιογόνα από τις συνταγές, χωρίς duplicates
+    allerg_rows = conn.execute("SELECT allergens FROM recipes WHERE allergens IS NOT NULL AND allergens != ''").fetchall()
+    all_allergs = set()
+    for row in allerg_rows:
+        allergens = (row['allergens'] or '').replace(',', ' ')
+        for a in allergens.split():
+            a = a.strip()
+            if a:
+                all_allergs.add(a)
+    all_allergs = sorted(all_allergs)
+
+    # Βρες όλους τους chef που έχουν πάνω από 1 συνταγή
+    chefs = conn.execute("""
+        SELECT chef, COUNT(*) as cnt
+        FROM recipes
+        WHERE chef IS NOT NULL AND chef != ''
+        GROUP BY chef
+        HAVING cnt > 1
+        ORDER BY chef COLLATE NOCASE
+    """).fetchall()
+    chef_options = [r["chef"] for r in chefs]
+    chef_options = sorted(set(chef_options), key=lambda x: x.lower())
+    if "Κανένας" not in chef_options:
+        chef_options = ["Κανένας"] + chef_options  # Βάλε πάντα πρώτο το "Κανένας"
+
+    conn.close()
+
+    return render_template(
+        "profile_view.html",
+        profile=user,
+        members=members,
+        weekly_goals=goals,
+        categories=categories,
+        comparisons=comparisons,
+        all_allergs=all_allergs,    # multi-select για αλλεργίες
+        chef_options=chef_options   # dropdown για chef
+    )
+
+@app.route("/edit_profile_info", methods=["POST"])
+def edit_profile_info():
+    user, _ = get_user()
+    data = request.get_json()
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE users SET first_name=?, family_name=?, address=?, alt_address=?, chef=?, menu_day=?, menu_hour=?, cooking_method=?
+        WHERE id=?
+    """, (
+        data.get("first_name", ""), data.get("family_name", ""), data.get("address", ""), data.get("alt_address", ""),
+        data.get("chef", ""), data.get("menu_day", ""), data.get("menu_hour", ""), data.get("cooking_method", ""),
+        user["id"]
+    ))
+    conn.commit()
+    conn.close()
+    return jsonify({"status":"ok"})
+
+@app.route('/add_family_member', methods=['POST'])
+def add_family_member():
+    user, _ = get_user()
+    data = request.get_json()
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO family_members (user_id, name, age, allergies) VALUES (?, ?, ?, ?)",
+        (user['id'], data['name'], int(data['age']), data['allergies'])
+    )
+    new_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok", "id": new_id})
+
+@app.route('/edit_family_member', methods=['POST'])
+def edit_family_member():
+    user, _ = get_user()
+    data = request.get_json()
+    conn = sqlite3.connect(DB)
+    conn.execute(
+        "UPDATE family_members SET name=?, age=?, allergies=? WHERE id=? AND user_id=?",
+        (data['name'], int(data['age']), data['allergies'], data['member_id'], user['id'])
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
+@app.route('/delete_family_member', methods=['POST'])
+def delete_family_member():
+    user, _ = get_user()
+    data = request.get_json()
+    conn = sqlite3.connect(DB)
+    conn.execute(
+        "DELETE FROM family_members WHERE id=? AND user_id=?",
+        (data['member_id'], user['id'])
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
+@app.route("/edit_cooking_times", methods=["POST"])
+def edit_cooking_times():
+    user, _ = get_user()
+    data = request.get_json()
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+    sql = "UPDATE users SET cooktime_mon=?, cooktime_tue=?, cooktime_wed=?, cooktime_thu=?, cooktime_fri=?, cooktime_sat=?, cooktime_sun=? WHERE id=?"
+    cur.execute(sql, (
+        data.get("cooktime_mon", 0), data.get("cooktime_tue", 0), data.get("cooktime_wed", 0),
+        data.get("cooktime_thu", 0), data.get("cooktime_fri", 0), data.get("cooktime_sat", 0), data.get("cooktime_sun", 0),
+        user["id"]
+    ))
+    conn.commit()
+    conn.close()
+    return jsonify({"status":"ok"})
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    user, _ = get_user()
+    msg = request.form.get("message")
+    answer = f"Έλαβες: {msg}"
+    now = datetime.now()
+    days_map = {
+        "Monday": "Δευτέρα", "Tuesday": "Τρίτη", "Wednesday": "Τετάρτη",
+        "Thursday": "Πέμπτη", "Friday": "Παρασκευή",
+        "Saturday": "Σάββατο", "Sunday": "Κυριακή"
+    }
+    current_day = days_map[now.strftime("%A")]
+    greeting = "Καλημέρα" if now.hour < 12 else "Καλησπέρα"
+    return render_template("welcome.html", greeting=greeting, user_name=user["first_name"], current_day=current_day, chat_response=answer)
+
+def get_current_week_start():
+    today = datetime.now()
+    monday = today - timedelta(days=today.weekday())
+    return monday.date()
+
+    today = datetime.now()
+    monday = today - timedelta(days=today.weekday())
+    return monday.date()
+
+def normalize_title(title):
+    if not title:
+        return ""
+    # Αφαίρεση τόνων και μετατροπή σε μικρά, καθαρισμός
+    t = ''.join(c for c in unicodedata.normalize('NFD', title) if unicodedata.category(c) != 'Mn')
+    return t.lower().strip()
+
+@app.route("/menu")
+def menu():
+    user, members = get_user()
+    user_id = user["id"]
+    week_start = get_current_week_start()
+    edit_mode = request.args.get("edit", "0") == "1"
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    def split_and_strip(s):
+        return set(x.strip().lower() for x in (s or '').split(',') if x.strip())
+
+    # Αγαπημένα recipes
+    fav_rows = conn.execute("SELECT recipe_id FROM favorite_recipes WHERE user_id=?", (user_id,)).fetchall()
+    fav_ids = set(r["recipe_id"] for r in fav_rows)
+
+    # Δες αν έχει ήδη μενού για την εβδομάδα (saved)
+    c = conn.execute("SELECT * FROM weekly_menu WHERE user_id=? AND week_start_date=? ORDER BY day_of_week ASC", (user_id, str(week_start)))
+    saved_menu = c.fetchall()
+    menu_entries = []
+    categories = ['κόκκινο κρέας', 'ψάρι', 'όσπρια', 'λαδερά', 'ζυμαρικά', 'πουλερικά', 'σαλάτα']
+
+    if len(saved_menu) == 7:
+        preferred_methods = [m.strip().lower() for m in (user["cooking_method"] or "").split(",") if m.strip()]
+        fav_chef = (user["chef"] or "").strip()
+        cooktimes = []
+        for d in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']:
+            val = user[f"cooktime_{d}"] if f"cooktime_{d}" in user.keys() else None
+            try:
+                cooktimes.append(int(val))
+            except:
+                cooktimes.append(120)
+        for entry in saved_menu:
+            recipe = None
+            if entry["recipe_id"]:
+                recipe = conn.execute("SELECT * FROM recipes WHERE id=?", (entry["recipe_id"],)).fetchone()
+            category = ""
+            if recipe:
+                category = (recipe["main_dish_tag"] or "").capitalize() if "main_dish_tag" in recipe.keys() else ""
+                if not category:
+                    for cat in categories:
+                        if cat in (recipe["tags"] or "").lower():
+                            category = cat.capitalize()
+                            break
+            criteria_text = []
+            try:
+                day_idx = int(entry["day_of_week"])
+            except:
+                day_idx = 0
+            if recipe and recipe["total_time"] and abs(int(recipe["total_time"]) - cooktimes[day_idx]) <= 10:
+                criteria_text.append("✓ χρόνος OK")
+            elif recipe and recipe["total_time"]:
+                criteria_text.append("✓ χρόνος σχετικός")
+            if recipe:
+                dish_methods = [m.strip().lower() for m in (recipe["method"] or "").split(",") if m.strip()]
+                if dish_methods and all(dm in preferred_methods for dm in dish_methods):
+                    criteria_text.append("✓ τρόπος")
+            if recipe and fav_chef and fav_chef.lower() in (recipe["chef"] or "").lower():
+                criteria_text.append("✓ σεφ")
+            criteria = ", ".join(criteria_text) if criteria_text else "-"
+            menu_entries.append({
+                "day": WEEKDAYS_GR[entry["day_of_week"]],
+                "title": recipe["title"] if recipe else entry["title"] if "title" in entry.keys() else "Δεν βρέθηκε πιάτο",
+                "chef": recipe["chef"] if recipe else "",
+                "duration": recipe["total_time"] if recipe else "-",
+                "method": recipe["method"] if recipe else "-",
+                "url": recipe["url"] if recipe else "",
+                "criteria": criteria,
+                "menu_id": entry["id"],
+                "tags": recipe["tags"] if recipe else "",
+                "category": category,
+                "is_favorite": (recipe["id"] in fav_ids) if recipe else False,
+                "recipe_id": recipe["id"] if recipe else None
+            })
+        # ---- Υπολογισμός επίτευξης στόχων (νέο format) ----
+        weekly_goals = conn.execute("SELECT * FROM weekly_goals WHERE user_id=?", (user_id,)).fetchall()
+        goals_achievement = []
+        for g in weekly_goals:
+            cat = g["category"].strip().lower()
+            min_times = g["min_times"]
+            max_times = g["max_times"]
+            count_in_menu = sum(
+                1 for r in menu_entries if r and cat in (r["tags"] or '').lower()
+            )
+            goals_achievement.append({
+                "category": cat,
+                "min_times": min_times,
+                "max_times": max_times,
+                "count": count_in_menu
+            })
+        # Unreachable goals
+        c2 = conn.execute("SELECT * FROM recipes")
+        all_recipes = [dict(r) for r in c2.fetchall()]
+        all_allergies = set()
+        for m in members:
+            if m["allergies"]:
+                all_allergies.update(split_and_strip(m["allergies"]))
+        valid_recipes = []
+        for r in all_recipes:
+            allergens_in_recipe = split_and_strip(r.get("allergens", ""))
+            if not (all_allergies & allergens_in_recipe):
+                valid_recipes.append(r)
+        unreachable_goals = []
+        for g in weekly_goals:
+            cat = g["category"].strip().lower()
+            available = [r for r in valid_recipes if cat in (r["tags"] or '').lower()]
+            if not available:
+                unreachable_goals.append(cat)
+        conn.close()
+        return render_template(
+            "menu.html",
+            menu=menu_entries,
+            edit_mode=edit_mode,
+            goals_achievement=goals_achievement,
+            unreachable_goals=unreachable_goals
+        )
+
+    # --- Αν ΔΕΝ έχει έτοιμο μενού, ΔΗΜΙΟΥΡΓΙΑ με τον νέο αλγόριθμο min/max ---
+    preferred_methods = [m.strip().lower() for m in (user["cooking_method"] or "").split(",") if m.strip()]
+    fav_chef = (user["chef"] or "").strip()
+    cooktimes = []
+    for d in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']:
+        val = user[f"cooktime_{d}"] if f"cooktime_{d}" in user.keys() else None
+        try:
+            cooktimes.append(int(val))
+        except:
+            cooktimes.append(120)
+
+    weekly_goals = conn.execute("SELECT * FROM weekly_goals WHERE user_id=?", (user_id,)).fetchall()
+    goals = []
+    for g in weekly_goals:
+        goals.append({
+            "category": g["category"].strip().lower(),
+            "min_times": g["min_times"],
+            "max_times": g["max_times"]
+        })
+
+    c = conn.execute("SELECT * FROM recipes")
+    all_recipes = [dict(r) for r in c.fetchall()]
+    all_allergies = set()
+    for m in members:
+        if m["allergies"]:
+            all_allergies.update(split_and_strip(m["allergies"]))
+    valid_recipes = []
+    for r in all_recipes:
+        allergens_in_recipe = split_and_strip(r.get("allergens", ""))
+        if not (all_allergies & allergens_in_recipe):
+            valid_recipes.append(r)
+
+    used_ids = set()
+    used_titles = set()
+    used_tags = set()
+    week_menu = [None] * 7
+    category_counts = {cat: 0 for cat in categories}
+    sorted_days = sorted([(i, cooktimes[i]) for i in range(7)], key=lambda x: x[1])
+
+    # --- 1. Πρώτα ικανοποιούμε το min_times για κάθε στόχο ---
+    for goal in goals:
+        cat = goal["category"]
+        min_times = goal["min_times"]
+        days_left = [i for i, _ in sorted_days if week_menu[i] is None]
+        added = 0
+        for i in days_left:
+            if added >= min_times:
+                break
+            day_time = cooktimes[i]
+            matches = [
+                r for r in valid_recipes
+                if cat in (r["tags"] or '').lower()
+                and r["id"] not in used_ids
+                and normalize_title(r["title"]) not in used_titles
+                and (r.get("main_dish_tag", "").lower() not in used_tags if r.get("main_dish_tag") else True)
+                and r.get("total_time") is not None
+                and abs(int(r["total_time"]) - day_time) <= 30
+            ]
+            matches = sorted(matches, key=lambda r: abs(int(r["total_time"]) - day_time))
+            if not matches:
+                continue
+            chosen = matches.pop(0)
+            week_menu[i] = chosen
+            used_ids.add(chosen["id"])
+            used_titles.add(normalize_title(chosen["title"]))
+            if chosen.get("main_dish_tag"):
+                used_tags.add(chosen["main_dish_tag"].lower())
+            for category in categories:
+                if category in (chosen["tags"] or '').lower():
+                    category_counts[category] += 1
+            added += 1
+
+    # --- 2. Συμπλήρωσε τα υπόλοιπα πιάτα χωρίς να ξεπερνάς max_times ---
+    for i, _ in sorted_days:
+        if week_menu[i] is not None:
+            continue
+        day_time = cooktimes[i]
+        candidates = []
+        for r in valid_recipes:
+            if r["id"] in used_ids:
+                continue
+            if normalize_title(r["title"]) in used_titles:
+                continue
+            if r.get("main_dish_tag") and r["main_dish_tag"].lower() in used_tags:
+                continue
+            # ΕΛΕΓΧΟΣ max_times για κάθε στόχο
+            skip = False
+            for goal in goals:
+                cat = goal["category"]
+                cat_in_recipe = cat in (r["tags"] or '').lower()
+                count_now = category_counts[cat]
+                if cat_in_recipe and count_now >= goal["max_times"]:
+                    skip = True
+                    break
+            if skip:
+                continue
+            score = 0
+            if r["total_time"]:
+                diff = abs(int(r["total_time"]) - day_time)
+                if diff > 30:
+                    continue
+                elif diff > 20:
+                    score += 0
+                elif diff <= 10:
+                    score += 5
+                elif diff <= 20:
+                    score += 2
+            if preferred_methods and any(pm in (r["method"] or '').lower() for pm in preferred_methods):
+                score += 2
+            if fav_chef and fav_chef.lower() in (r["chef"] or "").lower():
+                score += 1
+            candidates.append((score, r))
+        candidates = sorted(candidates, key=lambda x: -x[0])
+        chosen = None
+        if candidates and candidates[0][0] > 0:
+            top_score = candidates[0][0]
+            top_candidates = [r for s, r in candidates if s == top_score]
+            chosen = random.choice(top_candidates)
+        elif valid_recipes:
+            unused = [
+                r for r in valid_recipes
+                if r["id"] not in used_ids
+                and normalize_title(r["title"]) not in used_titles
+                and (r.get("main_dish_tag", "").lower() not in used_tags if r.get("main_dish_tag") else True)
+            ]
+            if unused:
+                chosen = random.choice(unused)
+        if chosen:
+            week_menu[i] = chosen
+            used_ids.add(chosen["id"])
+            used_titles.add(normalize_title(chosen["title"]))
+            if chosen.get("main_dish_tag"):
+                used_tags.add(chosen["main_dish_tag"].lower())
+            for category in categories:
+                if category in (chosen["tags"] or '').lower():
+                    category_counts[category] += 1
+
+    # --- Save το νέο μενού στη βάση ---
+    for i, day in enumerate(WEEKDAYS_GR):
+        chosen = week_menu[i]
+        if chosen:
+            criteria_text = []
+            if chosen["total_time"] and abs(int(chosen["total_time"]) - cooktimes[i]) <= 10:
+                criteria_text.append("✓ χρόνος OK")
+            elif chosen["total_time"]:
+                criteria_text.append("✓ χρόνος σχετικός")
+            πιατο_methods = [(m.strip().lower()) for m in (chosen["method"] or "").split(",") if m.strip()]
+            if preferred_methods:
+                if all(pm in preferred_methods for pm in πιατο_methods):
+                    criteria_text.append("✓ τρόπος")
+            if fav_chef and fav_chef.lower() in (chosen["chef"] or "").lower():
+                criteria_text.append("✓ σεφ")
+            criteria = ", ".join(criteria_text) if criteria_text else "-"
+            conn.execute("""
+                INSERT INTO weekly_menu (user_id, week_start_date, day_of_week, recipe_id, criteria)
+                VALUES (?, ?, ?, ?, ?)
+            """, (user_id, str(week_start), i, chosen["id"], criteria))
+        else:
+            conn.execute("""
+                INSERT INTO weekly_menu (user_id, week_start_date, day_of_week, recipe_id, criteria)
+                VALUES (?, ?, ?, NULL, ?)
+            """, (user_id, str(week_start), i, "Δεν πληρούνται τα βασικά κριτήρια"))
+
+    favorite_recipes = set(row["recipe_id"] for row in conn.execute("SELECT recipe_id FROM favorite_recipes WHERE user_id=?", (user_id,)))
+    conn.commit()
+    conn.close()
+
+    # --- Παραγωγή μενού για Jinja (final_menu) ---
+    final_menu = []
+    for i, chosen in enumerate(week_menu):
+        if chosen:
+            criteria_text = []
+            if chosen["total_time"] and abs(int(chosen["total_time"]) - cooktimes[i]) <= 10:
+                criteria_text.append("✓ χρόνος OK")
+            elif chosen["total_time"]:
+                criteria_text.append("✓ χρόνος σχετικός")
+            πιατο_methods = [(m.strip().lower()) for m in (chosen["method"] or "").split(",") if m.strip()]
+            if preferred_methods:
+                if all(pm in preferred_methods for pm in πιατο_methods):
+                    criteria_text.append("✓ τρόπος")
+            if fav_chef and fav_chef.lower() in (chosen["chef"] or "").lower():
+                criteria_text.append("✓ σεφ")
+            criteria = ", ".join(criteria_text) if criteria_text else "-"
+            final_menu.append({
+                "day": WEEKDAYS_GR[i],
+                "title": chosen["title"],
+                "chef": chosen["chef"],
+                "duration": chosen["total_time"],
+                "method": chosen["method"],
+                "url": chosen["url"],
+                "criteria": criteria,
+                "tags": chosen.get("tags", ""),
+                "category": (chosen.get("main_dish_tag") or "").capitalize(),
+                "is_favorite": chosen["id"] in favorite_recipes,
+                "recipe_id": chosen["id"],
+            })
+        else:
+            final_menu.append({
+                "day": WEEKDAYS_GR[i],
+                "title": "Δεν βρέθηκε πιάτο",
+                "chef": "",
+                "duration": "-",
+                "method": "-",
+                "url": "",
+                "criteria": "Δεν πληρούνται τα βασικά κριτήρια",
+                "tags": "",
+                "category": "",
+                "is_favorite": False,
+                "recipe_id": None,
+            })
+
+    # --- Υπολογισμός επίτευξης στόχων για το νέο μενού ---
+    goals_achievement = []
+    for goal in goals:
+        cat = goal["category"]
+        min_times = goal["min_times"]
+        max_times = goal["max_times"]
+        count_in_menu = sum(
+            1 for r in final_menu if r and cat in (r["tags"] or '').lower()
+        )
+        goals_achievement.append({
+            "category": cat,
+            "min_times": min_times,
+            "max_times": max_times,
+            "count": count_in_menu
+        })
+
+    # --- Unreachable goals ---
+    unreachable_goals = []
+    for goal in goals:
+        cat = goal["category"]
+        available = [r for r in valid_recipes if cat in (r["tags"] or '').lower()]
+        if not available:
+            unreachable_goals.append(cat)
+
+    print("New weekly menu created!")
+
+    return render_template(
+        "menu.html",
+        menu=final_menu,
+        edit_mode=edit_mode,
+        goals_achievement=goals_achievement,
+        unreachable_goals=unreachable_goals
+    )
+
+@app.route("/generate_menu", methods=["POST"])
+def generate_menu():
+    user, members = get_user()
+    user_id = 1
+    week_start = get_current_week_start()
+    conn = sqlite3.connect(DB)
+    # Διαγραφή του εβδομαδιαίου μενού για τον χρήστη/εβδομάδα
+    conn.execute("DELETE FROM weekly_menu WHERE user_id=? AND week_start_date=?", (user_id, str(week_start)))
+    conn.commit()
+    conn.close()
+    # Ανακατεύθυνση στο /menu για να δημιουργηθεί νέο
+    return redirect(url_for("menu"))
+
+@app.route("/update_menu_order", methods=["POST"])
+def update_menu_order():
+    user, _ = get_user()
+    user_id = user["id"]
+    week_start = get_current_week_start()
+    order = request.form.get("order", "")
+    ids = [int(x) for x in order.split(",") if x.isdigit()]
+    conn = sqlite3.connect(DB)
+
+    # Αναθέτει ξανά το day_of_week (0-6) στη βάση
+    for idx, menu_id in enumerate(ids):
+        conn.execute(
+            "UPDATE weekly_menu SET day_of_week=? WHERE id=? AND user_id=? AND week_start_date=?",
+            (idx, menu_id, user_id, str(week_start))
+        )
+    conn.commit()
+    conn.close()
+    return redirect(url_for("menu"))
+
+@app.route("/search_recipes")
+def search_recipes():
+    q = request.args.get("q", "").strip().lower()
+    if not q or len(q) < 2:
+        return jsonify([])
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    recipes = conn.execute(
+        "SELECT id, title, chef, tags FROM recipes WHERE LOWER(title) LIKE ? OR LOWER(tags) LIKE ? LIMIT 12",
+        (f"%{q}%", f"%{q}%")
+    ).fetchall()
+    conn.close()
+    return jsonify([{"id": r["id"], "title": r["title"], "chef": r["chef"]} for r in recipes])
+
+def remove_tonos(s):
+    if not s:
+        return ""
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s)
+        if unicodedata.category(c) != 'Mn'
+    ).lower()
+
+@app.route("/update_menu_entries", methods=["POST"])
+def update_menu_entries():
+    data = request.get_json()
+    updates = data.get("updates", [])
+    ignore_allergy = data.get("ignore_allergy", False)
+    if not updates:
+        return jsonify({"success": False})
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    # Πάρε τα μέλη και τις αλλεργίες τους
+    members = conn.execute("SELECT name, allergies FROM family_members").fetchall()
+
+    recipes = conn.execute("SELECT id, title, tags, main_dish_tag, ingredients, allergens FROM recipes").fetchall()
+
+    allergy_warnings = []
+    # Κρατάμε mapping: recipe_title -> (allergen, member name)
+    title_to_id = {remove_tonos(r["title"]): r for r in recipes}
+
+    # Πρώτα ελέγχει για αλλεργιογόνα, αν δεν αγνοούνται (ignore_allergy)
+    if not ignore_allergy:
+        for update in updates:
+            recipe_title = update.get("recipe_title", "").strip()
+            norm_input = remove_tonos(recipe_title)
+            chosen_recipe = None
+            for r in recipes:
+                if remove_tonos(r["title"]) == norm_input:
+                    chosen_recipe = r
+                    break
+                if r["main_dish_tag"] and remove_tonos(r["main_dish_tag"]) == norm_input:
+                    chosen_recipe = r
+                    break
+                if (remove_tonos(r["tags"] or "").find(norm_input) != -1) or \
+                   (remove_tonos(r["ingredients"] or "").find(norm_input) != -1):
+                    chosen_recipe = r
+                    break
+            if chosen_recipe:
+                recipe_allergens = (chosen_recipe["allergens"] or "").lower().split(",")
+                recipe_allergens = [remove_tonos(a.strip()) for a in recipe_allergens if a.strip()]
+                if recipe_allergens:
+                    for m in members:
+                        if not m["allergies"]:
+                            continue
+                        user_allergies = [remove_tonos(a.strip()) for a in m["allergies"].split(",") if a.strip()]
+                        found_common = set(recipe_allergens) & set(user_allergies)
+                        if found_common:
+                            allergy_warnings.append({
+                                "dish": chosen_recipe["title"],
+                                "member": m["name"],
+                                "allergen": ", ".join(found_common)
+                            })
+        if allergy_warnings:
+            conn.close()
+            return jsonify({"success": False, "allergy_warnings": allergy_warnings})
+
+    # Αποθήκευση αλλαγών (μόνο αφού περάσει το allergy check ή αν το αγνοήσουμε)
+    for update in updates:
+        menu_id = update.get("menu_id")
+        recipe_title = update.get("recipe_title", "").strip()
+        if not menu_id or not recipe_title:
+            continue
+        norm_input = remove_tonos(recipe_title)
+        found = None
+        for r in recipes:
+            if remove_tonos(r["title"]) == norm_input:
+                found = r
+                break
+            if r["main_dish_tag"] and remove_tonos(r["main_dish_tag"]) == norm_input:
+                found = r
+                break
+            if (remove_tonos(r["tags"] or "").find(norm_input) != -1) or \
+               (remove_tonos(r["ingredients"] or "").find(norm_input) != -1):
+                found = r
+                break
+        if found:
+            conn.execute(
+                "UPDATE weekly_menu SET recipe_id=? WHERE id=?",
+                (found["id"], menu_id)
+            )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route("/get_recipes_for_autocomplete")
+def get_recipes_for_autocomplete():
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute("SELECT id, title, tags, ingredients, main_dish_tag FROM recipes").fetchall()
+    result = []
+    for r in rows:
+        result.append({
+            "id": r["id"],
+            "title": r["title"],
+            "tags": r["tags"] or "",
+            "ingredients": r["ingredients"] or "",
+            "main_dish_tag": r["main_dish_tag"] or ""
+        })
+    conn.close()
+    return jsonify(result)
+
+@app.route('/ai_suggest_dish', methods=['POST'])
+def ai_suggest_dish():
+    data = request.get_json()
+    step = data.get('step', 1)
+    filters = data.get('filters', {})
+    user, family = get_user()  # Πάρε τον user και τα μέλη
+
+    # STEP 1: Πόσο χρόνο έχεις;
+    if step == 1:
+        return jsonify({
+            "question": "Πόσο χρόνο μπορείς να διαθέσεις σήμερα για μαγείρεμα (σε λεπτά);",
+            "step": 2,
+            "filters": filters
+        })
+
+    # STEP 2: Ποιο υλικό προτιμάς;
+    if step == 2:
+        # Λάβε το χρόνο από το frontend
+        time_limit = int(data.get('answer', 120))
+        filters['max_time'] = time_limit
+        return jsonify({
+            "question": "Προτιμάς κάποιο συγκεκριμένο υλικό; (π.χ. κοτόπουλο, ψάρι, ζυμαρικά, μοσχάρι, λαχανικά, ή άφησέ το κενό)",
+            "step": 3,
+            "filters": filters
+        })
+
+    # STEP 3: Πρόταση πιάτου!
+    if step == 3:
+        user_input = data.get('answer', '').strip()
+        search_ingredient = remove_tonos(user_input)
+
+        # ---- Πάρε ΑΛΛΕΡΓΙΕΣ (όλων) ----
+        allergy_set = set()
+        for member in family:
+            if "allergies" in member and member["allergies"]:
+                allergy_set.update([remove_tonos(a.strip()) for a in member["allergies"].split(',')])
+        # ---- Προτιμώμενη μέθοδος/σεφ ----
+        method_prefs = []
+        if "cook_methods" in user and user["cook_methods"]:
+            method_prefs = [remove_tonos(m.strip()) for m in user["cook_methods"].split(',')]
+        chef_pref = remove_tonos(user["favorite_chef"]) if "favorite_chef" in user and user["favorite_chef"] else ""
+
+        # ----- QUERY (όλα τα φίλτρα ΠΡΙΝ το ORDER BY) -----
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+        q = "SELECT * FROM recipes WHERE 1=1"
+        params = []
+
+        if 'max_time' in filters:
+            q += " AND total_time<=?"
+            params.append(filters['max_time'])
+
+        for allergen in allergy_set:
+            q += " AND tags NOT LIKE ? AND ingredients NOT LIKE ?"
+            s = f"%{allergen}%"
+            params.extend([s, s])
+
+        # Λίστα με υλικά που ΔΕΝ έχει ο χρήστης
+        missing = session.get('missing_ingredients', [])
+        for miss in missing:
+            q += " AND ingredients NOT LIKE ?"
+            params.append(f"%{miss}%")
+
+        # --- ΕΔΩ ΒΑΖΕΙΣ ΤΟ ORDER BY ΜΕΤΑ ΤΑ ΦΙΛΤΡΑ ---
+        q += " ORDER BY "
+        if method_prefs:
+            method_order = "CASE "
+            for i, m in enumerate(method_prefs):
+                method_order += f"WHEN method LIKE '%{m}%' THEN {i} "
+            method_order += "ELSE 99 END,"
+            q += method_order
+        if chef_pref:
+            q += f"CASE WHEN chef LIKE '%{chef_pref}%' THEN 0 ELSE 1 END, "
+        q += "RANDOM() LIMIT 25"
+
+        # --- Εκτέλεση
+        recipes = conn.execute(q, params).fetchall()
+        conn.close()
+
+        # ---- ΠΡΑΓΜΑΤΙΚΟ AI: Φιλτράρισμα με βάση υλικό/tags χωρίς τόνους ----
+        def matches_ingredient(recipe, ingr):
+            if not ingr:
+                return True  # ο χρήστης άφησε κενό, δέχεται όλα!
+            all_text = (recipe["ingredients"] or "") + " " + (recipe["tags"] or "")
+            all_text = remove_tonos(all_text)
+            return ingr in all_text
+
+        filtered_recipes = [r for r in recipes if matches_ingredient(r, search_ingredient)]
+
+        if filtered_recipes:
+            dishes = []
+            for r in filtered_recipes[:3]:
+                dishes.append({
+                    "id": r["id"],  # ΕΔΩ
+                    "title": r["title"],
+                    "total_time": r["total_time"],
+                    "ingredients": r["ingredients"],
+                    "link": r["url"]
+                })
+            return jsonify({
+                "question": "Τι λες για τα παρακάτω πιάτα;",
+                "step": 0,
+                "dishes": dishes
+            })
+        else:
+            return jsonify({
+                "question": "Δυστυχώς δεν βρέθηκε πιάτο που να ταιριάζει! Θες να το ξαναπροσπαθήσουμε με άλλα κριτήρια;",
+                "step": 0,
+                "dishes": []
+            })
+ 
+@app.route("/history")
+def cooked_history():
+    user, _ = get_user()
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    BASIC_CATEGORIES = [
+        'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα'
+    ]
+
+    # Πάρε όλες τις εγγραφές, με chef και tags από recipes (LEFT JOIN για ασφάλεια)
+    res = conn.execute("""
+        SELECT cd.*, r.chef, r.tags, r.id as recipe_id
+        FROM cooked_dishes cd
+        LEFT JOIN recipes r ON cd.recipe_id = r.id
+        WHERE cd.user_id=?
+        ORDER BY cd.date DESC, cd.recorded_at DESC
+    """, (user["id"],)).fetchall()
+
+    # Φέρε τα αγαπημένα
+    favorite_ids = set(
+        row[0] for row in conn.execute(
+            "SELECT recipe_id FROM favorite_recipes WHERE user_id=?", (user["id"],)
+        ).fetchall()
+    )
+
+    history = []
+    for row in res:
+        tags = row['tags'] or ""
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+        basic_category = next((t for t in tag_list if t in BASIC_CATEGORIES), "-")
+        d = dict(row)
+        d['basic_category'] = basic_category
+        # ΠΡΟΣΟΧΗ: μπορεί να είναι None (π.χ. αν δεν υπάρχει recipe_id)
+        rec_id = d.get('recipe_id')
+        d['is_favorite'] = rec_id in favorite_ids if rec_id else False
+        history.append(d)
+
+    # Βρες τις προηγούμενες 2 μέρες
+    today = datetime.now().date()
+    days_to_check = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(1, 3)]
+    existing_dates = [row['date'] for row in history]
+    missing_days = [d for d in days_to_check if d not in existing_dates]
+    conn.close()
+
+    return render_template('history.html', history=history, missing_days=missing_days)
+
+
+@app.route('/delete_history_entry', methods=['POST'])
+def delete_history_entry():
+    user, _ = get_user()
+    data = request.get_json()
+    entry_id = data.get('id')
+    if not entry_id:
+        return {'status': 'error'}
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute("DELETE FROM cooked_dishes WHERE id=? AND user_id=?", (entry_id, user["id"]))
+    conn.commit()
+    conn.close()
+    print("entry deleted")
+    return {'status': 'ok'}
+
+@app.route("/add_manual_recipe", methods=["POST"])
+def add_manual_recipe():
+    user, _ = get_user()
+    data = request.get_json()
+    title = data["title"].strip()
+    date = data["date"]
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    # Έλεγξε αν υπάρχει ήδη συνταγή
+    c.execute("SELECT id FROM recipes WHERE title=? ORDER BY id LIMIT 1", (title,))
+    r = c.fetchone()
+    if r:
+        recipe_id = r[0]
+        is_new = False
+    else:
+        c.execute("INSERT INTO recipes (title, chef, created_by) VALUES (?, ?, ?)", (title, "Me!!", user["id"]))
+        recipe_id = c.lastrowid
+        is_new = True
+    # Καταχώρησε στο cooked_dishes
+    c.execute("INSERT INTO cooked_dishes (user_id, date, recipe_id, title) VALUES (?, ?, ?, ?)",
+              (user["id"], date, recipe_id, title))
+    cooked_dish_id = c.lastrowid
+
+    # === Βρες chef/tags για να τα επιστρέψεις ===
+    c.execute("SELECT chef, tags FROM recipes WHERE id=?", (recipe_id,))
+    recipe_row = c.fetchone()
+    chef = recipe_row["chef"] if recipe_row and recipe_row["chef"] else "-"
+    tags = recipe_row["tags"] if recipe_row and recipe_row["tags"] else ""
+
+    # Βασικές κατηγορίες:
+    BASIC_CATEGORIES = [
+        'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα'
+    ]
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+    basic_category = next((t for t in tag_list if t in BASIC_CATEGORIES), "-")
+
+    conn.commit()
+    conn.close()
+    return jsonify({
+        "status": "ok",
+        "new_recipe": is_new,
+        "recipe_id": recipe_id,
+        "id": cooked_dish_id,
+        "date": date,
+        "title": title,
+        "chef": chef,
+        "basic_category": basic_category
+    })
+
+
+@app.route('/cook_dish', methods=['POST'])
+def cook_dish():
+    user, _ = get_user()
+    data = request.get_json()
+    recipe_id = str(data.get('recipe_id'))      # Βεβαιώσου ότι είναι string!
+    title = data.get('title', '')
+    date = data.get('date', datetime.now().strftime('%Y-%m-%d'))
+    user_id = 1  # Για demo
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute("SELECT id, title, recipe_id FROM cooked_dishes WHERE user_id=? AND date=?", (user_id, date))
+    found = c.fetchone()
+    if found:
+        old_recipe_id = str(found[2]) if found[2] is not None else ""
+        old_title = found[1]
+#        print("DEBUG: recipe_id from JS:", recipe_id, "old_recipe_id from DB:", old_recipe_id)
+        # Έλεγχος για ίδιο πιάτο
+        if recipe_id == old_recipe_id:
+            conn.close()
+            return jsonify({"exists": True, "already": True, "old_title": old_title})
+        else:
+            conn.close()
+            return jsonify({"exists": True, "already": False, "old_title": old_title})
+    else:
+        c.execute("INSERT INTO cooked_dishes (user_id, date, recipe_id, title) VALUES (?, ?, ?, ?)", (user_id, date, recipe_id, title))
+        print(recipe_id)
+        conn.commit()
+        conn.close()
+        return jsonify({"exists": False})
+
+@app.route('/update_cooked_dish', methods=['POST'])
+def update_cooked_dish():
+    data = request.get_json()
+    title = data.get('title')
+    date = data.get('date')
+    user, _ = get_user()
+    user_id = 1  # <--- Για demo mode, μέχρι να έχεις login/user system
+    try:
+        conn = sqlite3.connect(DB)
+        cur = conn.cursor()
+        # ΠΡΟΣΟΧΗ: Update *υπάρχουσας* εγγραφής, όχι insert!
+        cur.execute("UPDATE cooked_dishes SET title=? WHERE user_id=? AND date=?", (title, user_id, date))
+        if cur.rowcount == 0:
+            # Δεν βρέθηκε εγγραφή να αλλάξει
+            conn.close()
+            return jsonify(success=False, message="Δεν βρέθηκε εγγραφή για ενημέρωση.")
+        conn.commit()
+        conn.close()
+        return jsonify(success=True)
+    except Exception as e:
+        print("UPDATE ERROR:", e)
+        return jsonify(success=False, message=str(e))
+
+@app.route("/get_recipe/<int:recipe_id>")
+def get_recipe(recipe_id):
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    r = conn.execute("SELECT * FROM recipes WHERE id=?", (recipe_id,)).fetchone()
+    conn.close()
+    if not r:
+        return jsonify({})
+    return jsonify({
+        "title": r["title"],
+        "ingredients": r["ingredients"],
+        "url": r["url"],
+        "instructions": r["instructions"] 
+    })
+
+@app.template_filter('todate')
+def todate_filter(s):
+    return datetime.strptime(s, "%Y-%m-%d").date()
+
+@app.route("/")
+def home():
+    return redirect("/welcome")
+    
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
+

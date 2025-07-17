@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}Εβδομαδιαίο Μενού{% endblock %}
+{% block content %}
+<h2>Εβδομαδιαίο Μενού</h2>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Ημέρα</th>
+      <th>Πιάτο</th>
+      <th>Σεφ</th>
+      <th>Χρόνος</th>
+      <th>Μέθοδος</th>
+      <th>Κατηγορία πιάτου</th>
+      <th>Κριτήρια</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in menu %}
+      <tr>
+        <td><strong>{{ entry.day }}</strong></td>
+        <td>
+          {% if edit_mode %}
+            <input type="text"
+                   class="form-control recipe-input"
+                   value="{{ entry.title }}"
+                   placeholder="Αναζήτηση πιάτου..."
+                   data-original="{{ entry.title }}"
+                   data-menuid="{{ entry.menu_id }}"
+                   autocomplete="off"
+                   onfocus="onRecipeFocus(this, '{{ entry.title }}')"
+                   onblur="onRecipeBlur(this)">
+            <div class="autocomplete-list" style="position:relative;"></div>
+          {% else %}
+            {{ entry.title }}
+            {% if entry.recipe_id %}
+              <a href="javascript:void(0);" onclick="toggleFavorite(this, {{ entry.recipe_id }})"
+                 class="favorite-btn" data-recipeid="{{ entry.recipe_id }}">
+                <i class="fa{{ 's' if entry.is_favorite else 'r' }} fa-heart"
+                   style="color: {{ 'gray' if not entry.is_favorite else '#c33' }}; margin-left: 8px; font-size:18px;"></i>
+              </a>
+            {% endif %}
+          {% endif %}
+        </td>
+        <td>{{ entry.chef }}</td>
+        <td>{{ entry.duration }}</td>
+        <td>{{ entry.method }}</td>
+        <td>
+          {% if entry.category %}
+            {{ entry.category|capitalize }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td>{{ entry.criteria }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+
+{% if edit_mode %}
+  <button class="btn btn-primary" onclick="saveMenuEdits()">Αποθήκευση αλλαγών</button>
+  <a href="{{ url_for('menu') }}" class="btn btn-secondary">Άκυρο</a>
+{% else %}
+  <form method="get" action="{{ url_for('menu') }}" style="display:inline-block;">
+    <input type="hidden" name="edit" value="1">
+    <button class="btn btn-warning">Επεξεργασία Μενού</button>
+  </form>
+  <form method="post" action="{{ url_for('generate_menu') }}" style="display:inline-block;">
+    <button class="btn btn-success" onclick="return confirm('Σίγουρα θέλεις να δημιουργηθεί νέο μενού για αυτή την εβδομάδα; ΠΡΟΣΟΧΗ: θα διαγραφεί το προηγούμενο!');">
+      Δημιουργία νέου Εβδομαδιαίου Μενού
+    </button>
+  </form>
+{% endif %}
+
+{% if goals_achievement %}
+  <h4 class="mt-4">Εβδομαδιαίοι Στόχοι</h4>
+  <table class="table table-sm w-auto">
+    <thead>
+      <tr>
+        <th>Κατηγορία</th>
+        <th>Στόχος</th>
+        <th>Επίτευξη</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in goals_achievement %}
+        <tr>
+          <td>{{ g.category|capitalize }}</td>
+			<td>
+			  {% if g.min_times != g.max_times %}
+				Από {{ g.min_times }} έως {{ g.max_times }} φορές
+			  {% else %}
+				{% if g.min_times == 1 %}
+				  Ακριβώς 1 φορά
+				{% else %}
+				  Ακριβώς {{ g.min_times }} φορές
+				{% endif %}
+			  {% endif %}
+			</td>
+			<td>
+			  {% if g.count == 0 %}
+				καμία φορά
+			  {% elif g.count == 1 %}
+				1 φορά
+			  {% else %}
+				{{ g.count }} φορές
+			  {% endif %}
+			  {% if g.count >= g.min_times and g.count <= g.max_times %}
+				<span style="color:#198754; font-weight:bold;">✔️</span>
+			  {% else %}
+				<span style="color:#dc3545; font-weight:bold;">❌</span>
+			  {% endif %}
+			</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
+
+{% if unreachable_goals %}
+  <div style="color: #c00; font-weight: bold; margin-top: 20px; font-size: 0.9em;">
+    Δεν ήταν δυνατή η κάλυψη των παρακάτω στόχων λόγω αλλεργιών ή άλλων φίλτρων:
+    <ul>
+      {% for cat in unreachable_goals %}
+        <li>{{ cat|capitalize }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{% if edit_mode %}
+<script>
+let allRecipes = [];
+fetch('/get_recipes_for_autocomplete')
+  .then(r => r.json())
+  .then(data => { allRecipes = data; });
+
+// Αφαίρεση τόνων, πεζά
+function removeTonos(str) {
+  if (!str) return "";
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+// Όταν κάνεις focus, σβήνει το input και δείχνει placeholder
+function onRecipeFocus(input, original) {
+  input.value = "";
+  input.placeholder = "Αναζήτηση πιάτου...";
+  showAutocomplete(input);
+}
+
+// Αν φύγεις χωρίς επιλογή, ξαναβάζει το αρχικό value
+function onRecipeBlur(input) {
+  setTimeout(() => {
+    if (!input.value) {
+      input.value = input.getAttribute("data-original") || "";
+      input.placeholder = "Αναζήτηση πιάτου...";
+    }
+    hideAutocomplete(input);
+  }, 150);
+}
+
+// Autocomplete
+document.querySelectorAll('.recipe-input').forEach(input => {
+  input.addEventListener('input', function() {
+    showAutocomplete(this);
+  });
+});
+
+function showAutocomplete(input) {
+  let listDiv = input.nextElementSibling;
+  let val = removeTonos(input.value.trim());
+  if (val.length < 2) {
+    listDiv.innerHTML = "";
+    return;
+  }
+  let found = allRecipes.filter(r => {
+    return removeTonos(r.title).includes(val)
+      || removeTonos(r.tags || "").includes(val)
+      || removeTonos(r.ingredients || "").includes(val)
+      || removeTonos(r.main_dish_tag || "").includes(val);
+  }).slice(0,10);
+  listDiv.innerHTML = "";
+  found.forEach(r => {
+    let opt = document.createElement("div");
+    opt.className = "autocomplete-option";
+    opt.textContent = r.title;
+    opt.style.cursor = "pointer";
+    opt.onclick = () => {
+      input.value = r.title;
+      hideAutocomplete(input);
+    };
+    listDiv.appendChild(opt);
+  });
+}
+
+function hideAutocomplete(input) {
+  let listDiv = input.nextElementSibling;
+  listDiv.innerHTML = "";
+}
+
+// Αποθήκευση αλλαγών με AJAX + προειδοποίηση για αλλεργιογόνα
+function saveMenuEdits(ignoreAllergy=false) {
+  let inputs = document.querySelectorAll('.recipe-input');
+  let updates = [];
+  inputs.forEach(inp => {
+    updates.push({
+      menu_id: inp.dataset.menuid,
+      recipe_title: inp.value
+    });
+  });
+  fetch('/update_menu_entries', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ updates, ignore_allergy: ignoreAllergy })
+  }).then(r => r.json())
+    .then(data => {
+      if (data.success) location.href = "{{ url_for('menu') }}";
+      else if (data.allergy_warnings) {
+        // Δείξε το πρώτο warning
+        let w = data.allergy_warnings[0];
+        let msg = `ΠΡΟΣΟΧΗ: το επιλεγμένο πιάτο "${w.dish}" περιέχει αλλεργιογόνο για το μέλος "${w.member}".\n\nΤι θέλεις να κάνεις;`;
+        if (confirm(msg + '\n\nOK = Συνέχεια (θα μαγειρέψω κάτι άλλο για το μέλος)\nCancel = Άκυρο')) {
+          saveMenuEdits(true);
+        }
+      } else {
+        alert("Σφάλμα στην αποθήκευση! Ελέγξτε τα ονόματα των πιάτων.");
+      }
+    });
+}
+
+</script>
+<style>
+.autocomplete-list {
+  background: #fff;
+  border: 1px solid #ccc;
+  position: absolute;
+  z-index: 100;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.autocomplete-option:hover {
+  background: #f0f0f0;
+}
+.recipe-input { min-width: 180px; }
+</style>
+{% endif %}
+
+<script>
+function toggleFavorite(el, recipe_id) {
+  fetch('/toggle_favorite_recipe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({recipe_id: recipe_id})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.status === "added") {
+      el.querySelector('i').classList.remove('far');
+      el.querySelector('i').classList.add('fas');
+      el.querySelector('i').style.color = '#c33';  // κόκκινο γεμισμένο
+    } else if(data.status === "removed") {
+      el.querySelector('i').classList.remove('fas');
+      el.querySelector('i').classList.add('far');
+      el.querySelector('i').style.color = 'gray';  // γκρι ανενεργή καρδούλα
+    }
+  });
+}
+</script>
+
+{% endblock %}

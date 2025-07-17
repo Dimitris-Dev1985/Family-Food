@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}{{ recipe and 'Επεξεργασία' or 'Νέα' }} Συνταγή{% endblock %}
+{% block content %}
+<h2>{{ recipe and 'Επεξεργασία' or 'Νέα' }} Συνταγή</h2>
+
+<form id="editRecipeForm" method="post">
+  <div class="mb-2">
+    <label>Τίτλος</label>
+    <input class="form-control" name="title" value="{{ recipe.title or '' }}" required>
+  </div>
+  
+  <div class="mb-2">
+    <label>Υλικά</label>
+    <textarea class="form-control" name="ingredients" required placeholder="Συμπληρώστε..">{{ '' if recipe.ingredients in [None, 'None'] else recipe.ingredients }}</textarea>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <label>Χρόνος Προετοιμασίας (λεπτά)</label>
+      <input class="form-control" name="prep_time" type="number" min="0" value="{{ recipe.prep_time or '' }}" placeholder="Συμπληρώστε..">
+    </div>
+    <div class="col">
+      <label>Χρόνος Μαγειρέματος (λεπτά)</label>
+      <input class="form-control" name="cook_time" type="number" min="0" value="{{ recipe.cook_time or '' }}" placeholder="Συμπληρώστε..">
+    </div>
+  </div>
+  
+  <div class="mb-2 mt-2">
+    <label>Μέθοδος</label>
+    <input class="form-control" name="method" value="{{ recipe.method or '' }}" placeholder="Συμπληρώστε..">
+  </div>
+  
+  <div class="mb-2">
+    <label>Οδηγίες</label>
+    <textarea class="form-control" name="instructions" placeholder="Συμπληρώστε..">{{ '' if recipe.instructions in [None, 'None'] else recipe.instructions }}</textarea>
+  </div>
+
+  <div class="mb-2">
+  <label>Κατηγορία πιάτου</label>
+  <select id="tagsSelect" class="form-control" name="tags" multiple required>
+    <optgroup label="Βασικές Κατηγορίες">
+      {% for t in basic_tags %}
+        {% if t in all_tags %}
+          <option value="{{ t }}" {% if recipe.tags and t in recipe.tags.split(',') %}selected{% endif %}>{{ t }}</option>
+        {% endif %}
+      {% endfor %}
+    </optgroup>
+    <optgroup label="Άλλες Κατηγορίες">
+      {% for t in all_tags %}
+        {% if t not in basic_tags %}
+          <option value="{{ t }}" {% if recipe.tags and t in recipe.tags.split(',') %}selected{% endif %}>{{ t }}</option>
+        {% endif %}
+      {% endfor %}
+    </optgroup>
+  </select>
+  <small class="text-muted">Μπορείς να επιλέξεις παραπάνω από μία</small>
+  </div>
+
+  
+
+  <div class="mb-2">
+    <label>Αλλεργιογόνα (με κόμμα)</label>
+    <input class="form-control" name="allergens" value="{{ '' if recipe.allergens in [None, 'None'] else recipe.allergens }}" placeholder="Συμπληρώστε..">
+  </div>
+  
+  <button class="btn btn-success" type="submit">Αποθήκευση</button>
+  <a class="btn btn-secondary" href="{{ url_for('favorites') }}">Άκυρο</a>
+  <div id="editRecipeFeedback" class="mt-2"></div>  
+</form>
+
+
+{% endblock %}
+
+
+
+{% block scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+
+<script>
+
+window.addEventListener('DOMContentLoaded', function() {
+  // Existing JS για τα αρχικά values...
+  const form = document.getElementById('editRecipeForm');
+  const fields = ["title", "ingredients", "prep_time", "cook_time", "method", "instructions", "allergens", "tags"];
+  const initial = {};
+  fields.forEach(function(name) {
+    const el = form.elements[name];
+    if (el) initial[name] = el.value.trim();
+  });
+
+  // --- Choices.js (όπως πριν) ---
+  new Choices('#tagsSelect', {
+    removeItemButton: true,
+    placeholder: true,
+    placeholderValue: 'Επιλέξτε κατηγορία...',
+    searchPlaceholderValue: 'Αναζήτηση...',
+    noResultsText: 'Δεν βρέθηκαν κατηγορίες',
+    itemSelectText: '',
+    shouldSort: false
+  });
+
+  // --- Validation για REQUIRED κατηγορία ---
+  form.addEventListener('submit', function(e) {
+    let changed = false;
+    fields.forEach(function(name) {
+      const el = form.elements[name];
+      if (el && el.value.trim() !== initial[name]) changed = true;
+    });
+
+    // *** REQUIRED τουλάχιστον ένα βασικό tag ***
+    const requiredTags = [
+      'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα'
+    ];
+    const selectedTags = Array.from(form.elements['tags']).filter(function(opt) { return opt.selected; }).map(function(opt) { return opt.value; });
+
+    const hasRequired = requiredTags.some(function(tag) { return selectedTags.includes(tag); });
+    if (!hasRequired) {
+      e.preventDefault();
+      document.getElementById('editRecipeFeedback').innerHTML =
+        '<div class="alert alert-danger">Επίλεξε τουλάχιστον μία βασική κατηγορία: ' +
+        requiredTags.map(function(tag) { return '<b>' + tag + '</b>'; }).join(', ') +
+        '.</div>';
+      setTimeout(function() { document.getElementById('editRecipeFeedback').innerHTML = ''; }, 3500);
+      document.getElementById('tagsSelect').focus();
+      return false;
+    }
+
+    if (!changed) {
+      e.preventDefault();
+      document.getElementById('editRecipeFeedback').innerHTML =
+        '<div class="alert alert-warning">Κάνε τουλάχιστον μία αλλαγή ή πάτησε Άκυρο.</div>';
+      setTimeout(function() { document.getElementById('editRecipeFeedback').innerHTML = ''; }, 3500);
+      form.elements[fields[0]].focus();
+      return false;
+    }
+  });
+});
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Αυτό θα κάνει το select σου dropdown με chips & search
+  new Choices('#tagsSelect', {
+    removeItemButton: true,
+    placeholder: true,
+    placeholderValue: 'Επιλέξτε κατηγορία...',
+    searchPlaceholderValue: 'Αναζήτηση...',
+    noResultsText: 'Δεν βρέθηκαν κατηγορίες',
+    itemSelectText: '',
+    shouldSort: false
+  });
+});
+
+</script>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">Μη διαθέσιμα Υλικά</h2>
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th style="width:50px;">#</th>
+        <th>Υλικό</th>
+        <th style="width:120px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in missing_ingredients %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ item }}</td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteMissing('{{ item }}')">
+            <i class="fa fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if missing_ingredients|length == 0 %}
+      <tr>
+        <td colspan="3" class="text-muted">Δεν έχεις δηλώσει μη διαθέσιμα υλικά!</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <!-- + κάτω από Α/Α στήλη -->
+        <td>
+          <button class="btn btn-success btn-sm" onclick="addMissingRow()" title="Προσθήκη υλικού">
+            <i class="fa fa-plus"></i>
+          </button>
+        </td>
+        <td></td>
+        <td class="text-end">
+          {% if missing_ingredients|length > 0 %}
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteAllMissing()">
+            <i class="fa fa-trash"></i> Διαγραφή όλων
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function deleteMissing(item) {
+  if (!confirm("Να αφαιρεθεί το υλικό;")) return;
+  fetch('/delete_missing_ingredient', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({item: item})
+  }).then(r => r.json())
+    .then(() => location.reload());
+}
+
+function addMissingRow() {
+  let val = prompt("Ποιο υλικό θέλεις να προσθέσεις στη λίστα μη-διαθέσιμων;");
+  if (!val) return;
+  fetch('/add_missing_ingredient', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({item: val})
+  }).then(r => r.json())
+    .then(() => location.reload());
+}
+
+function deleteAllMissing() {
+  if (!confirm("Να διαγραφούν όλα τα μη-διαθέσιμα υλικά;")) return;
+  fetch('/delete_all_missing_ingredients', {method: 'POST'})
+    .then(r => r.json())
+    .then(() => location.reload());
+}
+</script>
+{% endblock %}

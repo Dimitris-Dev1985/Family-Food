@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Food App{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#f44336">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  {% block head %}{% endblock %}
+
+  <style>
+    body {
+      background: #f5f6fa;
+      min-height: 100vh;
+    }
+    .container, .main-welcome-container {
+      padding-bottom: 70px;
+      padding-top: 1.5rem;
+    }
+    @media (max-width: 600px) {
+      .container, .main-welcome-container {
+        padding-left: 0.2rem;
+        padding-right: 0.2rem;
+        padding-bottom: 85px !important;
+      }
+    }
+    /* Responsive tables */
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    /* Mobile-friendly inputs & select */
+    @media (max-width: 500px) {
+      input[type="text"], input[type="number"], select, textarea, .choices__inner, .form-control {
+        min-width: 0 !important;
+        width: 100% !important;
+        font-size: 1.02em;
+      }
+      .autocomplete-input, #autocomplete-input {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+      }
+    }
+    /* Mobile buttons */
+    @media (max-width: 480px) {
+      .btn, .btn-group .btn {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin-bottom: 8px;
+        font-size: 1.09em;
+      }
+      .btn-group {
+        flex-direction: column !important;
+        align-items: stretch;
+        gap: 0 !important;
+      }
+    }
+    /* Mobile modals */
+    @media (max-width: 500px) {
+      .modal-dialog { margin: 1.5rem auto; max-width: 98vw; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container{% if request.endpoint == 'welcome' %} main-welcome-container{% endif %}">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alert alert-warning mt-2 mb-2">
+          {% for message in messages %}
+            <div>{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="navbar fixed-bottom navbar-light bg-light shadow-sm" style="z-index:999;">
+    <div class="container-fluid justify-content-center p-0">
+      <div class="row w-100 text-center">
+        <div class="col">
+          <a href="/" class="nav-link py-2{% if request.endpoint=='welcome' %} active{% endif %}">
+            <i class="fa fa-home fa-lg"></i><div style="font-size:12px;">Αρχική</div>
+          </a>
+        </div>
+        <div class="col">
+          <a href="/menu" class="nav-link py-2{% if request.endpoint=='menu' %} active{% endif %}">
+            <i class="fa fa-calendar-week fa-lg"></i><div style="font-size:12px;">Μενού</div>
+          </a>
+        </div>
+        <div class="col">
+          <a href="/history" class="nav-link py-2{% if request.endpoint=='history' %} active{% endif %}">
+            <i class="fa fa-history fa-lg"></i><div style="font-size:12px;">Ιστορικό</div>
+          </a>
+        </div>
+        <div class="col">
+          <a href="/favorites" class="nav-link py-2{% if request.endpoint=='favorites' %} active{% endif %}">
+            <i class="fa fa-star fa-lg"></i><div style="font-size:12px;">Αγαπημένα</div>
+          </a>
+        </div>
+        <div class="col">
+          <a href="/profile" class="nav-link py-2{% if request.endpoint=='profile' %} active{% endif %}">
+            <i class="fa fa-user fa-lg"></i><div style="font-size:12px;">Προφίλ</div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+  <script>
+	if ('serviceWorker' in navigator) {
+	  navigator.serviceWorker.register('/static/service-worker.js')
+		.then(function() { console.log('Service Worker Registered'); });
+	}
+  </script>
+
+  {% block scripts %}{% endblock %}
+  {% block modals %}{% endblock %}
+</body>
+</html>

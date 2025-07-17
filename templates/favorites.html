@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">Αγαπημένες Συνταγές</h2>
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th style="width:50px;">#</th>
+        <th>Πιάτο</th>
+        <th>Σεφ</th>
+        <th>Διάρκεια</th>
+        <th style="width:120px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rec in favorites %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ rec.title }}</td>
+        <td>{{ rec.chef }}</td>
+        <td>{{ rec.total_time }}</td>
+		<td>
+		  <button class="btn btn-danger btn-sm" onclick="deleteFavorite({{ rec.id }})">
+			<i class="fa fa-trash"></i>
+		  </button>
+		  <a href="{{ url_for('edit_favorite_recipe', recipe_id=rec.id) }}" class="btn btn-outline-primary btn-sm" title="Επεξεργασία">
+			<i class="fa fa-pen"></i>
+		  </a>
+		</td>
+
+
+      </tr>
+      {% endfor %}
+      {% if favorites|length == 0 %}
+      <tr>
+        <td colspan="5" class="text-muted">Δεν έχεις προσθέσει αγαπημένες συνταγές!</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <!-- + κάτω από Α/Α στήλη -->
+        <td>
+          <button class="btn btn-success btn-sm" onclick="showAddFavorite()" title="Προσθήκη αγαπημένης">
+            <i class="fa fa-plus"></i>
+          </button>
+        </td>
+        <td colspan="2" id="add-favorite-cell"></td>
+        <td></td>
+        <td class="text-end">
+          {% if favorites|length > 0 %}
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteAllFavorites()">
+            <i class="fa fa-trash"></i> Διαγραφή όλων
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+<style>
+.autocomplete-list {
+  background: #fff;
+  border: 1px solid #ccc;
+  position: absolute;
+  z-index: 100;
+  width: 220px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.autocomplete-option:hover {
+  background: #f0f0f0;
+}
+</style>
+
+<script>
+
+let allRecipes = [];
+fetch('/get_recipes_for_autocomplete')
+  .then(r => r.json())
+  .then(data => { allRecipes = data; });
+
+// Διαγραφή μίας συνταγής
+function deleteFavorite(recipeId) {
+  if (!confirm("Να αφαιρεθεί η συνταγή από τα αγαπημένα;")) return;
+  fetch('/delete_favorite_recipe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({recipe_id: recipeId})
+  }).then(r => r.json())
+    .then(() => location.reload());
+}
+
+// Διαγραφή όλων
+function deleteAllFavorites() {
+  if (!confirm("Να διαγραφούν όλες οι αγαπημένες συνταγές;")) return;
+  fetch('/delete_all_favorite_recipes', {method: 'POST'})
+    .then(r => r.json())
+    .then(() => location.reload());
+}
+
+// Live search για προσθήκη
+function showAddFavorite() {
+  let cell = document.getElementById("add-favorite-cell");
+  cell.innerHTML =
+    '<input type="text" id="fav-input" class="form-control" placeholder="Αναζήτηση πιάτου..." autocomplete="off" style="display:inline-block; width:220px;">' +
+    '<div id="fav-autocomplete" class="autocomplete-list"></div>';
+  let input = document.getElementById("fav-input");
+  let listDiv = document.getElementById("fav-autocomplete");
+
+  input.focus();
+  input.addEventListener('input', function() {
+    let val = removeTonos(input.value.trim());
+    if (val.length < 2) {
+      listDiv.innerHTML = "";
+      return;
+    }
+    let found = allRecipes.filter(r =>
+      removeTonos(r.title).includes(val) ||
+      removeTonos(r.tags || "").includes(val) ||
+      removeTonos(r.ingredients || "").includes(val) ||
+      removeTonos(r.main_dish_tag || "").includes(val)
+    ).slice(0,10);
+    listDiv.innerHTML = "";
+    found.forEach(r => {
+      let opt = document.createElement("div");
+      opt.className = "autocomplete-option";
+      opt.textContent = r.title;
+      opt.style.cursor = "pointer";
+      opt.onclick = function() {
+        addFavorite(r.id);
+      };
+      listDiv.appendChild(opt);
+    });
+  });
+}
+
+// Χρήσιμο και για remove τόνων (το ίδιο με menu)
+function removeTonos(str) {
+  if (!str) return "";
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function addFavorite(recipeId) {
+  fetch('/add_favorite_recipe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({recipe_id: recipeId})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success) {
+      location.reload();
+    } else {
+      alert("Σφάλμα ή ήδη προστέθηκε!");
+    }
+  });
+}
+
+</script>
+
+{% endblock %}
