@@ -18,6 +18,63 @@
 	  transition: opacity 1s linear;
 	}
 
+
+	.card {
+	  border-radius: 18px;
+	}
+	.card-body {
+	  padding: 1.1em 1.2em;
+	}
+	.card .fw-bold {
+	  letter-spacing: 0.5px;
+	}
+	.favorite-btn {
+	  margin-left: 10px;
+	}
+	@media (max-width: 600px) {
+	  .card {
+		border-radius: 13px;
+		margin-bottom: 0.7em;
+	  }
+	  .card-body {
+		padding: 0.9em 1em;
+	  }
+	  .form-control.recipe-input {
+		font-size: 1em;
+		padding: 0.42em 0.8em;
+	  }
+	}
+
+
+
+.drag-handle-wrapper {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+.drag-handle {
+  font-size: 20px;
+  cursor: grab;
+  user-select: none;
+}
+.menu-content {
+  position: relative;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+}
+.menu-content.drag-source {
+  opacity: 0.5;
+  border: 2px dashed #007bff;
+}
+
+
+
+
+
+
+
   
     body {
       background: #f5f6fa;
@@ -42,7 +99,7 @@
 	
 	
     /* Mobile-friendly inputs & select */
-    @media (max-width: 500px) {
+    @media (max-width: 576px) {
       input[type="text"], input[type="number"], select, textarea, .choices__inner, .form-control {
         min-width: 0 !important;
         width: auto;
@@ -68,7 +125,7 @@
     /* Mobile buttons - καθολική βελτίωση */
     @media (max-width: 576px) {
       .btn, .btn-sm, .btn-group .btn, .modal-footer .btn {
-        width: auto !important;
+        width: 100%;
         min-width: 0 !important;
         margin-top: 1px;
 		margin-bottom: 1px;
