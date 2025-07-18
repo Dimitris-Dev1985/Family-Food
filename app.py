@@ -246,6 +246,7 @@ def toggle_favorite_recipe():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     found = conn.execute("SELECT * FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id)).fetchone()
+        
     if found:
         conn.execute("DELETE FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id))
         conn.commit()
@@ -654,7 +655,7 @@ def menu():
     c = conn.execute("SELECT * FROM weekly_menu WHERE user_id=? AND week_start_date=? ORDER BY day_of_week ASC", (user_id, str(week_start)))
     saved_menu = c.fetchall()
     menu_entries = []
-    categories = ['κόκκινο κρέας', 'ψάρι', 'όσπρια', 'λαδερά', 'ζυμαρικά', 'πουλερικά', 'σαλάτα']
+    categories = ['κόκκινο κρέας', 'ψάρι', 'όσπρια', 'λαδερά', 'ζυμαρικά', 'πουλερικά', 'σαλάτα', 'delivery']
 
     if len(saved_menu) == 7:
         preferred_methods = [m.strip().lower() for m in (user["cooking_method"] or "").split(",") if m.strip()]
@@ -743,6 +744,7 @@ def menu():
             if not available:
                 unreachable_goals.append(cat)
         conn.close()
+        print(edit_mode)
         return render_template(
             "menu.html",
             menu=menu_entries,
@@ -1453,6 +1455,6 @@ def home():
     return redirect("/welcome")
     
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(debug=True)
 
 
