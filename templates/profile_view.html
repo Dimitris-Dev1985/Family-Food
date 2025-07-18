@@ -3,9 +3,10 @@
 {% block content %}
 
 <div class="row mb-4">
-  <div class="col-md-7">
 
-	<div class="card shadow-sm mb-4">
+  <div class="col-12 col-md-7">
+
+	<div class="card shadow-sm mb-2">
 	  <div class="card-body">
 		<h4 class="card-title mb-3" id="profile-name">
 		  <i class="fa fa-user-circle fa-lg me-2"></i> {{ profile.first_name }} {{ profile.family_name }}
@@ -23,25 +24,27 @@
 		<p><i class="fa fa-fire"></i> <strong>Προτιμώμενος τρόπος μαγειρέματος:</strong> <span id="profile-cooking-method">{{ profile.cooking_method }}</span></p>
 		<div class="text-end mt-2">
 		  <button class="btn btn-outline-primary btn-sm" onclick="editProfileInfo()">
-			<i class="fa fa-pen"></i> Επεξεργασία
+			<i class="fa fa-pen"></i> Επεξεργασία προφίλ
 		  </button>
 		</div>
 	  </div>
 	</div>
  
-	<div class="card shadow-sm mb-4">
+	<div class="card shadow-sm mb-2">
 	  <div class="card-body">
-		<h5 class="card-title mb-3">Διαθέσιμος χρόνος μαγειρέματος</h5>
-		<table class="table table-sm w-auto mb-0">
-		  <tbody>
-			{% for d, gr in [('mon','Δευτέρα'),('tue','Τρίτη'),('wed','Τετάρτη'),('thu','Πέμπτη'),('fri','Παρασκευή'),('sat','Σάββατο'),('sun','Κυριακή')] %}
-			  <tr>
-				<td>{{ gr }}</td>
-				<td id="cooktime-{{d}}-display">{{ profile['cooktime_' ~ d] or '-' }} λεπτά</td>
-			  </tr>
+		<h5 class="card-title mb-3" style="font-size:1.1em">Διαθέσιμος χρόνος μαγειρέματος</h5>
+
+		<table class="table table-sm w-100 mb-0 text-center" style="font-size:0.9em">
+		  <tr>
+			{% for d, gr in [('mon','Δ'),('tue','Τ'),('wed','Τ'),('thu','Π'),('fri','Π'),('sat','Σ'),('sun','Κ')] %}
+			  <td><strong>{{ gr }}</strong><br>
+				  <span id="cooktime-{{d}}-display">{{ profile['cooktime_' ~ d] or '-' }} λ. </span>
+			  </td>
 			{% endfor %}
-		  </tbody>
-		</tbody></table></div>
+		  </tr>
+		</table>
+
+
 		<div class="text-end mt-2">
 		  <button class="btn btn-outline-primary btn-sm" onclick="editCookingTimes()">
 			<i class="fa fa-pen"></i> Επεξεργασία
@@ -52,43 +55,57 @@
 		
   </div>
 
-  <div class="col-md-5">
+  <div class="col-12 col-md-5">
 
-	<div class="card shadow-sm mb-4">
+	<div class="card shadow-sm mb-2">
 	  <div class="card-body">
-		<h5 class="card-title mb-3">Μέλη Οικογένειας</h5>
-		<div id="members-list">
-		{% for m in members %}
-		  <div class="mb-2 family-member-row" data-memberid="{{ m.id }}">
-			<i class="fa fa-user-friends text-secondary"></i> <strong>{{ m.name }}</strong>
-			<span class="text-muted">({{ m.age }} ετών)</span>
-			{% if m.allergies %}
-			  <span class="badge bg-danger ms-2" title="Αλλεργίες"><i class="fa fa-exclamation-triangle"></i> {{ m.allergies }}</span>
-			{% endif %}
-			<button type="button" class="btn btn-outline-primary btn-sm ms-2" title="Επεξεργασία"
-			  onclick="editMember({{ m.id }}, this)">
-			  <i class="fa fa-pen"></i>
-			</button>		
-			<button type="button" class="btn btn-outline-danger btn-sm ms-2" title="Διαγραφή"
-			  onclick="deleteMember({{ m.id }}, this)">
-			  <i class="fa fa-trash"></i>
-			</button>
-		  </div>
-		{% else %}
-		  <div class="text-muted">Δεν έχουν προστεθεί μέλη.</div>
-		{% endfor %}
+		<h5 class="card-title mb-3" style="font-size:1.1em">Μέλη Οικογένειας</h5>
+		<div class="table-responsive">
+		  <table class="table table-striped align-middle table-sm mb-2 text-center" style="font-size:0.8em">
+			<tbody id="members-list">
+			  {% for m in members %}
+			  <tr data-memberid="{{ m.id }}">
+				<td>
+				  <div class="d-flex justify-content-left align-items-center flex-wrap gap-1 mb-0" style="gap:6px;">
+					<i class="fa fa-user-friends text-secondary"></i>
+					<strong>{{ m.name }}</strong>
+					<span class="text-muted">({{ m.age }} ετών)</span>
+					<button class="btn btn-outline-primary btn-sm ms-1" title="Επεξεργασία" onclick="editMember({{ m.id }}, this)">
+					  <i class="fa fa-pen"></i>
+					</button>
+					<button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Διαγραφή" onclick="deleteMember({{ m.id }}, this)">
+					  <i class="fa fa-trash"></i>
+					</button>
+				  </div>
+					{% if m.allergies %}
+					  <div class="mt-1 text-start">
+						<span class="badge bg-warning" title="Αλλεργίες">
+						  <i class="fa fa-exclamation-triangle"></i> {{ m.allergies }}
+						</span>
+					  </div>
+					{% endif %}
+
+				</td>
+			  </tr>
+			  {% else %}
+			  <tr>
+				<td class="text-muted">Δεν έχουν προστεθεί μέλη.</td>
+			  </tr>
+			  {% endfor %}
+			</tbody>
+		  </table>
 		</div>
 		<button class="btn btn-success btn-sm mt-2" onclick="openAddMemberModal()">
 		  <i class="fa fa-plus"></i> Προσθήκη μέλους
 		</button>
 	  </div>
 	</div>
-	
-    <div class="card shadow-sm">
+
+    <div class="card shadow-sm mb-2">
       <div class="card-body">
-        <h5 class="card-title mb-3">Στόχοι Εβδομάδας</h5>
+        <h5 class="card-title mb-3" style="font-size:1.1em">Στόχοι Εβδομάδας</h5>
         <div class="table-responsive">
-		<table class="table table-striped align-middle table-sm mb-2">
+		<table class="table table-striped align-middle table-sm mb-2 text-center" style="font-size:0.8em">
 		  <thead>
 			<tr>
 			  <th>Κατηγορία</th>
@@ -127,7 +144,7 @@
 			</tr>
 			{% endif %}
 		  </tbody>
-		</tbody></table></div>
+		</table>
         </div>
         <button class="btn btn-success btn-sm" onclick="addGoalRow()"><i class="fa fa-plus"></i> Προσθήκη στόχου</button>
         {% if weekly_goals|length > 0 %}
@@ -137,6 +154,7 @@
         {% endif %}
       </div>
     </div>
+  
   </div>
 
 </div>
@@ -183,7 +201,7 @@
 </div>
 
 <div class="modal fade" id="addGoalModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog"><div class="modal-content">
+  <div class="modal-dialog" style="width:240px"><div class="modal-content">
     <div class="modal-header">
       <h5 class="modal-title" id="addGoalModalLabel">Προσθήκη Στόχου</h5>
     </div>
@@ -199,37 +217,46 @@
           </select>
         </div>
         <div class="mb-2 row">
-          <div class="col">
-            <label>Από (min):</label>
-            <input type="number" min="0" max="7" class="form-control" id="goalMinTimes" value="1" required>
+          <div class="col d-flex justify-content-center flex-column align-items-center" style="max-width:90px;">
+            <label class="mb-1">Από (min):</label>
+            <button type="button" class="btn btn-outline-primary btn-sm ms-1" style="width:40px;" onclick="changeGoalTimes('goalMinTimes', 1, 0, 7)">+</button>
+            <input type="number" min="0" max="7" class="form-control text-center mb-1" id="goalMinTimes" value="1" required style="width:45px;">
+            <button type="button" class="btn btn-outline-primary btn-sm ms-1" style="width:36px;" onclick="changeGoalTimes('goalMinTimes', -1, 0, 7)">-</button>
           </div>
-          <div class="col">
-            <label>Έως (max):</label>
-            <input type="number" min="1" max="7" class="form-control" id="goalMaxTimes" value="1" required>
+          <div class="col d-flex flex-column align-items-center" style="max-width:90px;">
+            <label class="mb-1">Έως (max):</label>
+            <button type="button" class="btn btn-outline-primary btn-sm ms-1" style="width:36px;" onclick="changeGoalTimes('goalMaxTimes', 1, 1, 7)">+</button>
+            <input type="number" min="1" max="7" class="form-control text-center mb-1" id="goalMaxTimes" value="1" required style="width:45px;">
+            <button type="button" class="btn btn-outline-primary btn-sm ms-1" style="width:36px;" onclick="changeGoalTimes('goalMaxTimes', -1, 1, 7)">-</button>
           </div>
         </div>
-        <button type="submit" class="btn btn-primary">Καταχώρηση</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Άκυρο</button>
+        <button type="submit" class="btn btn-primary mt-2">Καταχώρηση</button>
+        <button type="button" class="btn btn-secondary mt-2" data-bs-dismiss="modal">Άκυρο</button>
       </form>
     </div>
   </div></div>
 </div>
 
+
 <div class="modal fade" id="editCookTimesModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog"><div class="modal-content">
     <form id="cook-times-form">
-      <div class="modal-header"><h5 class="modal-title">Επεξεργασία Διαθέσιμου Χρόνου</h5></div>
+      <div class="modal-header"><h5 class="modal-title text-center">Θα μπορούσα να διαθέσω:</h5></div>
       <div class="modal-body">
         <div class="row">
-          {% for d, gr in [('mon','Δευτέρα'),('tue','Τρίτη'),('wed','Τετάρτη'),('thu','Πέμπτη'),('fri','Παρασκευή'),('sat','Σάββατο'),('sun','Κυριακή')] %}
-          <div class="col-6 mb-2">
-            <label>{{ gr }}</label>
-            <input type="number" class="form-control" min="0"
-              id="cooktime-{{d}}-input"
-              name="cooktime_{{d}}"
-              value="{{ profile['cooktime_' ~ d] or '' }}">
-          </div>
-          {% endfor %}
+			{% for d, gr in [('mon','Δευτέρα'),('tue','Τρίτη'),('wed','Τετάρτη'),('thu','Πέμπτη'),('fri','Παρασκευή'),('sat','Σάββατο'),('sun','Κυριακή')] %}
+			  <div class="col d-flex flex-column align-items-center" style="min-width:90px;">
+				<label>{{ gr }}</label>
+				<div class="d-flex align-items-center justify-content-center" style="gap:2px;">
+				  <span style="font-size:1.4em;padding-right:3px;padding-bottom:10px;">~</span>
+				  <input type="number" class="form-control text-center mb-1" min="0" style="width:50px;"
+					id="cooktime-{{d}}-input"
+					name="cooktime_{{d}}"
+					value="{{ profile['cooktime_' ~ d] or '' }}">
+				  <span style="font-size:1em;padding-left:3px;padding-bottom:5px;"> λ.</span>
+				</div>
+			  </div>
+			{% endfor %}
         </div>
       </div>
       <div class="modal-footer">
@@ -390,6 +417,15 @@ function addGoalRow() {
   openGoalModal('add');
 }
 
+function changeGoalTimes(inputId, delta, min, max) {
+  let inp = document.getElementById(inputId);
+  let val = parseInt(inp.value) || min;
+  val += delta;
+  if (val < min) val = min;
+  if (val > max) val = max;
+  inp.value = val;
+}
+
 function editGoal(id, category, min, max) {
   openGoalModal('edit', id, category, min, max);
 }
@@ -483,17 +519,30 @@ function deleteAllGoals() {
 }
 
 function deleteMember(member_id, btn) {
-  if(!confirm('Θέλεις σίγουρα να διαγράψεις αυτό το μέλος;')) return;
+  if (!confirm('Θέλεις σίγουρα να διαγράψεις αυτό το μέλος;')) return;
   fetch('/delete_family_member', {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({member_id: member_id})
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ member_id: member_id })
   })
-  .then(function(r){return r.json();})
+  .then(function(r) { return r.json(); })
   .then(function(res) {
-    if(res.status === 'ok') {
-      var row = btn.closest('.family-member-row');
+    if (res.status === 'ok') {
+      // Βρες το <tr> του μέλους και αφαίρεσέ το
+      var row = btn.closest('tr[data-memberid]');
       if (row) row.remove();
+
+      // Αν δεν έμεινε κανένα μέλος, εμφάνισε το "Δεν έχουν προστεθεί μέλη."
+      var tbody = document.getElementById('members-list');
+      if (!tbody.querySelector('tr')) {
+        var tr = document.createElement('tr');
+        var td = document.createElement('td');
+        td.className = "text-muted";
+        td.colSpan = 1;
+        td.innerText = "Δεν έχουν προστεθεί μέλη.";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
     }
   });
 }
@@ -507,23 +556,48 @@ function openAddMemberModal() {
 }
 
 function editMember(member_id, btn) {
-  var row = btn.closest('.family-member-row');
+  // Βρες το σωστό <tr>
+  var row = btn.closest('tr[data-memberid]');
+  if (!row) return;
+
   document.getElementById('memberModalLabel').innerText = 'Επεξεργασία Μέλους';
   document.getElementById('member-id').value = member_id;
-  document.getElementById('member-name').value = row.querySelector('strong').innerText.trim();
-  document.getElementById('member-age').value = row.querySelector('.text-muted').innerText.replace(/[^\d]/g, '');
 
-  var allergiesText = '';
-  var badge = row.querySelector('.badge.bg-danger');
-  if (badge) allergiesText = badge.innerText.replace(/^Αλλεργίες:? ?/, '').trim();
+  // Βρες το td (πρώτο κελί)
+  var td = row.querySelector('td');
+  if (!td) return;
 
+  // Όνομα
+  var nameEl = td.querySelector('strong');
+  document.getElementById('member-name').value = nameEl ? nameEl.innerText.trim() : '';
+
+  // Ηλικία (αναζήτησε span με class "text-muted", π.χ. "(35 ετών)")
+  var ageEl = td.querySelector('.text-muted');
+  var ageVal = '';
+  if (ageEl) {
+    var match = ageEl.innerText.match(/(\d+)/);
+    if (match) ageVal = match[1];
+  }
+  document.getElementById('member-age').value = ageVal;
+
+  // Αλλεργίες (αν υπάρχουν)
+  var allergies = '';
+  var allergyEl = td.querySelector('.badge.bg-warning, .badge.bg-danger');
+  if (allergyEl) {
+    // Αφαιρούμε το εικονίδιο και κενά
+    var allergyText = allergyEl.innerText.replace(/^Αλλεργίες:? ?/, '').trim();
+    allergies = allergyText;
+  }
+
+  // Γέμισε το select + input "άλλο"
   var choices = window.choicesAllergies;
   choices.removeActiveItems();
   document.getElementById('member-allergies-other').value = '';
   document.getElementById('member-allergies-other').style.display = 'none';
 
-  if (allergiesText) {
-    var tags = allergiesText.split(' ');
+  if (allergies) {
+    // Σπάσε με κόμμα, αφαίρεσε κενά
+    var tags = allergies.split(',').map(function(t){return t.trim();});
     tags.forEach(function(tag) {
       var optExists = Array.from(document.getElementById('member-allergies-select').options).some(function(opt) {
         return opt.value === tag;
@@ -537,17 +611,9 @@ function editMember(member_id, btn) {
       }
     });
   }
-
+  // Εμφάνισε το modal
   bootstrap.Modal.getOrCreateInstance(document.getElementById('memberModal')).show();
 }
-
-document.getElementById('member-allergies-select').onchange = function() {
-  var sel = this;
-  var show = false;
-  for (var i=0; i<sel.options.length; ++i)
-    if (sel.options[i].selected && sel.options[i].value == '__other__') show = true;
-  document.getElementById('member-allergies-other').style.display = show ? '' : 'none';
-};
 
 document.getElementById('member-form').onsubmit = function(e) {
   e.preventDefault();
@@ -555,11 +621,12 @@ document.getElementById('member-form').onsubmit = function(e) {
   var sel = document.getElementById('member-allergies-select');
   var other = document.getElementById('member-allergies-other');
   var selected = [];
-  for(var i=0; i<sel.options.length; ++i)
-    if(sel.options[i].selected && sel.options[i].value != '__other__') selected.push(sel.options[i].value);
+  for (var i = 0; i < sel.options.length; ++i)
+    if (sel.options[i].selected && sel.options[i].value != '__other__') selected.push(sel.options[i].value);
   var otherVal = other.value.trim();
   if (other.style.display !== 'none' && otherVal) selected.push(otherVal);
-  var allergiesString = selected.join(' ');
+
+  var allergiesString = selected.join(', ');
 
   var data = {
     member_id: form.member_id.value,
@@ -571,38 +638,64 @@ document.getElementById('member-form').onsubmit = function(e) {
   var url = data.member_id ? '/edit_family_member' : '/add_family_member';
   fetch(url, {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(data)
   })
-  .then(function(r){return r.json();})
-  .then(function(res){
-    if(res.status === 'ok') {
-      if(data.member_id) {
-        var row = document.querySelector('.family-member-row[data-memberid="' + data.member_id + '"]');
-        if(row) {
-          row.innerHTML =
-            '<i class="fa fa-user-friends text-secondary"></i> <strong>' + data.name + ' </strong>' +
-            '<span class="text-muted">(' + data.age + ' ετών)</span>' +
-            (data.allergies ? '<span class="badge bg-danger ms-2" title="Αλλεργίες"><i class="fa fa-exclamation-triangle"></i> ' + data.allergies + '</span>' : '') +
-            '<button type="button" class="btn btn-outline-primary btn-sm ms-2" title="Επεξεργασία" onclick="editMember(' + data.member_id + ', this)">' +
-            '<i class="fa fa-pen"></i></button>' +
-            '<button type="button" class="btn btn-outline-danger btn-sm ms-2" title="Διαγραφή" onclick="deleteMember(' + data.member_id + ', this)">' +
-            '<i class="fa fa-trash"></i></button>';
+  .then(function(r) { return r.json(); })
+  .then(function(res) {
+    if (res.status === 'ok') {
+      // EDIT υπάρχον μέλος
+      if (data.member_id) {
+        var row = document.querySelector('tr[data-memberid="' + data.member_id + '"]');
+        if (row) {
+          var td = row.querySelector('td');
+          td.innerHTML =
+            '<div class="d-flex justify-content-left align-items-center flex-wrap gap-1 mb-0" style="gap:6px;">' +
+              '<i class="fa fa-user-friends text-secondary"></i> <strong>' + data.name + '</strong>' +
+              '<span class="text-muted">(' + data.age + ' ετών)</span>' +
+              '<button class="btn btn-outline-primary btn-sm ms-1" title="Επεξεργασία" onclick="editMember(' + data.member_id + ', this)">' +
+                '<i class="fa fa-pen"></i>' +
+              '</button>' +
+              '<button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Διαγραφή" onclick="deleteMember(' + data.member_id + ', this)">' +
+                '<i class="fa fa-trash"></i>' +
+              '</button>' +
+            '</div>' +
+            (data.allergies
+              ? '<div class="mt-1 text-start" style="width:100%;"><span class="badge bg-warning" title="Αλλεργίες"><i class="fa fa-exclamation-triangle"></i> ' + data.allergies + '</span></div>'
+              : ''
+            );
         }
       } else {
-        var list = document.getElementById('members-list');
-        var div = document.createElement('div');
-        div.className = 'mb-2 family-member-row';
-        div.setAttribute('data-memberid', res.id);
-        div.innerHTML =
-          '<i class="fa fa-user-friends text-secondary"></i> <strong>' + data.name + ' </strong>' +
-          '<span class="text-muted">(' + data.age + ' ετών)</span>' +
-          (data.allergies ? '<span class="badge bg-danger ms-2" title="Αλλεργίες"><i class="fa fa-exclamation-triangle"></i> ' + data.allergies + '</span>' : '') +
-          '<button type="button" class="btn btn-outline-primary btn-sm ms-2" title="Επεξεργασία" onclick="editMember(' + res.id + ', this)">' +
-          '<i class="fa fa-pen"></i></button>' +
-          '<button type="button" class="btn btn-outline-danger btn-sm ms-2" title="Διαγραφή" onclick="deleteMember(' + res.id + ', this)">' +
-          '<i class="fa fa-trash"></i></button>';
-        list.appendChild(div);
+        // ADD νέο μέλος: πρόσθεσε νέο <tr> στον πίνακα
+        var tbody = document.getElementById('members-list');
+        // Διέγραψε το "Δεν έχουν προστεθεί μέλη." αν υπάρχει
+        var emptyRow = tbody.querySelector('tr > td.text-muted');
+        if (emptyRow) emptyRow.parentNode.remove();
+
+        // Χρησιμοποίησε το id από το response (που στέλνει το backend)
+        var newId = res.id;
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-memberid', newId);
+
+        var td = document.createElement('td');
+        td.innerHTML =
+          '<div class="d-flex justify-content-left align-items-center flex-wrap gap-1 mb-0" style="gap:6px;">' +
+            '<i class="fa fa-user-friends text-secondary"></i> <strong>' + data.name + '</strong>' +
+            '<span class="text-muted">(' + data.age + ' ετών)</span>' +
+            '<button class="btn btn-outline-primary btn-sm ms-1" title="Επεξεργασία" onclick="editMember(' + newId + ', this)">' +
+              '<i class="fa fa-pen"></i>' +
+            '</button>' +
+            '<button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Διαγραφή" onclick="deleteMember(' + newId + ', this)">' +
+              '<i class="fa fa-trash"></i>' +
+            '</button>' +
+          '</div>' +
+          (data.allergies
+            ? '<div class="mt-1 text-start" style="width:100%;"><span class="badge bg-warning" title="Αλλεργίες"><i class="fa fa-exclamation-triangle"></i> ' + data.allergies + '</span></div>'
+            : ''
+          );
+
+        tr.appendChild(td);
+        tbody.appendChild(tr);
       }
       bootstrap.Modal.getInstance(document.getElementById('memberModal')).hide();
       form.reset();
@@ -611,24 +704,13 @@ document.getElementById('member-form').onsubmit = function(e) {
   });
 };
 
-window.addEventListener('DOMContentLoaded', function() {
-  window.choicesAllergies = new Choices('#member-allergies-select', {
-    removeItemButton: true,
-    placeholderValue: 'Επίλεξε αλλεργία... Μπορείς να επιλέξεις παραπάνω από μία!',
-    searchPlaceholderValue: 'Αναζήτηση...',
-    noResultsText: 'Δεν βρέθηκαν αλλεργίες',
-    itemSelectText: 'Επιλογή',
-    shouldSort: false,
-    duplicateItemsAllowed: false,
-    maxItemCount: 15
-  });
-
-  document.getElementById('member-allergies-select').addEventListener('change', function() {
-    var otherInput = document.getElementById('member-allergies-other');
-    var selected = Array.from(this.selectedOptions).map(function(opt) { return opt.value; });
-    otherInput.style.display = selected.indexOf('__other__') !== -1 ? '' : 'none';
-  });
-});
+document.getElementById('member-allergies-select').onchange = function() {
+  var sel = this;
+  var show = false;
+  for (var i=0; i<sel.options.length; ++i)
+    if (sel.options[i].selected && sel.options[i].value == '__other__') show = true;
+  document.getElementById('member-allergies-other').style.display = show ? '' : 'none';
+};
 
 function editCookingTimes() {
   var modal = new bootstrap.Modal(document.getElementById('editCookTimesModal'));
@@ -718,6 +800,24 @@ document.getElementById('profile-info-form').onsubmit = function(e) {
     }
   });
 };
+
+window.addEventListener('DOMContentLoaded', function() {
+  window.choicesAllergies = new Choices('#member-allergies-select', {
+    removeItemButton: true,
+    placeholderValue: 'Επίλεξε...',
+    searchPlaceholderValue: 'Αναζήτηση...',
+    noResultsText: 'Δεν βρέθηκαν αλλεργίες',
+    itemSelectText: 'Επιλογή',
+    shouldSort: false,
+    duplicateItemsAllowed: false,
+    maxItemCount: 15
+  });
+
+  // Κλείνει το drop-down όταν επιλέγεται κάτι!
+  window.choicesAllergies.passedElement.element.addEventListener('addItem', function(e) {
+    window.choicesAllergies.hideDropdown();
+  });
+});
 
 </script>
 

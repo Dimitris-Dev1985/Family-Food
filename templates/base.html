@@ -33,11 +33,13 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
+	
+	
     /* Mobile-friendly inputs & select */
     @media (max-width: 500px) {
       input[type="text"], input[type="number"], select, textarea, .choices__inner, .form-control {
         min-width: 0 !important;
-        width: 100% !important;
+        width: auto;
         font-size: 1.02em;
       }
       .autocomplete-input, #autocomplete-input {
@@ -46,24 +48,113 @@
         max-width: 100% !important;
       }
     }
-    /* Mobile buttons */
-    @media (max-width: 480px) {
-      .btn, .btn-group .btn {
-        width: 100% !important;
+
+	@media (max-width: 576px) {
+	  .btn-inline, .btn-inline.btn, .btn-inline.btn-sm {
+		width: auto !important;
+		margin-bottom: 0 !important;
+		display: inline-block !important;
+		font-size: 0.65em !important;
+		padding: 0.2rem 0.4rem !important;
+	  }
+	}
+
+    /* Mobile buttons - καθολική βελτίωση */
+    @media (max-width: 576px) {
+      .btn, .btn-sm, .btn-group .btn, .modal-footer .btn {
+        width: auto !important;
         min-width: 0 !important;
-        margin-bottom: 8px;
-        font-size: 1.09em;
+        margin-top: 1px;
+		margin-bottom: 1px;
+        font-size: 0.8em;
+        padding: .2rem .4rem;
+        box-sizing: border-box;
       }
       .btn-group {
         flex-direction: column !important;
-        align-items: stretch;
+        align-items: stretch !important;
         gap: 0 !important;
       }
-    }
-    /* Mobile modals */
-    @media (max-width: 500px) {
       .modal-dialog { margin: 1.5rem auto; max-width: 98vw; }
+      .form-check, .input-group { flex-direction: column; align-items: stretch; }
     }
+    /* Τελευταία πινελιά: καλύτερα "πατημένα" κουμπιά στη bottom-nav */
+    @media (max-width: 576px) {
+      .navbar.fixed-bottom .nav-link {
+        font-size: 1.01em;
+        padding: 0.4rem 0 0.2rem 0;
+      }
+      .navbar.fixed-bottom .fa {
+        font-size: 1.35em;
+      }
+    }
+	
+	/* modals format */
+	
+	@media (max-width: 600px) {
+	  .modal-dialog {
+		max-width: 280px !important;
+		margin: 0.5rem auto;
+		position: relative;
+		margin-left: auto;
+		margin-right: auto;
+	  }
+	  .modal-content {
+		border-radius: 2rem;
+		padding: 0.5em 0.5em 0.4em 0.5em;
+		overflow-y: auto;
+		max-height: 90vh;
+		align-items: center;
+		}
+		.modal-title {
+		  font-size: 1.1rem !important;
+		  justify-content: center;
+		}
+		.modal-body {
+		  flex: 1 1 auto;
+		  overflow-y: auto;
+		}
+		.modal-footer {
+		  position: sticky;
+		  bottom: 0;
+		  background: inherit;
+		  z-index: 2;
+		  box-shadow: 0 -2px 8px -4px #0002;
+		}
+
+	  .modal-content label,
+	  .modal-content .form-control,
+	  .modal-content .form-select,
+	  .modal-content .btn {
+		font-size: 0.85em !important;
+		left: auto !important;
+		right: auto !important;
+		
+	  }
+	}
+
+
+	.offcanvas {
+	  width: 300px !important;
+	  max-width: 94vw !important;
+	  min-width: 200px !important;
+	  border-radius: 16px 0 0 16px !important;
+	}
+	@media (max-width: 600px) {
+	  .offcanvas {
+		width: 50vw !important;
+		max-width: 50vw !important;
+		min-width: 0 !important;
+		border-radius: 10px !important;
+		left: auto !important;
+		right: auto !important;
+		max-height: 100vw !important;
+		margin-top: 15px;
+		margin-bottom: 15px;
+	  }
+	}
+
+	
   </style>
 </head>
 <body>
@@ -113,6 +204,8 @@
     </div>
   </nav>
 
+  {% block modals %}{% endblock %}
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
   <script>
@@ -121,7 +214,8 @@
 		.then(function() { console.log('Service Worker Registered'); });
 	}
   </script>
-  {% block modals %}{% endblock %}
+
   {% block scripts %}{% endblock %}
+
 </body>
 </html>
