@@ -13,6 +13,12 @@
   {% block head %}{% endblock %}
 
   <style>
+  
+	.goalerror-alert.fade {
+	  transition: opacity 1s linear;
+	}
+
+  
     body {
       background: #f5f6fa;
       min-height: 100vh;
@@ -100,6 +106,7 @@
 		margin-right: auto;
 	  }
 	  .modal-content {
+		display: flow;
 		border-radius: 2rem;
 		padding: 0.5em 0.5em 0.4em 0.5em;
 		overflow-y: auto;
@@ -109,6 +116,7 @@
 		.modal-title {
 		  font-size: 1.1rem !important;
 		  justify-content: center;
+		  text-align: center;
 		}
 		.modal-body {
 		  flex: 1 1 auto;
@@ -122,6 +130,12 @@
 		  box-shadow: 0 -2px 8px -4px #0002;
 		}
 
+		.modal-content .alert {
+		display: block;
+		font-size: small;
+		padding: 2px 2px 2px 2px;
+		text-align: center;
+		}
 	  .modal-content label,
 	  .modal-content .form-control,
 	  .modal-content .form-select,
@@ -129,7 +143,6 @@
 		font-size: 0.85em !important;
 		left: auto !important;
 		right: auto !important;
-		
 	  }
 	}
 
