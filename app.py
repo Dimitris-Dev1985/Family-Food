@@ -744,13 +744,13 @@ def menu():
             if not available:
                 unreachable_goals.append(cat)
         conn.close()
-        print(edit_mode)
         return render_template(
             "menu.html",
             menu=menu_entries,
             edit_mode=edit_mode,
             goals_achievement=goals_achievement,
-            unreachable_goals=unreachable_goals
+            unreachable_goals=unreachable_goals,
+            menu_1st_day=7
         )
 
     # --- Αν ΔΕΝ έχει έτοιμο μενού, ΔΗΜΙΟΥΡΓΙΑ με τον νέο αλγόριθμο min/max ---
@@ -1011,24 +1011,29 @@ def generate_menu():
     # Ανακατεύθυνση στο /menu για να δημιουργηθεί νέο
     return redirect(url_for("menu"))
 
-@app.route("/update_menu_order", methods=["POST"])
-def update_menu_order():
-    user, _ = get_user()
-    user_id = user["id"]
-    week_start = get_current_week_start()
-    order = request.form.get("order", "")
-    ids = [int(x) for x in order.split(",") if x.isdigit()]
+@app.route('/swap_menu_entries', methods=['POST'])
+def swap_menu_entries():
+    data = request.get_json()
+    menu_id_from = data.get('menu_id_from')
+    menu_id_to = data.get('menu_id_to')
+    if not menu_id_from or not menu_id_to:
+        return jsonify(success=False)
     conn = sqlite3.connect(DB)
-
-    # Αναθέτει ξανά το day_of_week (0-6) στη βάση
-    for idx, menu_id in enumerate(ids):
-        conn.execute(
-            "UPDATE weekly_menu SET day_of_week=? WHERE id=? AND user_id=? AND week_start_date=?",
-            (idx, menu_id, user_id, str(week_start))
-        )
+    c = conn.cursor()
+    # Πάρε τα recipe_id των δύο ημερών
+    c.execute("SELECT recipe_id FROM weekly_menu WHERE id=?", (menu_id_from,))
+    rec_from = c.fetchone()
+    c.execute("SELECT recipe_id FROM weekly_menu WHERE id=?", (menu_id_to,))
+    rec_to = c.fetchone()
+    if rec_from is None or rec_to is None:
+        conn.close()
+        return jsonify(success=False)
+    # Swap τα recipe_id
+    c.execute("UPDATE weekly_menu SET recipe_id=? WHERE id=?", (rec_to[0], menu_id_from))
+    c.execute("UPDATE weekly_menu SET recipe_id=? WHERE id=?", (rec_from[0], menu_id_to))
     conn.commit()
     conn.close()
-    return redirect(url_for("menu"))
+    return jsonify(success=True)
 
 @app.route("/search_recipes")
 def search_recipes():
