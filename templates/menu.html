@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block title %}Μενού Εβδομάδας{% endblock %}
-
 {% block content %}
 
 <div class="d-flex justify-content-center mb-3">
@@ -45,9 +44,7 @@
           </button>
         </div>
         <!-- Menu-dropzone (για SortableJS) -->
-        <div class="card-body menu-dropzone py-3 d-flex flex-column align-items-stretch justify-content-center"
-             id="dropzone-{{ entry.menu_id }}"
-             style="min-height:110px;">
+        <div class="card-body menu-dropzone py-3 d-flex flex-column align-items-stretch justify-content-center" id="dropzone-{{ entry.menu_id }}">
           {% if entry.recipe_id %}
             <!-- Card πιάτου -->
             <div class="recipe-card border rounded px-3 py-2 d-flex flex-row align-items-center"
@@ -102,23 +99,13 @@
   {% endfor %}
 </div>
 
-<!--
-{% if edit_mode %}
-  <div class="text-end mt-2">
-    <button class="btn btn-primary btn-lg" style="min-width:150px; border-radius:9px;" onclick="saveMenuEdits();">
-      <i class="fa fa-save me-1"></i> Αποθήκευση Μενού
-    </button>
-  </div>
-{% endif %}
--->
-
 
 <!-- Card: Επίτευξη στόχων -->
 {% if goals_achievement %}
 <div class="card shadow-sm my-4">
-  <div class="card-header bg-light">
-    <h5 class="mb-0">Εβδομαδιαίοι Στόχοι</h5>
-  </div>
+      <div class="card-header" style="background:#f8fafc;">
+        <i class="fa fa-bullseye me-2 text-info"></i> Εβδομαδιαίοι Στόχοι
+      </div>
   <div class="card-body">
     <table class="table table-sm mb-0">
       <thead>
@@ -169,9 +156,31 @@
 {% endblock %}
 
 
+{% block modals %}
+
+<div class="modal fade" id="allergyModal" tabindex="-1" aria-labelledby="allergyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 16px;">
+      <div class="modal-header bg-warning-subtle">
+        <h5 class="modal-title" id="allergyModalLabel">
+          <i class="fa fa-exclamation-triangle text-warning me-2"></i>Προσοχή: Αλλεργιογόνο
+        </h5>
+      </div>
+      <div class="modal-body text-center" id="allergyModalBody" style="font-size:1.08em;">
+        <!-- Το μήνυμα θα μπει εδώ -->
+      </div>
+      <div class="modal-footer d-flex flex-column gap-2">
+        <button type="button" class="btn btn-danger btn-lg w-100" id="allergy-cancel-btn" data-bs-dismiss="modal">Άκυρο</button>
+        <button type="button" class="btn btn-primary btn-lg w-100" id="allergy-continue-btn">Συνέχεια</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <script>
 let allRecipes = [];
@@ -231,35 +240,6 @@ function hideAutocomplete(input) {
   listDiv.innerHTML = "";
 }
 
-// Αποθήκευση αλλαγών με AJAX + προειδοποίηση για αλλεργιογόνα
-function saveMenuEdits(ignoreAllergy=false) {
-  let inputs = document.querySelectorAll('.recipe-input');
-  let updates = [];
-  inputs.forEach(inp => {
-    updates.push({
-      menu_id: inp.dataset.menuid,
-      recipe_title: inp.value
-    });
-  });
-  fetch('/update_menu_entries', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ updates, ignore_allergy: ignoreAllergy })
-  }).then(r => r.json())
-    .then(data => {
-      if (data.success) location.href = "{{ url_for('menu') }}";
-      else if (data.allergy_warnings) {
-        // Δείξε το πρώτο warning
-        let w = data.allergy_warnings[0];
-        let msg = `ΠΡΟΣΟΧΗ: το επιλεγμένο πιάτο "${w.dish}" περιέχει αλλεργιογόνο για το μέλος "${w.member}".\n\nΤι θέλεις να κάνεις;`;
-        if (confirm(msg + '\n\nOK = Συνέχεια (θα μαγειρέψω κάτι άλλο για το μέλος)\nCancel = Άκυρο')) {
-          saveMenuEdits(true);
-        }
-      } else {
-        alert("Σφάλμα στην αποθήκευση! Ελέγξτε τα ονόματα των πιάτων.");
-      }
-    });
-}
 
 function toggleFavorite(icon, recipe_id) {
   fetch('/toggle_favorite_recipe', {
@@ -298,11 +278,9 @@ function onRecipeBlur(input) {
     if (parent) {
       var menu_id = input.dataset.menuid;
       var new_title = input.value.trim();
-      // Save μόνο αν άλλαξε ο τίτλος και δεν είναι κενό
       if (new_title && new_title !== input.getAttribute('data-original')) {
-        saveMenuEditsForOne(menu_id, new_title);
+        saveMenuEditsForOne(menu_id, new_title, false, input); // <--- ΕΔΩ
       } else {
-        // Απόκρυψε το input, εμφάνισε τον τίτλο (αν δεν άλλαξε τίποτα)
         parent.style.display = 'none';
         document.getElementById('dish-title-' + menu_id).style.display = '';
       }
@@ -312,7 +290,7 @@ function onRecipeBlur(input) {
 }
 
 
-function saveMenuEditsForOne(menu_id, recipe_title, ignoreAllergy=false) {
+function saveMenuEditsForOne(menu_id, recipe_title, ignoreAllergy=false, inputEl = null) {
   let updates = [{ menu_id: menu_id, recipe_title: recipe_title }];
   fetch('/update_menu_entries', {
     method: 'POST',
@@ -322,49 +300,65 @@ function saveMenuEditsForOne(menu_id, recipe_title, ignoreAllergy=false) {
   .then(r => r.json())
   .then(data => {
     if (data.success) {
-      // Ανανέωση της σελίδας για να εμφανιστεί το νέο πιάτο/τίτλος
       location.reload();
     } else if (data.allergy_warnings) {
       let w = data.allergy_warnings[0];
-      let msg = `ΠΡΟΣΟΧΗ: το επιλεγμένο πιάτο "${w.dish}" περιέχει αλλεργιογόνο για το μέλος "${w.member}".\n\nΤι θέλεις να κάνεις;`;
-      if (confirm(msg + '\n\nOK = Συνέχεια (θα μαγειρέψω κάτι άλλο για το μέλος)\nCancel = Άκυρο')) {
-        saveMenuEditsForOne(menu_id, recipe_title, true);
-      }
+      let msg = `<b>ΠΡΟΣΟΧΗ:</b> Το επιλεγμένο πιάτο <b>"${w.dish}"</b> περιέχει <span class="text-danger"><b>αλλεργιογόνο</b></span> για το μέλος <b>"${w.member}"</b>.<br><br>
+                Θέλεις να το προσπεράσεις και να συνεχίσεις;<br>
+                <span class="text-secondary small">(Συνέχεια = θα μαγειρέψεις κάτι άλλο για το μέλος)</span>`;
+      
+	  showAllergyModal(msg, 
+		  function () {
+			saveMenuEditsForOne(menu_id, recipe_title, true, inputEl);
+		  }, 
+		  function () {
+			if (inputEl) {
+			  inputEl.value = inputEl.getAttribute('data-original') || '';
+			  inputEl.focus();
+			}
+		  }
+		);
+	 
     } else {
       alert("Σφάλμα στην αποθήκευση! Ελέγξτε τα ονόματα των πιάτων.");
     }
   });
 }
 
+// Νέα βοηθητική για το modal:
+function showAllergyModal(msg, onContinue, onCancel) {
+  document.getElementById('allergyModalBody').innerHTML = msg;
+  var modal = new bootstrap.Modal(document.getElementById('allergyModal'), { backdrop: 'static' });
+  modal.show();
+  document.getElementById('allergy-continue-btn').onclick = function () {
+    modal.hide();
+    if (typeof onContinue === 'function') onContinue();
+  };
+  document.getElementById('allergy-cancel-btn').onclick = function () {
+    modal.hide();
+    if (typeof onCancel === 'function') onCancel();
+  };
+}
+
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Κάνε κάθε .menu-dropzone dropzone group για SortableJS
   document.querySelectorAll('.menu-dropzone').forEach(function(zone){
     Sortable.create(zone, {
       group: 'menu',
       animation: 150,
       handle: '.drag-handle',
       draggable: '.recipe-card',
-		onEnd: function(evt) {
-		  let fromMenuId = evt.item.dataset.menuid;
-		  let toDropzone = evt.to;
-		  let toMenuId = toDropzone.id.replace('dropzone-','');
-		  if (fromMenuId && toMenuId && fromMenuId !== toMenuId) {
-			// Βρες το recipe-card που ήταν ήδη στον στόχο
-			let droppedOnCard = null;
-			toDropzone.querySelectorAll('.recipe-card').forEach(function(card){
-			  if (card !== evt.item) droppedOnCard = card;
-			});
-			let fromDropzone = evt.from;
-			// Κάνε swap τα DOM nodes αν υπάρχει droppedOnCard
-			if(droppedOnCard && fromDropzone) {
-			  // Μετακίνησε το droppedOnCard στο source dropzone
-			  fromDropzone.appendChild(droppedOnCard);
-			}
-			// Τώρα κάνε το backend swap (ώστε να σωθεί και στη βάση)
-			swapDishes(fromMenuId, toMenuId);
-		  }
-		}
+      swap: true, // <-- ενεργοποιεί το swap-on-hover!
+      swapClass: 'highlight-swap', // CSS κλάση όταν γίνει swap/hover
+      onEnd: function(evt) {
+        let fromMenuId = evt.item.dataset.menuid;
+        let toDropzone = evt.to;
+        let toMenuId = toDropzone.id.replace('dropzone-','');
+        // Μόνο αν το πιάτο μεταφέρθηκε σε άλλη μέρα
+        if (fromMenuId && toMenuId && fromMenuId !== toMenuId) {
+          swapDishes(fromMenuId, toMenuId);
+        }
+      }
     });
   });
 });
@@ -380,15 +374,13 @@ function swapDishes(menuIdFrom, menuIdTo) {
   })
   .then(r => r.json())
   .then(data => {
-    if (data.success) {
-      location.reload();
-    } else {
+    if (!data.success) {
       alert("Σφάλμα στη μεταφορά! Δοκίμασε ξανά.");
+      location.reload();
     }
+      else location.reload(); // προαιρετικά refresh για σιγουριά
   });
 }
-
-
 
 </script>
 {% endblock %}

@@ -1,79 +1,127 @@
 {% extends "base.html" %}
 {% block content %}
+
+<div class="d-flex justify-content-center mb-3">
+  <h2 class="fw-bold mb-1" style="font-size:2em;">Αγαπημένες Συνταγές</h2>
+</div>
+
 <div class="container mt-4">
-  <h2 class="mb-3">Αγαπημένες Συνταγές</h2>
-  <table class="table table-striped align-middle">
-    <thead>
-      <tr>
-        <th style="width:50px;">#</th>
-        <th>Πιάτο</th>
-        <th>Σεφ</th>
-        <th>Διάρκεια</th>
-        <th style="width:120px;"></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for rec in favorites %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ rec.title }}</td>
-        <td>{{ rec.chef }}</td>
-        <td>{{ rec.total_time }}</td>
-		<td>
-		  <button class="btn btn-danger btn-sm" onclick="deleteFavorite({{ rec.id }})">
-			<i class="fa fa-trash"></i>
-		  </button>
-		  <a href="{{ url_for('edit_favorite_recipe', recipe_id=rec.id) }}" class="btn btn-outline-primary btn-sm" title="Επεξεργασία">
-			<i class="fa fa-pen"></i>
-		  </a>
-		</td>
+   <div class="row g-3">
+    {% for rec in favorites %}
+      <div class="col-12">
+        <div class="card shadow-sm h-100">
+          <div class="card-header d-flex justify-content-between align-items-center bg-light">
+            <span class="fw-bold" style="font-size:1.14em;">{{ rec.title }}</span>
+            <div>
+              <a href="{{ url_for('edit_favorite_recipe', recipe_id=rec.id) }}" class="btn btn-outline-primary btn-sm" title="Επεξεργασία">
+                <i class="fa fa-pen"></i>
+              </a>
+<!-- created_by: {{ rec.created_by }} -->			
+				<button class="btn btn-danger btn-sm ms-1"
+						data-id="{{ rec.id }}"
+						data-title="{{ rec.title|tojson }}"
+						data-createdby="{{ rec.created_by or 0 }}"
+						onclick="deleteFavFromDataAttr(this)">
+				  <i class="fa fa-trash"></i>
+				</button>
 
 
-      </tr>
-      {% endfor %}
-      {% if favorites|length == 0 %}
-      <tr>
-        <td colspan="5" class="text-muted">Δεν έχεις προσθέσει αγαπημένες συνταγές!</td>
-      </tr>
-      {% endif %}
-      <tr>
-        <!-- + κάτω από Α/Α στήλη -->
-        <td>
+            </div>
+          </div>
+          <div class="card-body py-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between">
+            <div>
+              <div class="mb-2">
+                <span class="badge bg-info text-dark me-2"><i class="fa fa-user"></i> {{ rec.chef or '-' }}</span>
+                <span class="badge bg-secondary me-2"><i class="fa fa-clock"></i> {{ rec.total_time or '-' }}'</span>
+                {% if rec.basic_category %}
+                  <span class="badge bg-success"><i class="fa fa-tag"></i> {{ rec.basic_category }}</span>
+                {% endif %}
+              </div>
+              {% if rec.description %}
+                <div class="small text-muted">{{ rec.description }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+
+    {% if favorites|length == 0 %}
+      <div class="col-12">
+        <div class="alert alert-secondary text-center py-3 mb-2">
+          Δεν έχεις προσθέσει αγαπημένες συνταγές!
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Κάρτα προσθήκης και διαγραφής όλων -->
+    <div class="col-12">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body d-flex justify-content-between align-items-center">
           <button class="btn btn-success btn-sm" onclick="showAddFavorite()" title="Προσθήκη αγαπημένης">
-            <i class="fa fa-plus"></i>
+            <i class="fa fa-plus"></i> Προσθήκη
           </button>
-        </td>
-        <td colspan="2" id="add-favorite-cell"></td>
-        <td></td>
-        <td class="text-end">
+          <div id="add-favorite-cell" class="flex-grow-1 ms-2"></div>
           {% if favorites|length > 0 %}
           <button class="btn btn-outline-danger btn-sm" onclick="deleteAllFavorites()">
             <i class="fa fa-trash"></i> Διαγραφή όλων
           </button>
           {% endif %}
-        </td>
-      </tr>
-    </tbody>
-  </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+
 {% endblock %}
 
-{% block scripts %}
 
-<style>
-.autocomplete-list {
-  background: #fff;
-  border: 1px solid #ccc;
-  position: absolute;
-  z-index: 100;
-  width: 220px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-.autocomplete-option:hover {
-  background: #f0f0f0;
-}
-</style>
+{% block modals %}
+
+<div class="modal fade" id="deleteFavoriteModal" tabindex="-1" aria-labelledby="deleteFavoriteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 16px;">
+      <div class="modal-header bg-danger-subtle">
+        <h5 class="modal-title" id="deleteFavoriteModalLabel">
+          <i class="fa fa-trash text-danger me-2"></i>Διαγραφή αγαπημένης Συνταγής
+        </h5>
+      </div>
+      <div class="modal-body text-center" id="deleteFavoriteModalBody" style="font-size:1.09em;">
+        Θέλεις σίγουρα να αφαιρέσεις αυτή τη συνταγή από τα αγαπημένα;
+      </div>
+      <div class="modal-footer d-flex flex-column gap-2">
+        <button type="button" class="btn btn-danger btn-lg w-100" id="delete-fav-confirm-btn">Διαγραφή</button>
+        <button type="button" class="btn btn-secondary btn-lg w-100" data-bs-dismiss="modal">Άκυρο</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteRecipeModal" tabindex="-1" aria-labelledby="deleteRecipeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 16px;">
+      <div class="modal-header bg-danger-subtle">
+        <h5 class="modal-title" id="deleteRecipeModalLabel">
+          <i class="fa fa-trash text-danger me-2"></i>Διαγραφή Συνταγής
+        </h5>
+      </div>
+      <div class="modal-body text-center" id="deleteRecipeModalBody" style="font-size:1.09em;">
+        Θέλεις επίσης να διαγραφεί εντελώς η συνταγή από τη βάση;
+      </div>
+      <div class="modal-footer d-flex flex-column gap-2">
+        <button type="button" class="btn btn-danger btn-lg w-100" id="delete-recipe-confirm-btn">Ναι, διαγραφή οριστικά</button>
+        <button type="button" class="btn btn-secondary btn-lg w-100" id="delete-recipe-only-fav-btn" data-bs-dismiss="modal">Όχι, μόνο από τα αγαπημένα</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+
+{% block scripts %}
 
 <script>
 
@@ -82,23 +130,112 @@ fetch('/get_recipes_for_autocomplete')
   .then(r => r.json())
   .then(data => { allRecipes = data; });
 
-// Διαγραφή μίας συνταγής
-function deleteFavorite(recipeId) {
-  if (!confirm("Να αφαιρεθεί η συνταγή από τα αγαπημένα;")) return;
-  fetch('/delete_favorite_recipe', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({recipe_id: recipeId})
-  }).then(r => r.json())
-    .then(() => location.reload());
+let pendingDeleteRecipeId = null;
+let pendingDeleteRecipeTitle = null;
+let pendingDeleteRecipeIsUser = false; // αν είναι του χρήστη
+let deleteAllMode = false;
+
+function deleteFavFromDataAttr(btn) {
+  const id = btn.getAttribute('data-id');
+  // Βγάζουμε το έξτρα wrapping quotes:
+  let raw = btn.getAttribute('data-title');
+  let title = raw ? JSON.parse(raw) : '';
+  const created = btn.getAttribute('data-createdby');
+  deleteFavorite(id, title, created);
 }
 
-// Διαγραφή όλων
+
+
+function deleteFavorite(recipeId, title=null, created_by=0) {
+  console.log("OK")
+  deleteAllMode = false;
+  pendingDeleteRecipeId = recipeId;
+  pendingDeleteRecipeTitle = title;
+  pendingDeleteRecipeIsUser = created_by != 0;
+  document.getElementById('deleteFavoriteModalLabel').innerHTML =
+    '<i class="fa fa-trash text-danger me-2"></i>Διαγραφή Αγαπημένης';
+  document.getElementById('deleteFavoriteModalBody').innerHTML =
+    title ?
+      'Θέλεις σίγουρα να αφαιρέσεις τη συνταγή <b>"' + title + '"</b> από τα αγαπημένα;'
+      : 'Θέλεις σίγουρα να αφαιρέσεις αυτή τη συνταγή από τα αγαπημένα;';
+  var modal = new bootstrap.Modal(document.getElementById('deleteFavoriteModal'));
+  modal.show();
+}
+
 function deleteAllFavorites() {
-  if (!confirm("Να διαγραφούν όλες οι αγαπημένες συνταγές;")) return;
-  fetch('/delete_all_favorite_recipes', {method: 'POST'})
-    .then(r => r.json())
-    .then(() => location.reload());
+  deleteAllMode = true;
+  pendingDeleteRecipeId = null;
+  document.getElementById('deleteFavoriteModalLabel').innerHTML =
+    '<i class="fa fa-trash text-danger me-2"></i>Διαγραφή Όλων';
+  document.getElementById('deleteFavoriteModalBody').innerHTML =
+    '<b>ΠΡΟΣΟΧΗ!</b><br> Να διαγραφούν <u>όλες</u> οι αγαπημένες συνταγές;';
+  var modal = new bootstrap.Modal(document.getElementById('deleteFavoriteModal'));
+  modal.show();
+}
+
+// Event handler για το πρώτο modal (διαγραφή αγαπημένου)
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('delete-fav-confirm-btn').onclick = function() {
+    var modal = bootstrap.Modal.getInstance(document.getElementById('deleteFavoriteModal'));
+    modal.hide();
+    if (deleteAllMode) {
+      fetch('/delete_all_favorite_recipes', {method: 'POST'})
+        .then(r => r.json())
+        .then(() => location.reload());
+    } else if (pendingDeleteRecipeId) {
+      // Αν είναι του χρήστη, άνοιξε το 2ο modal!
+      if (pendingDeleteRecipeIsUser) {
+        showDeleteRecipeModal();
+      } else {
+        // Αλλιώς, απλά διαγραφή από τα αγαπημένα
+        fetch('/delete_favorite_recipe', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({recipe_id: pendingDeleteRecipeId})
+        }).then(r => r.json())
+          .then(() => location.reload());
+      }
+    }
+  };
+
+  	// 2ο modal: διαγραφή εντελώς από τη βάση και από αγαπημένα
+	document.getElementById('delete-recipe-confirm-btn').onclick = function() {
+	  var modal = bootstrap.Modal.getInstance(document.getElementById('deleteRecipeModal'));
+	  modal.hide();
+	  if (pendingDeleteRecipeId) {
+		fetch('/delete_user_recipe', {
+		  method: 'POST',
+		  headers: {'Content-Type': 'application/json'},
+		  body: JSON.stringify({recipe_id: pendingDeleteRecipeId})
+		}).then(r => r.json())
+		  .then(() => location.reload());
+	  }
+	};
+
+	// 2ο modal: διαγραφή μονο από τα αγαπημένα
+	document.getElementById('delete-recipe-only-fav-btn').onclick = function() {
+	  var modal = bootstrap.Modal.getInstance(document.getElementById('deleteRecipeModal'));
+	  modal.hide();
+	  if (pendingDeleteRecipeId) {
+		fetch('/delete_favorite_recipe', {
+		  method: 'POST',
+		  headers: {'Content-Type': 'application/json'},
+		  body: JSON.stringify({recipe_id: pendingDeleteRecipeId})
+		}).then(r => r.json())
+		  .then(() => location.reload());
+	  }
+	};
+
+});
+
+function showDeleteRecipeModal() {
+  document.getElementById('deleteRecipeModalLabel').innerHTML =
+    '<i class="fa fa-trash text-danger me-2"></i>Διαγραφή Συνταγής';
+  document.getElementById('deleteRecipeModalBody').innerHTML =
+    'Η συνταγή αυτή έχει δημιουργηθεί από <b>εσένα!<!b><br><br>' +
+    'Θέλεις να τη διαγράψεις οριστικά και από τη βάση συνταγών;';
+  var modal = new bootstrap.Modal(document.getElementById('deleteRecipeModal'));
+  modal.show();
 }
 
 // Live search για προσθήκη
@@ -111,6 +248,21 @@ function showAddFavorite() {
   let listDiv = document.getElementById("fav-autocomplete");
 
   input.focus();
+  
+    // Προσθέτεις global click handler
+  function onClickOutside(event) {
+    // Αν το click ΔΕΝ είναι μέσα στο cell, κλείσε το input
+    if (!cell.contains(event.target)) {
+      cell.innerHTML = "";
+      document.removeEventListener('mousedown', onClickOutside);
+    }
+  }
+  // Βάζεις τον handler
+  setTimeout(() => {
+    document.addEventListener('mousedown', onClickOutside);
+  }, 0);
+  
+  
   input.addEventListener('input', function() {
     let val = removeTonos(input.value.trim());
     if (val.length < 2) {

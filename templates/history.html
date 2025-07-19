@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
+
+{% macro format_ddmmyyyy(datestr) -%}
+  {%- set y, m, d = datestr.split('-') -%}
+  {{ d }}/{{ m }}/{{ y }}
+{%- endmacro %}
+
 {% macro greek_date(datestr) %}
   {%- set days = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο', 'Κυριακή'] -%}
   {%- set months = ['', 'Ιανουαρίου', 'Φεβρουαρίου', 'Μαρτίου', 'Απριλίου', 'Μαΐου', 'Ιουνίου', 'Ιουλίου', 'Αυγούστου', 'Σεπτεμβρίου', 'Οκτωβρίου', 'Νοεμβρίου', 'Δεκεμβρίου'] -%}
@@ -8,61 +14,114 @@
   {{ days[date_obj.weekday()] }}, {{ d|int }} {{ months[m|int] }} {{ y }}
 {% endmacro %}
 
-<div class="container">
-  <h2>Ιστορικό Πιάτων</h2>
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>Ημερομηνία</th>
-        <th>Πιάτο</th>
-        <th>Σεφ</th>
-        <th>Κατηγορία</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in history %}
-      <tr id="row{{ row['id'] }}">
-        <td data-date="{{ row['date'] }}">{{ greek_date(row['date']) }}</td>
-        <td>
-          {{ row['title'] }}
-          {% if row.recipe_id %}
-            <a href="javascript:void(0);" onclick="toggleFavorite(this, {{ row.recipe_id }})"
-               class="favorite-btn ms-2" data-recipeid="{{ row.recipe_id }}" title="Αγαπημένο">
-              <i class="fa{{ 's' if row.is_favorite else 'r' }} fa-heart"
-                 style="color: {{ 'gray' if not row.is_favorite else '#c33' }}; font-size:18px; vertical-align:middle;"></i>
-            </a>
-          {% endif %}
-        </td>
-        <td>{{ row['chef'] or '-' }}</td>
-        <td>{{ row['basic_category'] }}</td>
-        <td>
-          <button class="btn btn-outline-danger btn-sm" title="Διαγραφή" onclick="deleteHistoryEntry({{ row['id'] }})">
-            <i class="fa fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="5" class="text-muted">Δεν υπάρχει καταχωρημένο ιστορικό.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  <!-- Εβδομαδιαίοι στόχοι -->
-  <h4 class="mt-4">Εβδομαδιαίοι Στόχοι</h4>
-  <table class="table table-sm w-auto" id="weekly-goals-table">
-    <thead>
-      <tr>
-        <th>Κατηγορία</th>
-        <th>Στόχος</th>
-        <th>Επίτευξη</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- JS generated -->
-    </tbody>
-  </table>
+<div class="d-flex justify-content-center mb-3">
+  <h2 class="fw-bold mb-1" style="font-size:2em;">Ιστορικό Πιάτων</h2>
 </div>
+
+{% set shown_weeks = namespace(seen=[]) %}
+{% for row in history %}
+  {% set dt = row['date']|todate %}
+  {% set week = dt.isocalendar()[1] %}
+  {% set year = dt.year %}
+  {% set current_week = year ~ '-' ~ week %}
+  {% set collapse_id = 'week-' ~ current_week.replace('-', '_') %}
+  {% if current_week not in shown_weeks.seen %}
+    {% set week_dates = [] %}
+    {% for r in history if (r['date']|todate).isocalendar()[1] == week and (r['date']|todate).year == year %}
+      {% set _ = week_dates.append(r['date']) %}
+    {% endfor %}
+    {% set week_first_date = week_dates | last %}
+    {% set week_last_date = week_dates | first %}
+    <div class="card my-2 shadow-sm">
+      <div class="card-header bg-info-subtle d-flex justify-content-between align-items-center"
+           role="button"
+           data-bs-toggle="collapse"
+           href="#{{ collapse_id }}"
+           aria-expanded="false"
+           aria-controls="{{ collapse_id }}">
+        <span>
+          <i class="fa fa-calendar-week me-2 text-primary"></i>
+            Εβδομάδα {{ week }} ({{ format_ddmmyyyy(week_first_date) }} – {{ format_ddmmyyyy(week_last_date) }})
+        </span>
+        <span>
+          <i class="fa fa-chevron-down small"></i>
+        </span>
+      </div>
+      <div class="collapse" id="{{ collapse_id }}">
+        <div class="row g-3 mb-3 pt-2 px-2">
+    {% set _ = shown_weeks.seen.append(current_week) %}
+  {% endif %}
+
+  <div class="col-12">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <span>
+          <i class="fa fa-calendar-alt text-primary me-2"></i>
+          {{ greek_date(row['date']) }}
+        </span>
+        <button class="btn btn-outline-danger btn-sm" title="Διαγραφή" onclick="deleteHistoryEntry({{ row['id'] }})">
+          <i class="fa fa-trash"></i>
+        </button>
+      </div>
+      <div class="card-body py-3 d-flex flex-column align-items-stretch justify-content-center">
+        <div class="d-flex align-items-center mb-2">
+          <span class="fw-bold" style="font-size:1.14em;">
+            {{ row['title'] }}
+          </span>
+          {% if row.recipe_id %}
+            <a href="javascript:void(0);" class="favorite-btn ms-1 d-inline-block" data-recipeid="{{ row.recipe_id }}">
+               <i class="fa{{ 's' if row.is_favorite else 'r' }} fa-heart"
+				 onclick="toggleFavorite(this, {{ row.recipe_id }})"
+                 style="color: {{ 'gray' if not row.is_favorite else '#c33' }}; font-size:18px; cursor:pointer; vertical-align:-2px;"></i>
+            </a>
+			
+          {% endif %}
+        </div>
+        <div class="small text-muted mb-1">
+          <span class="me-2"><i class="fa fa-user"></i> {{ row['chef'] or '-' }}</span>
+          <span class="me-2"><i class="fa fa-tag"></i> {{ row['basic_category'] or '-' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% set next_row = history[loop.index] if not loop.last else None %}
+  {% if loop.last or (
+    next_row and (
+      (next_row['date']|todate).isocalendar()[1] != week or
+      (next_row['date']|todate).year != year
+    )
+  ) %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endfor %}
+
+<div class="row g-3">
+  <div class="col-12" style="padding-top: 20px;">
+    <div class="card shadow-sm h-auto">
+      <div class="card-header" style="background:#f8fafc;">
+        <i class="fa fa-bullseye me-2 text-info"></i> Εβδομαδιαίοι Στόχοι (τελευταίες 7 ημέρες)
+      </div>
+      <div class="card-body p-0">
+        <table class="table mb-0 table-sm align-middle" id="weekly-goals-table">
+          <thead>
+            <tr>
+              <th>Κατηγορία</th>
+              <th>Στόχος</th>
+              <th>Επίτευξη</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- JS generated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 
@@ -114,7 +173,6 @@
 {% endblock %}
 
 {% block scripts %}
-
 <script>
 let missingDays = {{ missing_days|tojson }};
 let manualDayIdx = 0;
@@ -136,7 +194,8 @@ function greekDate(dateStr) {
   return days[date.getDay() === 0 ? 6 : date.getDay() - 1] + ', ' + d + ' ' + months[m] + ' ' + y;
 }
 
-function toggleFavorite(el, recipe_id) {
+function toggleFavorite(icon, recipe_id) {
+	
   fetch('/toggle_favorite_recipe', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -145,16 +204,17 @@ function toggleFavorite(el, recipe_id) {
   .then(r => r.json())
   .then(data => {
     if(data.status === "added") {
-      el.querySelector('i').classList.remove('far');
-      el.querySelector('i').classList.add('fas');
-      el.querySelector('i').style.color = '#c33';
+      icon.classList.remove('far');
+      icon.classList.add('fas');
+      icon.style.color = '#c33';
     } else if(data.status === "removed") {
-      el.querySelector('i').classList.remove('fas');
-      el.querySelector('i').classList.add('far');
-      el.querySelector('i').style.color = 'gray';
+      icon.classList.remove('fas');
+      icon.classList.add('far');
+      icon.style.color = 'gray';
     }
   });
 }
+
 
 function updateWeeklyGoalsTable() {
   fetch('/get_weekly_goals_status')
@@ -162,22 +222,22 @@ function updateWeeklyGoalsTable() {
     .then(function(data) {
       var tbody = document.querySelector("#weekly-goals-table tbody");
       tbody.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-muted text-center">Δεν έχεις ορίσει εβδομαδιαίους στόχους.</td></tr>`;
+        return;
+      }
+
       data.forEach(function(g) {
         var cat = g.category.charAt(0).toUpperCase() + g.category.slice(1);
 
-        // Ελληνική διατύπωση στόχου
         var target = '';
         if (g.min_times != g.max_times) {
           target = 'Από ' + g.min_times + ' έως ' + g.max_times + ' φορές';
         } else {
-          if (g.min_times == 1) {
-            target = 'Ακριβώς 1 φορά';
-          } else {
-            target = 'Ακριβώς ' + g.min_times + ' φορές';
-          }
+          target = 'Ακριβώς ' + g.min_times + (g.min_times == 1 ? ' φορά' : ' φορές');
         }
 
-        // Ελληνική διατύπωση επίτευξης
         var reached = '';
         if (!g.count || g.count == 0) {
           reached = 'καμία φορά';
@@ -187,18 +247,20 @@ function updateWeeklyGoalsTable() {
           reached = g.count + ' φορές';
         }
         var ok = (g.count >= g.min_times && g.count <= g.max_times);
-        reached += ok
-          ? ' <span style="color:#198754;font-weight:bold;">✔️</span>'
-          : ' <span style="color:#dc3545;font-weight:bold;">❌</span>';
+        var statusIcon = ok
+          ? '<span class="text-success fw-bold">✔️</span>'
+          : '<span class="text-danger fw-bold">❌</span>';
 
         var tr = document.createElement("tr");
-        tr.innerHTML = '<td>' + cat + '</td><td>' + target + '</td><td>' + reached + '</td>';
+        tr.innerHTML = `
+          <td>${cat}</td>
+          <td>${target}</td>
+          <td>${reached} ${statusIcon}</td>
+        `;
         tbody.appendChild(tr);
       });
     });
 }
-
-
 
 window.addEventListener('DOMContentLoaded', function() {
   updateWeeklyGoalsTable()
