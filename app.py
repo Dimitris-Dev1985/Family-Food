@@ -60,6 +60,29 @@ def edit_recipe(rid):
     conn.close()
     return render_template("edit_recipe.html", recipe=recipe)
 
+@app.route('/delete_user_recipe', methods=['POST'])
+def delete_user_recipe():
+    data = request.get_json()
+    recipe_id = data.get('recipe_id')
+    if not recipe_id:
+        return {'success': False, 'error': 'Missing recipe_id'}, 400
+
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    try:
+        # 1. Διαγραφή από πίνακα αγαπημένων
+        c.execute('DELETE FROM favorite_recipes WHERE recipe_id = ?', (recipe_id,))
+        # 2. Διαγραφή από πίνακα συνταγών
+        c.execute('DELETE FROM recipes WHERE id = ?', (recipe_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return {'success': False, 'error': str(e)}, 500
+
+    conn.close()
+    return {'success': True}
+
 @app.route("/favorites/edit/<int:recipe_id>", methods=["GET", "POST"])
 def edit_favorite_recipe(recipe_id):
     user, _ = get_user()
@@ -118,7 +141,7 @@ def edit_favorite_recipe(recipe_id):
         cur.execute("DELETE FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id))
         conn.commit()
         conn.close()
-        return redirect(url_for("cooked_history"))  
+        return redirect(url_for("favorites"))  
 
     conn.close()
     return render_template("edit_recipe.html", recipe=recipe, all_tags=all_tags, basic_tags=BASIC_TAGS)
@@ -224,7 +247,7 @@ def favorites():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     favorites = conn.execute("""
-    SELECT r.id, r.title, r.chef, r.total_time, r.parent_id
+    SELECT r.id, r.title, r.chef, r.total_time, r.created_by, r.parent_id
     FROM favorite_recipes f
     JOIN recipes r ON r.id = f.recipe_id
     WHERE f.user_id=?
@@ -995,7 +1018,8 @@ def menu():
         menu=final_menu,
         edit_mode=edit_mode,
         goals_achievement=goals_achievement,
-        unreachable_goals=unreachable_goals
+        unreachable_goals=unreachable_goals,
+        menu_1st_day=7
     )
 
 @app.route("/generate_menu", methods=["POST"])
