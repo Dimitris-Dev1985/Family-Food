@@ -1,15 +1,36 @@
 {% extends "base.html" %}
-{% block title %}Καλωσόρισμα{% endblock %}
+{% block title %}Εγκατάσταση Εφαρμογής{% endblock %}
 {% block content %}
 
-<div class="main-welcome-container">
+<div class="text-center mt-4">
+  <img src="/static/screenshot.png" alt="Family Food" class="img-fluid" style="max-height: 300px;">
+  <h2 class="mt-3">Καλωσόρισες στο Family Food</h2>
+  <p>Αποθήκευσε την εφαρμογή στην αρχική σου οθόνη για άμεση πρόσβαση! 📱</p>
+  <button id="installBtn" class="btn btn-success mt-3" style="display:none;">Εγκατάσταση Εφαρμογής</button>
+</div>
 
-	<div class="d-flex justify-content-center mt-2">
-	  <button id="installBtn" class="btn btn-outline-primary" style="display: none;">
-		📲 Εγκατάσταση Εφαρμογής
-	  </button>
-	</div>
+<script>
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'inline-block';
+
+  installBtn.addEventListener('click', () => {
+    installBtn.style.display = 'none';
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      deferredPrompt = null;
+    });
+  });
+});
+</script>
 
 {% endblock %}
-
-</div>
