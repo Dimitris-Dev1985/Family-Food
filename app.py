@@ -1487,7 +1487,7 @@ def todate_filter(s):
 
 @app.route("/")
 def home():
-    return redirect("/welcome")
+    return redirect("/install")
     
 if __name__ == "__main__":
     app.run(debug=True)
