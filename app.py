@@ -118,15 +118,22 @@ def edit_favorite_recipe(recipe_id):
 
         # MULTI-SELECT TAGS
         tags_list = form.getlist("tags")
-        tags = ", ".join([t.strip() for t in tags_list if t.strip()])
-
+        tags = ",".join([t.strip() for t in tags_list if t.strip()])
+        allergens_list = form.getlist("allergens")
+        # Αν υπάρχει το "__other__", πρόσθεσε το custom πεδίο
+        if "__other__" in allergens_list:
+            other = form.get("allergens_other", "").strip()
+            allergens_list.remove("__other__")
+            if other:
+                allergens_list.append(other)            
+        allergens = ",".join([a.strip() for a in allergens_list if a.strip()])
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO recipes (title, ingredients, prep_time, cook_time, total_time, method, instructions, allergens, tags, created_by, parent_id, chef)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             form["title"], form["ingredients"], prep, cook, total_time,
-            form["method"], form["instructions"], form["allergens"], tags,
+            form["method"], form["instructions"], allergens, tags,
             user_id, recipe["id"], "Me!!"
         ))
         new_recipe_id = cur.lastrowid
@@ -144,7 +151,7 @@ def edit_favorite_recipe(recipe_id):
         return redirect(url_for("favorites"))  
 
     conn.close()
-    return render_template("edit_recipe.html", recipe=recipe, all_tags=all_tags, basic_tags=BASIC_TAGS)
+    return render_template("edit_recipe.html", recipe=recipe, all_tags=all_tags, all_allergs=get_all_allergens(), basic_tags=BASIC_TAGS)
 
 @app.route("/reset_favorite_recipe", methods=["POST"])
 def reset_favorite_recipe():
@@ -190,9 +197,7 @@ def get_user():
 
 @app.route("/install")
 def install():
-    return render_template(
-        "install.html"
-    )
+    return render_template("install.html")
 
 @app.route("/welcome")
 def welcome():
@@ -501,6 +506,23 @@ def delete_all_missing():
     save_missing_ingredients([])
     return jsonify({'status': 'ok'})
 
+# Βρες ΟΛΑ τα αλλεργιογόνα από τις συνταγές, χωρίς duplicates
+def get_all_allergens():
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    allerg_rows = conn.execute("SELECT allergens FROM recipes WHERE allergens IS NOT NULL AND allergens != ''").fetchall()
+    conn.close()
+
+    all_allergs = set()
+    for row in allerg_rows:
+        allergens = (row['allergens'] or '').replace(',', ' ')
+        for a in allergens.split():
+            a = a.strip()
+            if a:
+                all_allergs.add(a)
+    return sorted(all_allergs)
+
+
 @app.route("/profile")
 def profile():
     user, members = get_user()
@@ -518,17 +540,6 @@ def profile():
         'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα', 'Delivery'
     ]
     comparisons = ['τουλάχιστον', 'το πολύ']
-
-    # Βρες ΟΛΑ τα αλλεργιογόνα από τις συνταγές, χωρίς duplicates
-    allerg_rows = conn.execute("SELECT allergens FROM recipes WHERE allergens IS NOT NULL AND allergens != ''").fetchall()
-    all_allergs = set()
-    for row in allerg_rows:
-        allergens = (row['allergens'] or '').replace(',', ' ')
-        for a in allergens.split():
-            a = a.strip()
-            if a:
-                all_allergs.add(a)
-    all_allergs = sorted(all_allergs)
 
     # Βρες όλους τους chef που έχουν πάνω από 1 συνταγή
     chefs = conn.execute("""
@@ -553,7 +564,7 @@ def profile():
         weekly_goals=goals,
         categories=categories,
         comparisons=comparisons,
-        all_allergs=all_allergs,    # multi-select για αλλεργίες
+        all_allergs=get_all_allergens(),    # multi-select για αλλεργίες
         chef_options=chef_options   # dropdown για chef
     )
 
@@ -1411,7 +1422,6 @@ def add_manual_recipe():
         "chef": chef,
         "basic_category": basic_category
     })
-
 
 @app.route('/cook_dish', methods=['POST'])
 def cook_dish():
