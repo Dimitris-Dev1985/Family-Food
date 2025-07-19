@@ -16,29 +16,50 @@
         </div>
         <div class="mb-3">
           <label class="form-label">Υλικά</label>
-          <textarea class="form-control" name="ingredients" rows="2" required placeholder="Συμπληρώστε..">{{ '' if recipe.ingredients in [None, 'None'] else recipe.ingredients }}</textarea>
+          <textarea class="form-control" name="ingredients" rows="2" style="width:100%;" required placeholder="Συμπληρώστε..">{{ '' if recipe.ingredients in [None, 'None'] else recipe.ingredients }}</textarea>
         </div>
-        <div class="row gx-2">
-          <div class="col-6 mb-3">
-            <label class="form-label">Προετοιμασία (λ.)</label>
-            <input class="form-control" name="prep_time" type="number" min="0" value="{{ recipe.prep_time or '' }}" placeholder="Λεπτά">
-          </div>
-          <div class="col-6 mb-3">
-            <label class="form-label">Μαγείρεμα (λ.)</label>
-            <input class="form-control" name="cook_time" type="number" min="0" value="{{ recipe.cook_time or '' }}" placeholder="Λεπτά">
-          </div>
-        </div>
+		
+		<div style="width: 100%; padding: 0;">
+		  <div style="display: flex; gap: 8px; width: 100%;">
+			<div style="flex: 1 1 0; min-width: 0;">
+			  <label class="form-label" style="font-size:0.96em;">Προετοιμασία (λ.)</label>
+			  <input class="form-control form-control-sm"
+					 style="max-width: 110px; font-size:1em;"
+					 name="prep_time" type="number" min="0"
+					 value="{{ recipe.prep_time or '' }}"
+					 placeholder="Λεπτά">
+			</div>
+			<div style="flex: 1 1 0; min-width: 0;">
+			  <label class="form-label" style="font-size:0.96em;">Μαγείρεμα (λ.)</label>
+			  <input class="form-control form-control-sm"
+					 style="max-width: 110px; font-size:1em;"
+					 name="cook_time" type="number" min="0"
+					 value="{{ recipe.cook_time or '' }}"
+					 placeholder="Λεπτά">
+			</div>
+		  </div>
+		</div>
+
+	
         <div class="mb-3">
-          <label class="form-label">Μέθοδος</label>
-          <input class="form-control" name="method" value="{{ recipe.method or '' }}" placeholder="Συμπληρώστε..">
+          <label class="form-label">Μέθοδος μαγειρέματος</label>
+          <input class="form-control" name="method" style="width:100%;" value="{{ recipe.method or '' }}" placeholder="Συμπληρώστε..">
         </div>
-        <div class="mb-3">
-          <label class="form-label">Οδηγίες</label>
-          <textarea class="form-control" name="instructions" rows="2" placeholder="Συμπληρώστε..">{{ '' if recipe.instructions in [None, 'None'] else recipe.instructions }}</textarea>
-        </div>
+
+		<div class="mb-3">
+		  <label class="form-label">Οδηγίες</label>
+		  <textarea class="form-control" name="instructions" rows="3" style="width:100%;" placeholder="Συμπληρώστε..">{{ '' if recipe.instructions in [None, 'None'] else recipe.instructions }}</textarea>
+		</div>
+
+		{% set selected_tags = [] %}
+		{% if recipe and recipe.tags %}
+		  {% for t in recipe.tags.split(',') %}
+			{% set _ = selected_tags.append(t.strip()) %}
+		  {% endfor %}
+		{% endif %}
         <div class="mb-3">
           <label class="form-label">Κατηγορία πιάτου</label>
-          <select id="tagsSelect" class="form-control" name="tags" multiple required>
+          <select id="tagsSelect" class="form-control" name="tags" multiple>
             <optgroup label="Βασικές Κατηγορίες">
               {% for t in basic_tags %}
                 {% if t in all_tags %}
@@ -54,12 +75,26 @@
               {% endfor %}
             </optgroup>
           </select>
-          <small class="text-muted">Μπορείς να επιλέξεις παραπάνω από μία</small>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Αλλεργιογόνα (με κόμμα)</label>
-          <input class="form-control" name="allergens" value="{{ '' if recipe.allergens in [None, 'None'] else recipe.allergens }}" placeholder="Συμπληρώστε..">
-        </div>
+
+		{% set selected_allergs = [] %}
+		{% if recipe and recipe.allergens %}
+		  {% for a in recipe.allergens.split(',') %}
+			{% set _ = selected_allergs.append(a.strip()) %}
+		  {% endfor %}
+		{% endif %}
+		<div class="mb-3">
+		  <label class="form-label">Αλλεργιογόνα</label>
+		  <select id="recipe-allergies-select" name="allergens" class="form-control" multiple>
+			{% for a in all_allergs %}
+			  <option value="{{ a }}" {% if a.strip() in selected_allergs %}selected{% endif %}>{{ a }}</option>
+			{% endfor %}
+			<option value="__other__" {% if '__other__' in selected_allergs %}selected{% endif %}>Άλλο...</option>
+		  </select>
+		  <input name="allergens_other" id="recipe-allergies-other" class="form-control mt-2" style="display:none;" placeholder="Σημειώστε άλλο αλλεργιογόνο...">
+		</div>
+
+	
         <div class="d-flex gap-2 flex-column flex-sm-row justify-content-center mt-4">
           <button class="btn btn-success btn-lg flex-grow-1" type="submit">Αποθήκευση</button>
           <a class="btn btn-outline-secondary btn-lg flex-grow-1" href="{{ url_for('favorites') }}">Άκυρο</a>
@@ -75,12 +110,10 @@
 
 {% block scripts %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
-<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <script>
 
 window.addEventListener('DOMContentLoaded', function() {
-  // Existing JS για τα αρχικά values...
   const form = document.getElementById('editRecipeForm');
   const fields = ["title", "ingredients", "prep_time", "cook_time", "method", "instructions", "allergens", "tags"];
   const initial = {};
@@ -89,15 +122,22 @@ window.addEventListener('DOMContentLoaded', function() {
     if (el) initial[name] = el.value.trim();
   });
 
-  // --- Choices.js (όπως πριν) ---
-  new Choices('#tagsSelect', {
+  // --- ΕΝΑΣ Choices instance ---
+  const tagChoices = new Choices('#tagsSelect', {
     removeItemButton: true,
     placeholder: true,
     placeholderValue: 'Επιλέξτε κατηγορία...',
     searchPlaceholderValue: 'Αναζήτηση...',
     noResultsText: 'Δεν βρέθηκαν κατηγορίες',
     itemSelectText: '',
-    shouldSort: false
+    shouldSort: false,
+    duplicateItemsAllowed: false,
+    maxItemCount: 15
+  });
+
+  // Κλείνει το drop-down όταν επιλέγεται κάτι!
+  tagChoices.passedElement.element.addEventListener('addItem', function(e) {
+    setTimeout(() => tagChoices.hideDropdown(), 10);
   });
 
   // --- Validation για REQUIRED κατηγορία ---
@@ -112,7 +152,8 @@ window.addEventListener('DOMContentLoaded', function() {
     const requiredTags = [
       'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα'
     ];
-    const selectedTags = Array.from(form.elements['tags']).filter(function(opt) { return opt.selected; }).map(function(opt) { return opt.value; });
+    // Βρες τα επιλεγμένα tags από Choices:
+    const selectedTags = tagChoices.getValue(true);
 
     const hasRequired = requiredTags.some(function(tag) { return selectedTags.includes(tag); });
     if (!hasRequired) {
@@ -137,19 +178,46 @@ window.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-
-document.addEventListener('DOMContentLoaded', function() {
-  // Αυτό θα κάνει το select σου dropdown με chips & search
-  new Choices('#tagsSelect', {
+window.addEventListener('DOMContentLoaded', function() {
+  const choices = new Choices('#recipe-allergies-select', {
     removeItemButton: true,
     placeholder: true,
-    placeholderValue: 'Επιλέξτε κατηγορία...',
+    placeholderValue: 'Επίλεξε αλλεργιογόνο',
     searchPlaceholderValue: 'Αναζήτηση...',
-    noResultsText: 'Δεν βρέθηκαν κατηγορίες',
+    noResultsText: 'Δεν βρέθηκαν αλλεργιογόνα',
     itemSelectText: '',
-    shouldSort: false
+    shouldSort: true
   });
+
+  // Κλείσιμο dropdown μόλις προστεθεί επιλογή (addItem)
+  choices.passedElement.element.addEventListener('addItem', function(e) {
+    // 100% ασφαλές για όλες τις εκδόσεις:
+    if (typeof choices.hideDropdown === "function") {
+      setTimeout(() => choices.hideDropdown(), 10);
+    }
+  });
+
+
+  // Εμφάνιση/απόκρυψη του input 'Άλλο...'
+  const sel = document.getElementById('recipe-allergies-select');
+  const input = document.getElementById('recipe-allergies-other');
+
+  function checkOther() {
+    let values = Array.from(sel.selectedOptions).map(opt => opt.value);
+    if (values.includes('__other__')) {
+      input.style.display = '';
+      input.required = true;
+    } else {
+      input.style.display = 'none';
+      input.required = false;
+      input.value = '';
+    }
+  }
+  sel.addEventListener('change', checkOther);
+  checkOther(); // αρχικό state αν παλιότερα υπήρχε
+
 });
+
 
 </script>
 {% endblock %}
