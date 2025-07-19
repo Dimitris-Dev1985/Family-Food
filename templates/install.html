@@ -1,36 +1,40 @@
 {% extends "base.html" %}
-{% block title %}Εγκατάσταση Εφαρμογής{% endblock %}
+{% block title %}Εγκατάσταση Family Food{% endblock %}
 {% block content %}
 
 <div class="text-center mt-4">
-  <img src="/static/screenshot.png" alt="Family Food" class="img-fluid" style="max-height: 300px;">
-  <h2 class="mt-3">Καλωσόρισες στο Family Food</h2>
-  <p>Αποθήκευσε την εφαρμογή στην αρχική σου οθόνη για άμεση πρόσβαση! 📱</p>
-  <button id="installBtn" class="btn btn-success mt-3" style="display:none;">Εγκατάσταση Εφαρμογής</button>
+  <img src="{{ url_for('static', filename='0392b3b9-13d5-4c44-b681-28c429589ea1.png') }}"
+       alt="Family Food Icon" class="img-fluid rounded" style="max-height: 280px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+  <h1 class="mt-3" style="font-size: 2.5em; font-weight: bold;">Family Food</h1>
+  <p class="lead">Κάνε εγκατάσταση για άμεση πρόσβαση στην κουζίνα σου 🍽️</p>
+
+  <button id="installBtn" class="btn btn-success mt-3" style="display:none;">
+    ➕ Εγκατάσταση Εφαρμογής
+  </button>
 </div>
 
 <script>
-let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
+  let deferredPrompt;
+  const installBtn = document.getElementById('installBtn');
 
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = 'inline-block';
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-block';
 
-  installBtn.addEventListener('click', () => {
-    installBtn.style.display = 'none';
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
-      }
-      deferredPrompt = null;
+    installBtn.addEventListener('click', () => {
+      installBtn.style.display = 'none';
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        deferredPrompt = null;
+      });
     });
   });
-});
 </script>
 
 {% endblock %}
