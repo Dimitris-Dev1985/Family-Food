@@ -14,7 +14,7 @@
 {% else %}
 <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 10px;">
   <form method="get" action="{{ url_for('menu') }}" style="display:inline-block;">
-
+	
     <button class="btn btn-warning" style="font-size: clamp(0.6rem, 3vw, 1.2rem);">Επεξεργασία Μενού</button>
   </form>
   <form method="post" action="{{ url_for('generate_menu') }}" style="display:inline-block;">
@@ -25,69 +25,78 @@
 </div>
 {% endif %}
 
+{# --- Υπολογισμός νέας σειράς --- #}
+{% set menu_len = menu|length %}
+{% set shift = (menu_1st_day - 1) %}
+{% set menu_rotated = menu[shift:] + menu[:shift] %}
 
-<div class="row g-2">
-  {% for entry in menu %}
+
+<div class="row g-3">
+  {% for entry in menu_rotated %}
     <div class="col-12">
-      <div class="card shadow-sm mb-2" id="menu-card-{{ entry.menu_id }}">
-        <div class="card-body py-2 px-3">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="fw-bold" style="font-size:1.14em;">{{ entry.day }}</span>
-			{% if entry.recipe_id %}
-			  <a href="javascript:void(0);" class="favorite-btn ms-2 d-inline-block" data-recipeid="{{ entry.recipe_id }}">
-				<i class="fa{{ 's' if entry.is_favorite else 'r' }} fa-heart"
-				   onclick="toggleFavorite(this, {{ entry.recipe_id }})"
-				   style="color: {{ 'gray' if not entry.is_favorite else '#c33' }}; font-size:19px; cursor:pointer;"></i>
-			  </a>
-			{% endif %}
-
-          </div>
-          <div style="font-size:1em;">
-            <div>
-              <span class="text-muted small">Πιάτο:</span>
-              {% if edit_mode %}
-                <input type="text"
-                       class="form-control mt-1 recipe-input"
-                       value="{{ entry.title or '' }}"
-                       placeholder="Αναζήτηση πιάτου..."
-                       data-original="{{ entry.title or '' }}"
-                       data-menuid="{{ entry.menu_id }}"
-                       autocomplete="off"
-                       onfocus="onRecipeFocus(this, '{{ entry.title|e('js') or '' }}')"
-                       onblur="onRecipeBlur(this)">
-                <div class="autocomplete-list" style="position:relative;"></div>
-              {% else %}
-                <span>{{ entry.title or '-' }}</span>
-              {% endif %}
-            </div>
-            <div>
-              <span class="text-muted small">Σεφ:</span>
-              <span>{{ entry.chef or '-' }}</span>
-            </div>
-            <div>
-              <span class="text-muted small">Χρόνος:</span>
-              <span>{{ entry.duration or '-' }}</span>
-            </div>
-            <div>
-              <span class="text-muted small">Μέθοδος:</span>
-              <span>{{ entry.method or '-' }}</span>
-            </div>
-            <div>
-              <span class="text-muted small">Κατηγορία:</span>
-              <span>{{ entry.category or '-' }}</span>
-            </div>
-            <div>
-              <span class="text-muted small">Κριτήρια:</span>
-              <span>{{ entry.criteria or '-' }}</span>
-            </div>
-          </div>
+      <!-- Card για κάθε μέρα, full width -->
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <span class="fw-bold" style="font-size:1.18em;">{{ entry.day }}</span>
+          <button type="button"
+                  class="btn btn-outline-primary btn-sm"
+                  onclick="enableEdit({{ entry.menu_id }})">
+            <i class="fa fa-pen"></i>
+          </button>
         </div>
-      </div>
-    </div>
-  {% else %}
-    <div class="col-12">
-      <div class="alert alert-secondary text-center py-3 mb-2">
-        Δεν έχεις ορίσει ακόμα πιάτα για το μενού της εβδομάδας.
+        <!-- Menu-dropzone (για SortableJS) -->
+        <div class="card-body menu-dropzone py-3 d-flex flex-column align-items-stretch justify-content-center"
+             id="dropzone-{{ entry.menu_id }}"
+             style="min-height:110px;">
+          {% if entry.recipe_id %}
+            <!-- Card πιάτου -->
+            <div class="recipe-card border rounded px-3 py-2 d-flex flex-row align-items-center"
+                 style="background:#f8f9fa;"
+                 data-menuid="{{ entry.menu_id }}"
+                 data-recipeid="{{ entry.recipe_id }}">
+              <div class="flex-grow-1">
+                <!-- Τίτλος ως span ή input ανάλογα με το edit mode -->
+                <div class="d-flex align-items-center">
+                  <div id="dish-title-{{ entry.menu_id }}">
+                    <span class="fw-bold" style="font-size:1.08em;">
+                      {{ entry.title or '-' }}
+                      <a href="javascript:void(0);" class="favorite-btn ms-1 d-inline-block" data-recipeid="{{ entry.recipe_id }}">
+                        <i class="fa{{ 's' if entry.is_favorite else 'r' }} fa-heart"
+                           onclick="toggleFavorite(this, {{ entry.recipe_id }})"
+                           style="color: {{ 'gray' if not entry.is_favorite else '#c33' }}; font-size:18px; cursor:pointer; vertical-align:-2px;"></i>
+                      </a>
+                    </span>
+                  </div>
+                  <div id="dish-edit-{{ entry.menu_id }}" style="display:none; width: 100%;">
+                    <input type="text"
+                           class="form-control recipe-input"
+                           value="{{ entry.title }}"
+                           placeholder="Αναζήτηση πιάτου..."
+                           data-original="{{ entry.title }}"
+                           data-menuid="{{ entry.menu_id }}"
+                           autocomplete="off"
+                           style="font-size:1.08em;"
+                           onfocus="onRecipeFocus(this, '{{ entry.title }}')"
+                           onblur="onRecipeBlur(this)"
+                           onkeydown="if(event.key==='Enter'){this.blur();}">
+                    <div class="autocomplete-list" style="position:relative;"></div>
+                  </div>
+                </div>
+                <div class="small mt-1 text-muted">
+                  {{ entry.chef or '-' }} &nbsp;|&nbsp; {{ entry.duration or '-' }}' &nbsp;|&nbsp; {{ entry.method or '-' }}
+                </div>
+              </div>
+              <span class="drag-handle ms-2"
+                    style="font-size:1.45em; cursor:grab; user-select:none;">
+                <i class="fa fa-bars"></i>
+              </span>
+            </div>
+          {% else %}
+            <div class="alert alert-secondary text-center py-4 mb-0" style="font-size:0.97em;">
+              Δεν έχεις ορίσει πιάτο για αυτή τη μέρα.
+            </div>
+          {% endif %}
+        </div>
       </div>
     </div>
   {% endfor %}
@@ -162,8 +171,9 @@
 
 
 {% block scripts %}
-<script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
+<script>
 let allRecipes = [];
 fetch('/get_recipes_for_autocomplete')
   .then(r => r.json())
@@ -178,19 +188,8 @@ function removeTonos(str) {
 // Όταν κάνεις focus, σβήνει το input και δείχνει placeholder
 function onRecipeFocus(input, original) {
   input.value = "";
-  input.placeholder = "Αναζήτηση πιάτου...";
+  input.placeholder = original;
   showAutocomplete(input);
-}
-
-// Αν φύγεις χωρίς επιλογή, ξαναβάζει το αρχικό value
-function onRecipeBlur(input) {
-  setTimeout(() => {
-    if (!input.value) {
-      input.value = input.getAttribute("data-original") || "";
-      input.placeholder = "Αναζήτηση πιάτου...";
-    }
-    hideAutocomplete(input);
-  }, 150);
 }
 
 // Autocomplete
@@ -281,6 +280,114 @@ function toggleFavorite(icon, recipe_id) {
     }
   });
 }
+
+function enableEdit(menu_id) {
+  // Απόκρυψε το title, δείξε το input
+  document.getElementById('dish-title-' + menu_id).style.display = 'none';
+  document.getElementById('dish-edit-' + menu_id).style.display = '';
+  // Focus στο input
+  document.querySelector('#dish-edit-' + menu_id + ' input').focus();
+}
+
+// Προαιρετικά, όταν βγαίνεις από το input (onblur) ή όταν κάνεις Enter,
+// μπορείς να κάνεις save/submit και να επαναφέρεις το display.
+// Αν θέλεις να επαναφέρεται πάντα όταν φεύγει το focus:
+function onRecipeBlur(input) {
+  setTimeout(function(){
+    var parent = input.closest('[id^=dish-edit-]');
+    if (parent) {
+      var menu_id = input.dataset.menuid;
+      var new_title = input.value.trim();
+      // Save μόνο αν άλλαξε ο τίτλος και δεν είναι κενό
+      if (new_title && new_title !== input.getAttribute('data-original')) {
+        saveMenuEditsForOne(menu_id, new_title);
+      } else {
+        // Απόκρυψε το input, εμφάνισε τον τίτλο (αν δεν άλλαξε τίποτα)
+        parent.style.display = 'none';
+        document.getElementById('dish-title-' + menu_id).style.display = '';
+      }
+    }
+    hideAutocomplete(input);
+  }, 200);
+}
+
+
+function saveMenuEditsForOne(menu_id, recipe_title, ignoreAllergy=false) {
+  let updates = [{ menu_id: menu_id, recipe_title: recipe_title }];
+  fetch('/update_menu_entries', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ updates, ignore_allergy: ignoreAllergy })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      // Ανανέωση της σελίδας για να εμφανιστεί το νέο πιάτο/τίτλος
+      location.reload();
+    } else if (data.allergy_warnings) {
+      let w = data.allergy_warnings[0];
+      let msg = `ΠΡΟΣΟΧΗ: το επιλεγμένο πιάτο "${w.dish}" περιέχει αλλεργιογόνο για το μέλος "${w.member}".\n\nΤι θέλεις να κάνεις;`;
+      if (confirm(msg + '\n\nOK = Συνέχεια (θα μαγειρέψω κάτι άλλο για το μέλος)\nCancel = Άκυρο')) {
+        saveMenuEditsForOne(menu_id, recipe_title, true);
+      }
+    } else {
+      alert("Σφάλμα στην αποθήκευση! Ελέγξτε τα ονόματα των πιάτων.");
+    }
+  });
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Κάνε κάθε .menu-dropzone dropzone group για SortableJS
+  document.querySelectorAll('.menu-dropzone').forEach(function(zone){
+    Sortable.create(zone, {
+      group: 'menu',
+      animation: 150,
+      handle: '.drag-handle',
+      draggable: '.recipe-card',
+		onEnd: function(evt) {
+		  let fromMenuId = evt.item.dataset.menuid;
+		  let toDropzone = evt.to;
+		  let toMenuId = toDropzone.id.replace('dropzone-','');
+		  if (fromMenuId && toMenuId && fromMenuId !== toMenuId) {
+			// Βρες το recipe-card που ήταν ήδη στον στόχο
+			let droppedOnCard = null;
+			toDropzone.querySelectorAll('.recipe-card').forEach(function(card){
+			  if (card !== evt.item) droppedOnCard = card;
+			});
+			let fromDropzone = evt.from;
+			// Κάνε swap τα DOM nodes αν υπάρχει droppedOnCard
+			if(droppedOnCard && fromDropzone) {
+			  // Μετακίνησε το droppedOnCard στο source dropzone
+			  fromDropzone.appendChild(droppedOnCard);
+			}
+			// Τώρα κάνε το backend swap (ώστε να σωθεί και στη βάση)
+			swapDishes(fromMenuId, toMenuId);
+		  }
+		}
+    });
+  });
+});
+
+function swapDishes(menuIdFrom, menuIdTo) {
+  fetch('/swap_menu_entries', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      menu_id_from: menuIdFrom,
+      menu_id_to: menuIdTo
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert("Σφάλμα στη μεταφορά! Δοκίμασε ξανά.");
+    }
+  });
+}
+
 
 
 </script>
