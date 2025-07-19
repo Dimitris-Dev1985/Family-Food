@@ -188,6 +188,12 @@ def get_user():
     conn.close()
     return user, members
 
+@app.route("/install")
+def install():
+    return render_template(
+        "install.html"
+    )
+
 @app.route("/welcome")
 def welcome():
     user, _ = get_user()
