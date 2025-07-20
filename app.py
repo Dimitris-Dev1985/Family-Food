@@ -9,10 +9,11 @@ DB = "family_food_app.db"
 
 WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"]
 
+
+
 @app.route("/")
 def home():
-    return redirect("/install")
-
+    return redirect("/login")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -20,10 +21,10 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        # 🔐 Debug credentials (σκληρά ορισμένα)
         if username == "admin" and password == "1234":
             session["username"] = username
-            return redirect("/welcome")  # ή όπου θες να πηγαίνεις
+            session["onboarding_done"] = False   # <-- Εδώ το βάζεις
+            return redirect("/welcome")
         else:
             error = "Λάθος στοιχεία!"
             return render_template("login.html", error=error)
@@ -37,6 +38,7 @@ def install():
 
 @app.route("/welcome")
 def welcome():
+        
     user, _ = get_user()
     hour = datetime.now().hour
     greeting = "Καλημέρα" if hour < 12 else "Καλησπέρα"
