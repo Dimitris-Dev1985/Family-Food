@@ -9,6 +9,87 @@ DB = "family_food_app.db"
 
 WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"]
 
+@app.route("/")
+def home():
+    if "username" in session:
+        return redirect("/welcome")
+    return redirect("/login")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        # 🔐 Debug credentials (σκληρά ορισμένα)
+        if username == "admin" and password == "1234":
+            session["username"] = username
+            return redirect("/welcome")  # ή όπου θες να πηγαίνεις
+        else:
+            error = "Λάθος στοιχεία!"
+            return render_template("login.html", error=error)
+
+    return render_template("login.html")
+
+
+@app.route("/install")
+def install():
+    return render_template("install.html")
+
+@app.route("/welcome")
+def welcome():
+    user, _ = get_user()
+    hour = datetime.now().hour
+    greeting = "Καλημέρα" if hour < 12 else "Καλησπέρα"
+    day_idx = datetime.now().weekday()  # 0 = Δευτέρα
+    day_name = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"][day_idx]
+
+    # Βρες το τρέχον εβδομαδιαίο μενού του χρήστη
+    week_start = (datetime.now() - timedelta(days=day_idx)).date()
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    c = conn.execute(
+        "SELECT * FROM weekly_menu WHERE user_id=? AND week_start_date=? ORDER BY day_of_week ASC",
+        (user["id"], str(week_start))
+    )
+    weekly_menu = c.fetchall()
+
+    # Ορισμοί για σήμερα & αύριο
+    today_menu = "-"
+    today_menu_id = ""
+    tomorrow_menu = "-"
+    tomorrow_menu_id = ""
+
+    if len(weekly_menu) == 7:
+        recipe_today, recipe_tomorrow = None, None
+        if weekly_menu[day_idx]["recipe_id"]:
+            recipe_today = conn.execute("SELECT * FROM recipes WHERE id=?", (weekly_menu[day_idx]["recipe_id"],)).fetchone()
+        if weekly_menu[(day_idx+1)%7]["recipe_id"]:
+            recipe_tomorrow = conn.execute("SELECT * FROM recipes WHERE id=?", (weekly_menu[(day_idx+1)%7]["recipe_id"],)).fetchone()
+        if recipe_today:
+            t = recipe_today["total_time"] if recipe_today["total_time"] else "-"
+            today_menu = f'{recipe_today["title"]} – χρόνος μαγειρέματος: {t}′'
+            today_menu_id = recipe_today["id"]   # <--- Σωστά περνάμε το ID
+        if recipe_tomorrow:
+            t = recipe_tomorrow["total_time"] if recipe_tomorrow["total_time"] else "-"
+            tomorrow_menu = f'{recipe_tomorrow["title"]} – χρόνος μαγειρέματος: {t}′'
+            tomorrow_menu_id = recipe_tomorrow["id"]
+
+    conn.close()
+
+    return render_template(
+        "welcome.html",
+        greeting=greeting,
+        user_name=user["first_name"],
+        day_name=day_name,
+        today_menu=today_menu,
+        today_menu_id=today_menu_id,
+        tomorrow_menu=tomorrow_menu,
+        tomorrow_menu_id=tomorrow_menu_id
+    )
+
+
 # --- ADMIN PANEL ΓΙΑ ΣΥΝΤΑΓΕΣ ---
 # Λίστα συνταγών + διαγραφή
 @app.route("/admin/recipes")
@@ -206,61 +287,7 @@ def get_user():
     conn.close()
     return user, members
 
-@app.route("/install")
-def install():
-    return render_template("install.html")
 
-@app.route("/welcome")
-def welcome():
-    user, _ = get_user()
-    hour = datetime.now().hour
-    greeting = "Καλημέρα" if hour < 12 else "Καλησπέρα"
-    day_idx = datetime.now().weekday()  # 0 = Δευτέρα
-    day_name = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"][day_idx]
-
-    # Βρες το τρέχον εβδομαδιαίο μενού του χρήστη
-    week_start = (datetime.now() - timedelta(days=day_idx)).date()
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    c = conn.execute(
-        "SELECT * FROM weekly_menu WHERE user_id=? AND week_start_date=? ORDER BY day_of_week ASC",
-        (user["id"], str(week_start))
-    )
-    weekly_menu = c.fetchall()
-
-    # Ορισμοί για σήμερα & αύριο
-    today_menu = "-"
-    today_menu_id = ""
-    tomorrow_menu = "-"
-    tomorrow_menu_id = ""
-
-    if len(weekly_menu) == 7:
-        recipe_today, recipe_tomorrow = None, None
-        if weekly_menu[day_idx]["recipe_id"]:
-            recipe_today = conn.execute("SELECT * FROM recipes WHERE id=?", (weekly_menu[day_idx]["recipe_id"],)).fetchone()
-        if weekly_menu[(day_idx+1)%7]["recipe_id"]:
-            recipe_tomorrow = conn.execute("SELECT * FROM recipes WHERE id=?", (weekly_menu[(day_idx+1)%7]["recipe_id"],)).fetchone()
-        if recipe_today:
-            t = recipe_today["total_time"] if recipe_today["total_time"] else "-"
-            today_menu = f'{recipe_today["title"]} – χρόνος μαγειρέματος: {t}′'
-            today_menu_id = recipe_today["id"]   # <--- Σωστά περνάμε το ID
-        if recipe_tomorrow:
-            t = recipe_tomorrow["total_time"] if recipe_tomorrow["total_time"] else "-"
-            tomorrow_menu = f'{recipe_tomorrow["title"]} – χρόνος μαγειρέματος: {t}′'
-            tomorrow_menu_id = recipe_tomorrow["id"]
-
-    conn.close()
-
-    return render_template(
-        "welcome.html",
-        greeting=greeting,
-        user_name=user["first_name"],
-        day_name=day_name,
-        today_menu=today_menu,
-        today_menu_id=today_menu_id,
-        tomorrow_menu=tomorrow_menu,
-        tomorrow_menu_id=tomorrow_menu_id
-    )
 
 @app.route("/favorites")
 def favorites():
@@ -750,13 +777,17 @@ def menu():
                 "day": WEEKDAYS_GR[entry["day_of_week"]],
                 "title": recipe["title"] if recipe else entry["title"] if "title" in entry.keys() else "Δεν βρέθηκε πιάτο",
                 "chef": recipe["chef"] if recipe else "",
+                "prep_time": recipe["prep_time"] if recipe else "-",
+                "cook_time": recipe["cook_time"] if recipe else "-",
                 "duration": recipe["total_time"] if recipe else "-",
                 "method": recipe["method"] if recipe else "-",
                 "url": recipe["url"] if recipe else "",
                 "criteria": criteria,
-                "menu_id": entry["id"],
+                "ingredients": recipe["ingredients"] if recipe else "-",
+                "instructions": recipe["instructions"] if recipe else "-",
+                "menu_id": entry["id"] if recipe else "-",
                 "tags": recipe["tags"] if recipe else "",
-                "category": category,
+                "category": category if recipe else "-",
                 "is_favorite": (recipe["id"] in fav_ids) if recipe else False,
                 "recipe_id": recipe["id"] if recipe else None
             })
@@ -1506,10 +1537,6 @@ def get_recipe(recipe_id):
 def todate_filter(s):
     return datetime.strptime(s, "%Y-%m-%d").date()
 
-@app.route("/")
-def home():
-    return redirect("/install")
-    
 if __name__ == "__main__":
     app.run(debug=True)
 
