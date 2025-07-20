@@ -90,15 +90,13 @@ def edit_favorite_recipe(recipe_id):
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
 
-    # Φέρε τη συνταγή που γίνεται edit
     recipe = conn.execute("SELECT * FROM recipes WHERE id=?", (recipe_id,)).fetchone()
     if not recipe:
         conn.close()
         return "Recipe not found", 404
 
-    # Βρες όλα τα μοναδικά tags (multi-select)
     BASIC_TAGS = [
-    'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα'
+        'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα'
     ]
     tags_rows = conn.execute("SELECT tags FROM recipes WHERE tags IS NOT NULL AND tags != ''").fetchall()
     all_tags_set = set()
@@ -108,6 +106,9 @@ def edit_favorite_recipe(recipe_id):
             if tag:
                 all_tags_set.add(tag)
     all_tags = sorted(all_tags_set)
+
+    # Cooking methods options
+    COOKING_METHODS = ['Φούρνος','Κατσαρόλα','Χύτρα','Τηγάνι','Σχάρα','Air-fryer']
 
     add_to_favorites = request.args.get("add_to_favorites")
     if request.method == "POST":
@@ -119,39 +120,49 @@ def edit_favorite_recipe(recipe_id):
         # MULTI-SELECT TAGS
         tags_list = form.getlist("tags")
         tags = ",".join([t.strip() for t in tags_list if t.strip()])
+
+        # MULTI-SELECT COOKING METHODS
+        cooking_methods_list = form.getlist("cooking_methods")
+        cooking_methods = ",".join([m.strip() for m in cooking_methods_list if m.strip()])
+
+        # MULTI-SELECT ALLERGENS
         allergens_list = form.getlist("allergens")
-        # Αν υπάρχει το "__other__", πρόσθεσε το custom πεδίο
         if "__other__" in allergens_list:
             other = form.get("allergens_other", "").strip()
             allergens_list.remove("__other__")
             if other:
                 allergens_list.append(other)            
         allergens = ",".join([a.strip() for a in allergens_list if a.strip()])
+
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO recipes (title, ingredients, prep_time, cook_time, total_time, method, instructions, allergens, tags, created_by, parent_id, chef)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             form["title"], form["ingredients"], prep, cook, total_time,
-            form["method"], form["instructions"], allergens, tags,
-            user_id, recipe["id"], "Me!!"
+            cooking_methods, form["instructions"], allergens, tags, user_id, recipe["id"], "Me!!"
         ))
         new_recipe_id = cur.lastrowid
         
         flag = add_to_favorites
         if flag is None:
             flag = "1"
-        # Προσθήκη στα αγαπημένα ΜΟΝΟ αν έχει flag
         if flag == "1":
             cur.execute("INSERT OR IGNORE INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)", (user_id, new_recipe_id))
-        # ΠΑΝΤΑ αφαίρεσε τη μητρική από τα αγαπημένα
         cur.execute("DELETE FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id))
         conn.commit()
         conn.close()
         return redirect(url_for("favorites"))  
 
     conn.close()
-    return render_template("edit_recipe.html", recipe=recipe, all_tags=all_tags, all_allergs=get_all_allergens(), basic_tags=BASIC_TAGS)
+    return render_template(
+        "edit_recipe.html",
+        recipe=recipe,
+        all_tags=all_tags,
+        all_allergs=get_all_allergens(),
+        basic_tags=BASIC_TAGS,
+        cooking_options=COOKING_METHODS
+    )
 
 @app.route("/reset_favorite_recipe", methods=["POST"])
 def reset_favorite_recipe():
@@ -258,7 +269,7 @@ def favorites():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     favorites = conn.execute("""
-    SELECT r.id, r.title, r.chef, r.total_time, r.created_by, r.parent_id
+    SELECT r.id, r.title, r.chef, r.total_time, r.created_by, r.parent_id, r.method, r.tags
     FROM favorite_recipes f
     JOIN recipes r ON r.id = f.recipe_id
     WHERE f.user_id=?
