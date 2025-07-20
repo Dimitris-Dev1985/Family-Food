@@ -50,12 +50,6 @@
 
 <div class="main-welcome-container">
 
-	<div class="d-flex justify-content-center mt-2">
-	  <button id="installBtn" class="btn btn-outline-primary" style="display: none;">
-		📲 Εγκατάσταση Εφαρμογής
-	  </button>
-	</div>
-
   <h1 class="display-5 text-center mb-3">{{ greeting }}, {{ user_name }}!</h1>
   <p class="lead text-center mb-3">
     Έτοιμοι να μαγειρέψουμε κάτι υπέροχο σήμερα; 🍽️
@@ -533,30 +527,6 @@ window.addEventListener('DOMContentLoaded', function() {
     showMainChoices();
   }
 });
-
-
-let deferredPrompt = null;
-const installBtn = document.getElementById('installBtn');
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault(); // Αποτρέπει το αυτόματο prompt
-  deferredPrompt = e;
-  installBtn.style.display = 'inline-block';
-
-  installBtn.addEventListener('click', () => {
-    installBtn.style.display = 'none';
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('Ο χρήστης εγκατέστησε την εφαρμογή!');
-      } else {
-        console.log('Ο χρήστης απέρριψε την εγκατάσταση.');
-      }
-      deferredPrompt = null;
-    });
-  });
-});
-
 
 
 </script>

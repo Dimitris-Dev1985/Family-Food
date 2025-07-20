@@ -9,9 +9,10 @@
   <p class="lead">Κάνε εγκατάσταση για άμεση πρόσβαση στην κουζίνα σου! 🍽️</p>
 
   <button id="installBtn" class="btn btn-success mt-3" style="display:none;">
-     Εγκατάσταση Εφαρμογής
+    📲 Εγκατάσταση Εφαρμογής
   </button>
 </div>
+
 
 <script>
   let deferredPrompt;
@@ -35,6 +36,51 @@
       });
     });
   });
+  
+   let deferredPrompt;
+  const installBtn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-block';
+
+    installBtn.addEventListener('click', () => {
+      installBtn.style.display = 'none';
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+          // Μετά την αποδοχή → έλεγξε αν είναι πρώτη φορά
+          if (!localStorage.getItem("ff_installed_once")) {
+            localStorage.setItem("ff_installed_once", "1");
+            window.location.href = "/login";
+          } else {
+            window.location.href = "/welcome";
+          }
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        deferredPrompt = null;
+      });
+    });
+  });
+
+  // Επιπλέον ασφαλιστική δικλείδα: αν ο χρήστης μπήκε χειροκίνητα στο /install
+  window.addEventListener('DOMContentLoaded', function() {
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+      if (!localStorage.getItem("ff_installed_once")) {
+        localStorage.setItem("ff_installed_once", "1");
+        window.location.href = "/login";
+      } else {
+        window.location.href = "/welcome";
+      }
+    }
+  });
+
+  
 </script>
 
 {% endblock %}
+
+
