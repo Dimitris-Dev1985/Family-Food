@@ -17,11 +17,26 @@
 		{% endif %}
 		<p><i class="fa fa-star text-warning"></i> <strong>Αγαπημένος Σεφ:</strong> <span id="profile-chef">{{ profile.chef }}</span></p>
 		<p>
-		  <i class="fa fa-calendar-alt"></i> <strong>Ημέρα μενού:</strong>
+		  <i class="fa fa-calendar-alt"></i> <strong>Δημιουργία μενού:</strong>
 		  <span id="profile-menu-day">{{ profile.menu_day }}</span>
 		  <span class="ms-2"><i class="fa fa-clock"></i> <span id="profile-menu-hour">{{ profile.menu_hour }}</span></span>
 		</p>
-		<p><i class="fa fa-fire"></i> <strong>Προτιμώμενος τρόπος μαγειρέματος:</strong> <span id="profile-cooking-method">{{ profile.cooking_method }}</span></p>
+
+		 <p>
+		  <i class="fa fa-fire"></i>
+		  <strong>Προτιμώμενος τρόπος μαγειρέματος:</strong>
+			<span id="profile-cooking-method">
+			  {% if profile.cooking_method %}
+				{% for m in profile.cooking_method.split(',') %}
+				  <span class="badge bg-warning text-dark me-1"><i class="fa fa-fire"></i> {{ m.strip() }}</span>
+				{% endfor %}
+			  {% else %}
+				<span class="text-muted">-</span>
+			  {% endif %}
+			</span>
+		</p>
+
+
 		<div class="text-end mt-2">
 		  <button class="btn btn-outline-primary btn-sm" onclick="editProfileInfo()">
 			<i class="fa fa-pen"></i> Επεξεργασία προφίλ
@@ -29,6 +44,7 @@
 		</div>
 	  </div>
 	</div>
+ 
  
 	<div class="card shadow-sm mb-2">
 	  <div class="card-body">
@@ -70,10 +86,10 @@
 					<i class="fa fa-user-friends text-secondary"></i>
 					<strong>{{ m.name }}</strong>
 					<span class="text-muted">({{ m.age }} ετών)</span>
-					<button class="btn btn-outline-primary btn-sm ms-1" title="Επεξεργασία" onclick="editMember({{ m.id }}, this)">
+					<button class="btn btn-outline-primary btn-sm ms-1" style="margin-bottom: 1px !important;" title="Επεξεργασία" onclick="editMember({{ m.id }}, this)">
 					  <i class="fa fa-pen"></i>
 					</button>
-					<button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Διαγραφή" onclick="deleteMember({{ m.id }}, this)">
+					<button type="button" class="btn btn-outline-danger btn-sm ms-1" style="margin-bottom: 1px !important;" title="Διαγραφή" onclick="deleteMember({{ m.id }}, this)">
 					  <i class="fa fa-trash"></i>
 					</button>
 				  </div>
@@ -129,10 +145,10 @@
 				{% endif %}
 			  </td>
 				<td>
-				  <button class="btn btn-outline-primary btn-sm" onclick="editGoal({{ row['id'] }}, '{{ row['category'] }}', {{ row['min_times'] }}, {{ row['max_times'] }})">
+				  <button class="btn btn-outline-primary btn-sm" style="margin-bottom: 1px !important;" onclick="editGoal({{ row['id'] }}, '{{ row['category'] }}', {{ row['min_times'] }}, {{ row['max_times'] }})">
 					<i class="fa fa-pen"></i>
 				  </button>
-				  <button class="btn btn-outline-danger btn-sm" onclick="deleteGoal({{ row['id'] }})">
+				  <button class="btn btn-outline-danger btn-sm" style="margin-bottom: 1px !important;" onclick="deleteGoal({{ row['id'] }})">
 					<i class="fa fa-trash"></i>
 				  </button>
 				</td>
@@ -193,8 +209,9 @@
           </select>
         </div>
         <div class="row">
+		<label>Δημιουργία εβδομαδιαίου μενού</label>
           <div class="col mb-2">
-            <label>Ημέρα μενού</label>
+            
             <select name="menu_day" id="profile-menu-day-select" class="form-select" required>
               {% for day in ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο','Κυριακή'] %}
                 <option value="{{ day }}" {% if profile.menu_day == day %}selected{% endif %}>{{ day }}</option>
@@ -202,7 +219,7 @@
             </select>
           </div>
           <div class="col mb-2">
-            <label>Ώρα μενού</label>
+            
             <select name="menu_hour" id="profile-menu-hour-select" class="form-select" required>
               {% for h in range(7,24) %}
                 <option value="{{ "%02d:00"|format(h) }}" {% if profile.menu_hour == "%02d:00"|format(h) %}selected{% endif %}>{{ "%02d:00"|format(h) }}</option>
@@ -454,7 +471,6 @@ function showGoalError(msg, duration=2000) {
     setTimeout(()=>{alertDiv.style.display='none';}, 1000); // περίμενε το fade
   }, duration);
 }
-
 
 function addGoalToTable(category, min, max, id) {
   var tbody = document.getElementById('goals-tbody');
@@ -763,6 +779,10 @@ window.addEventListener('DOMContentLoaded', function() {
     duplicateItemsAllowed: false,
     maxItemCount: 10
   });
+      // Κλείνει το drop-down όταν επιλέγεται κάτι!
+  window.choicesCooking.passedElement.element.addEventListener('addItem', function(e) {
+    window.choicesCooking.hideDropdown();
+  });
 });
 
 document.getElementById('profile-info-form').onsubmit = function(e) {
@@ -787,6 +807,7 @@ document.getElementById('profile-info-form').onsubmit = function(e) {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(data)
   }).then(function(r){return r.json();}).then(function(res){
+
     if(res.status === 'ok') {
       document.getElementById('profile-name').innerHTML =
         '<i class="fa fa-user-circle fa-lg me-2"></i> ' + data.first_name + ' ' + data.family_name;
@@ -794,7 +815,21 @@ document.getElementById('profile-info-form').onsubmit = function(e) {
       document.getElementById('profile-chef').textContent = data.chef;
       document.getElementById('profile-menu-day').textContent = data.menu_day;
       document.getElementById('profile-menu-hour').textContent = data.menu_hour;
-      document.getElementById('profile-cooking-method').textContent = data.cooking_method.split(',').join(', ');
+
+      // === Εδώ βάζουμε τα badges αντί για text === 
+	  var cookingDiv = document.getElementById('profile-cooking-method');
+		if (cookingDiv) {
+		  var html = "";
+		  if (data.cooking_method && data.cooking_method.length > 0) {
+			html = data.cooking_method.split(',').map(function(m){
+			  return '<span class="badge bg-warning text-dark me-1"><i class="fa fa-fire"></i> ' + m.trim() + '</span>';
+			}).join(' ');
+		  } else {
+			html = '<span class="text-muted">-</span>';
+		  }
+		  cookingDiv.innerHTML = html;
+		}
+
       var altSpan = document.getElementById('profile-alt-address');
       if (altSpan) {
         if (data.alt_address) {
@@ -808,6 +843,7 @@ document.getElementById('profile-info-form').onsubmit = function(e) {
     }
   });
 };
+
 
 window.addEventListener('DOMContentLoaded', function() {
   window.choicesAllergies = new Choices('#member-allergies-select', {

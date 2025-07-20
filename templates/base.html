@@ -12,104 +12,41 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   {% block head %}{% endblock %}
 
-  <style>
-  
-	.goalerror-alert.fade {
-	  transition: opacity 1s linear;
-	}
+<style>
+body {
+  background: #f5f6fa;
+  min-height: 100vh;
+}
 
-
-	.card {
-	  border-radius: 18px;
-	}
-	.card-body {
-	  padding: 1.1em 1.2em;
-	}
-	.card .fw-bold {
-	  letter-spacing: 0.5px;
-	}
-	.favorite-btn {
-	  margin-left: 10px;
-	}
-	@media (max-width: 600px) {
-	  .card {
-		border-radius: 13px;
-		margin-bottom: 0.7em;
-	  }
-	  .card-body {
-		padding: 0.9em 1em;
-	  }
-	  .form-control.recipe-input {
-		font-size: 1em;
-		padding: 0.42em 0.8em;
-	  }
-	}
-
-
-
-.card {
+/* Card styling */
+.card, .card-header, .card-body {
   border-radius: 17px !important;
-  position: relative;
   overflow: visible !important;
 }
 .card-header {
-  border-top-left-radius: 17px !important;
-  border-top-right-radius: 17px !important;
   background: #f8f9fa;
   border-bottom: none;
 }
-.card-body {
-  border-bottom-left-radius: 17px !important;
-  border-bottom-right-radius: 17px !important;
-}
-
-
-.recipe-card {
-  transition: box-shadow 0.2s;
-}
-.recipe-card:active {
-  box-shadow: 0 0 0 2px #ffdae0;
-}
+.card .fw-bold { letter-spacing: 0.5px; }
+.card-body { padding: 1.1em 1.2em; }
 @media (max-width: 600px) {
-  .card {
-    margin-bottom: 16px;
+  .card, .card-header, .card-body {
+    border-radius: 13px !important;
   }
-  .card-header {
-    font-size: 1.2em;
-    padding: 5px 4px !important; 
-  }
-  .card-body {
-    padding: 0px 10px !important;
-  }
+  .card-body { padding: 0.9em 1em !important; }
+  .card-header { font-size: 1.2em; padding: 5px 4px !important; }
 }
 
-
+/* Special cases for recipe card and drag handle */
+.recipe-card { transition: box-shadow 0.2s; }
+.recipe-card:active { box-shadow: 0 0 0 2px #ffdae0; }
 .drag-handle {
-  color: #888;
-  transition: color 0.2s;
-  font-size: 15px !important;
-  cursor: grab;
-  user-select: none;
+  color: #888; font-size: 15px !important; cursor: grab; user-select: none; transition: color 0.2s;
 }
-.recipe-card:active .drag-handle,
-.recipe-card:focus .drag-handle {
-  color: #888;
-}
+.recipe-card:active .drag-handle, .recipe-card:focus .drag-handle { color: #888; }
+.highlight-swap { border: 2px dashed #007bff; background: #eaf3ff; }
 
-
-.highlight-swap {
-  border: 2px dashed #007bff;
-  background: #eaf3ff;
-}
-
-
-.card-header[aria-expanded="true"] .fa-chevron-down {
-  transform: rotate(180deg);
-  transition: transform 0.3s;
-}
-.card-header .fa-chevron-down {
-  transition: transform 0.3s;
-}
+.favorite-btn { margin-left: 10px; }
 
 .autocomplete-list {
   background: #fff;
@@ -120,171 +57,84 @@
   max-height: 200px;
   overflow-y: auto;
 }
-.autocomplete-option:hover {
-  background: #f0f0f0;
+.autocomplete-option:hover { background: #f0f0f0; }
+
+/* Choices.js dropdown above modals */
+.modal, .modal-body { overflow: visible !important; }
+.choices__list--dropdown { z-index: 2055 !important; }
+
+/* Centered modal titles */
+.modal-header { justify-content: center !important; }
+.modal-title { width: 100%; text-align: center; }
+
+/* Responsive containers and tables */
+.container, .main-welcome-container { padding-bottom: 70px; padding-top: 1rem; }
+@media (max-width: 600px) {
+  .container, .main-welcome-container {
+    padding-left: 0.2rem; padding-right: 0.2rem; padding-bottom: 85px !important;
+  }
+}
+.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Responsive forms/inputs/buttons */
+@media (max-width: 576px) {
+  input[type="text"], input[type="number"], select, textarea, .choices__inner, .form-control {
+    min-width: 0 !important; width: auto; font-size: 1.02em;
+  }
+  .autocomplete-input, #autocomplete-input {
+    width: 100% !important; min-width: 0 !important; max-width: 100% !important;
+  }
+  .btn, .btn-sm, .btn-group .btn, .modal-footer .btn {
+    width: auto; min-width: 0 !important; margin-top: 1px; margin-bottom: 1px;
+    font-size: 0.8em; padding: .2rem .4rem; box-sizing: border-box;
+  }
+  .btn-inline, .btn-inline.btn, .btn-inline.btn-sm {
+    width: auto !important; margin-bottom: 0 !important; display: inline-block !important;
+    font-size: 0.65em !important; padding: 0.2rem 0.4rem !important;
+  }
+  .btn-group { flex-direction: column !important; align-items: stretch !important; gap: 0 !important; }
+  .modal-dialog { margin: 1.5rem auto; max-width: 98vw; }
+  .form-check, .input-group { flex-direction: column; align-items: stretch; }
+  .navbar.fixed-bottom .nav-link { font-size: 1.01em; padding: 0.4rem 0 0.2rem 0; }
+  .navbar.fixed-bottom .fa { font-size: 1.35em; }
 }
 
-  
-    body {
-      background: #f5f6fa;
-      min-height: 100vh;
-    }
-    .container, .main-welcome-container {
-      padding-bottom: 70px;
-      padding-top: 1rem;
-    }
-    @media (max-width: 600px) {
-      .container, .main-welcome-container {
-        padding-left: 0.2rem;
-        padding-right: 0.2rem;
-        padding-bottom: 85px !important;
-      }
-    }
-    /* Responsive tables */
-    .table-responsive {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-	
-	
-    /* Mobile-friendly inputs & select */
-    @media (max-width: 576px) {
-      input[type="text"], input[type="number"], select, textarea, .choices__inner, .form-control {
-        min-width: 0 !important;
-        width: auto;
-        font-size: 1.02em;
-      }
-      .autocomplete-input, #autocomplete-input {
-        width: 100% !important;
-        min-width: 0 !important;
-        max-width: 100% !important;
-      }
-    }
-
-	@media (max-width: 576px) {
-	  .btn-inline, .btn-inline.btn, .btn-inline.btn-sm {
-		width: auto !important;
-		margin-bottom: 0 !important;
-		display: inline-block !important;
-		font-size: 0.65em !important;
-		padding: 0.2rem 0.4rem !important;
-	  }
-	}
-
-    /* Mobile buttons - καθολική βελτίωση */
-    @media (max-width: 576px) {
-      .btn, .btn-sm, .btn-group .btn, .modal-footer .btn {
-        width: auto;
-        min-width: 0 !important;
-        margin-top: 1px;
-		margin-bottom: 10px;
-        font-size: 0.8em;
-        padding: .2rem .4rem;
-        box-sizing: border-box;
-      }
-      .btn-group {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 0 !important;
-      }
-      .modal-dialog { margin: 1.5rem auto; max-width: 98vw; }
-      .form-check, .input-group { flex-direction: column; align-items: stretch; }
-    }
-    /* Τελευταία πινελιά: καλύτερα "πατημένα" κουμπιά στη bottom-nav */
-    @media (max-width: 576px) {
-      .navbar.fixed-bottom .nav-link {
-        font-size: 1.01em;
-        padding: 0.4rem 0 0.2rem 0;
-      }
-      .navbar.fixed-bottom .fa {
-        font-size: 1.35em;
-      }
-    }
-	
-	/* modals format */
-
-
-.modal-header {
-  justify-content: center !important;
-}
-.modal-title {
-  width: 100%;
-  text-align: center;
+/* Mobile-friendly modals */
+@media (max-width: 600px) {
+  .modal-dialog { max-width: 380px !important; margin: 0.5rem auto; position: relative; }
+  .modal-content {
+    display: flow; border-radius: 2rem; padding: 0.5em 0.5em 0.4em 0.5em;
+    overflow-y: auto; max-height: 90vh; align-items: center;
+  }
+  .modal-title { font-size: 1.1rem !important; }
+  .modal-body { flex: 1 1 auto; overflow-y: auto; }
+  .modal-footer {
+    position: sticky; bottom: 0; background: inherit; z-index: 2;
+    box-shadow: 0 -2px 8px -4px #0002;
+  }
+  .modal-content .alert { display: block; font-size: small; padding: 2px; text-align: center; }
+  .modal-content label, .modal-content .form-control, .modal-content .form-select, .modal-content .btn {
+    font-size: 0.85em !important;
+  }
 }
 
-	
-	@media (max-width: 600px) {
-	  .modal-dialog {
-		max-width: 280px !important;
-		margin: 0.5rem auto;
-		position: relative;
-		margin-left: auto;
-		margin-right: auto;
-	  }
-	  .modal-content {
-		display: flow;
-		border-radius: 2rem;
-		padding: 0.5em 0.5em 0.4em 0.5em;
-		overflow-y: auto;
-		max-height: 90vh;
-		align-items: center;
-		}
-		.modal-title {
-		  font-size: 1.1rem !important;
-		  justify-content: center;
-		  text-align: center;
-		}
-		.modal-body {
-		  flex: 1 1 auto;
-		  overflow-y: auto;
-		}
-		.modal-footer {
-		  position: sticky;
-		  bottom: 0;
-		  background: inherit;
-		  z-index: 2;
-		  box-shadow: 0 -2px 8px -4px #0002;
-		}
+/* Offcanvas styling */
+.offcanvas {
+  width: 300px !important; max-width: 94vw !important; min-width: 200px !important; border-radius: 16px 0 0 16px !important;
+}
+@media (max-width: 600px) {
+  .offcanvas {
+    width: 50vw !important; max-width: 50vw !important; min-width: 0 !important;
+    border-radius: 10px !important; max-height: 100vw !important;
+    left: auto !important; right: auto !important; margin-top: 15px; margin-bottom: 15px;
+  }
+}
 
-		.modal-content .alert {
-		display: block;
-		font-size: small;
-		padding: 2px 2px 2px 2px;
-		text-align: center;
-		}
-	  .modal-content label,
-	  .modal-content .form-control,
-	  .modal-content .form-select,
-	  .modal-content .btn {
-		font-size: 0.85em !important;
-		left: auto !important;
-		right: auto !important;
-	  }
-	}
+/* Για fading alert */
+.goalerror-alert.fade { transition: opacity 1s linear; }
+</style>
 
 
-	.offcanvas {
-	  width: 300px !important;
-	  max-width: 94vw !important;
-	  min-width: 200px !important;
-	  border-radius: 16px 0 0 16px !important;
-	}
-	@media (max-width: 600px) {
-	  .offcanvas {
-		width: 50vw !important;
-		max-width: 50vw !important;
-		min-width: 0 !important;
-		border-radius: 10px !important;
-		left: auto !important;
-		right: auto !important;
-		max-height: 100vw !important;
-		margin-top: 15px;
-		margin-bottom: 15px;
-	  }
-	}
-
-	
-  </style>
 </head>
 <body>
   <div class="container{% if request.endpoint == 'welcome' %} main-welcome-container{% endif %}">

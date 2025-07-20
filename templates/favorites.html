@@ -15,8 +15,7 @@
             <div>
               <a href="{{ url_for('edit_favorite_recipe', recipe_id=rec.id) }}" class="btn btn-outline-primary btn-sm" title="Επεξεργασία">
                 <i class="fa fa-pen"></i>
-              </a>
-<!-- created_by: {{ rec.created_by }} -->			
+              </a>		
 				<button class="btn btn-danger btn-sm ms-1"
 						data-id="{{ rec.id }}"
 						data-title="{{ rec.title|tojson }}"
@@ -24,24 +23,25 @@
 						onclick="deleteFavFromDataAttr(this)">
 				  <i class="fa fa-trash"></i>
 				</button>
-
-
             </div>
           </div>
-          <div class="card-body py-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between">
-            <div>
-              <div class="mb-2">
-                <span class="badge bg-info text-dark me-2"><i class="fa fa-user"></i> {{ rec.chef or '-' }}</span>
-                <span class="badge bg-secondary me-2"><i class="fa fa-clock"></i> {{ rec.total_time or '-' }}'</span>
-                {% if rec.basic_category %}
-                  <span class="badge bg-success"><i class="fa fa-tag"></i> {{ rec.basic_category }}</span>
-                {% endif %}
-              </div>
-              {% if rec.description %}
-                <div class="small text-muted">{{ rec.description }}</div>
-              {% endif %}
-            </div>
-          </div>
+		  
+			<div class="card-body py-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between">
+			  <div>
+				<div class="mb-2 d-flex flex-wrap align-items-center gap-2" style="padding-top: 10px">
+				  <span class="badge bg-info text-dark"><i class="fa fa-user"></i> {{ rec.chef or '-' }}</span>
+				  <span class="badge bg-success"><i class="fa fa-clock"></i> {{ rec.total_time or '-' }}'</span>
+				  {% if rec.method %}
+					  <span class="badge bg-warning text-dark"><i class="fa fa-fire"></i> {{ rec.method }}</span>
+				  {% endif %}
+				  {% if rec.tags %}
+					  <span class="badge bg-secondary"><i class="fa fa-tag"></i> {{ rec.tags }}</span>
+				  {% endif %}				  
+				</div>
+			  </div>
+			</div>
+
+		  
         </div>
       </div>
     {% endfor %}
@@ -54,22 +54,30 @@
       </div>
     {% endif %}
 
-    <!-- Κάρτα προσθήκης και διαγραφής όλων -->
+
     <div class="col-12">
       <div class="card h-100 shadow-sm">
-        <div class="card-body d-flex justify-content-between align-items-center">
-          <button class="btn btn-success btn-sm" onclick="showAddFavorite()" title="Προσθήκη αγαπημένης">
-            <i class="fa fa-plus"></i> Προσθήκη
-          </button>
-          <div id="add-favorite-cell" class="flex-grow-1 ms-2"></div>
-          {% if favorites|length > 0 %}
-          <button class="btn btn-outline-danger btn-sm" onclick="deleteAllFavorites()">
-            <i class="fa fa-trash"></i> Διαγραφή όλων
-          </button>
-          {% endif %}
-        </div>
+		<div class="card-body d-flex gap-2 align-items-center" style="padding-top: 10px!important;padding-bottom: 10px !important;">
+		  <button class="btn btn-success btn-sm" onclick="showAddFavorite()" title="Προσθήκη αγαπημένης">
+			<i class="fa fa-plus"></i> Προσθήκη
+		  </button>
+		  <div id="add-favorite-cell" style="flex:1;"></div>
+		</div>
+
       </div>
     </div>
+	
+	<div class="row g-2 mb-3">
+	  <div class="col-12 d-flex gap-2">
+		{% if favorites|length > 0 %}
+		<button class="btn btn-outline-danger btn-sm ms-auto" onclick="deleteAllFavorites()">
+		  <i class="fa fa-trash"></i> Διαγραφή όλων
+		</button>
+		{% endif %}
+	  </div>
+	</div>
+
+	
   </div>
 </div>
 

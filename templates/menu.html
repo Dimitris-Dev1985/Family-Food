@@ -12,10 +12,7 @@
   <a href="{{ url_for('menu') }}" class="btn btn-secondary">Άκυρο</a>
 {% else %}
 <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 10px;">
-  <form method="get" action="{{ url_for('menu') }}" style="display:inline-block;">
-	
-    <button class="btn btn-warning" style="font-size: clamp(0.6rem, 3vw, 1.2rem);">Επεξεργασία Μενού</button>
-  </form>
+
   <form method="post" action="{{ url_for('generate_menu') }}" style="display:inline-block;">
     <button class="btn btn-success" style="font-size: clamp(0.6rem, 3vw, 1.2rem);" onclick="return confirm('Σίγουρα θέλεις να δημιουργηθεί νέο μενού για αυτή την εβδομάδα; ΠΡΟΣΟΧΗ: θα διαγραφεί το προηγούμενο!');">
       Δημιουργία νέου Εβδομαδιαίου Μενού
