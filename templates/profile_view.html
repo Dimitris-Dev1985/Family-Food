@@ -2,6 +2,68 @@
 {% block title %}Προφίλ{% endblock %}
 {% block content %}
 
+<style>
+#onboardingBackdrop2 {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 999;
+}
+
+#onboardingTooltip2 {
+  position: fixed;
+  bottom: 70px;
+  right: 16px;
+  background: #fff9db;
+  padding: 14px 18px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  z-index: 1000;
+  max-width: 200px;
+  font-size: 14px;
+  animation: pulse 1.5s infinite;
+}
+
+#onboardingTooltip2 .arrow-down {
+  width: 14px;
+  height: 14px;
+  background: #fff9db;
+  transform: rotate(45deg);
+  position: absolute;
+  bottom: -7px;
+  right: 14px;
+  z-index: -1;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.08);
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  border-right: 1px solid rgba(0,0,0,0.1);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+  50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(255,255,255,0.9); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+}
+
+/* Γκριζάρει όλα τα στοιχεία του body, εκτός από το tooltip και το κουμπί edit */
+body.onboarding-step-2 :not(#onboardingOverlay2):not(#onboardingOverlay2 *):not(a[href="/edit_profile"]) {
+  pointer-events: none !important;
+  opacity: 0.3 !important;
+}
+
+body.onboarding-step-2 {
+  opacity: 1 !important;
+}
+
+/* Ενεργό μόνο το κουμπί "Επεξεργασία" */
+body.onboarding-step-2 a[href="/edit_profile"] {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  z-index: 1001 !important;
+  position: relative;
+}
+</style>
+
+
 <div class="row mb-4">
 
   <div class="col-12 col-md-7">
@@ -174,6 +236,15 @@
   </div>
 
 </div>
+
+<div id="onboardingOverlay2" style="display:none;">
+  <div id="onboardingBackdrop2"></div>
+  <div id="onboardingTooltip2">
+    👉 Πάτα εδώ!
+    <div class="arrow-down"></div>
+  </div>
+</div>
+
 
 {% endblock %}
 
@@ -802,34 +873,51 @@ document.getElementById('profile-info-form').onsubmit = function(e) {
     menu_hour: form.menu_hour.value.trim(),
     cooking_method: cookingVals
   };
+
   fetch('/edit_profile_info', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(data)
   }).then(function(r){return r.json();}).then(function(res){
+    
 
     if(res.status === 'ok') {
-      document.getElementById('profile-name').innerHTML =
-        '<i class="fa fa-user-circle fa-lg me-2"></i> ' + data.first_name + ' ' + data.family_name;
-      document.getElementById('profile-address').textContent = data.address;
-      document.getElementById('profile-chef').textContent = data.chef;
-      document.getElementById('profile-menu-day').textContent = data.menu_day;
-      document.getElementById('profile-menu-hour').textContent = data.menu_hour;
+      // Όνομα προφίλ
+      let nameEl = document.getElementById('profile-name');
+      if (nameEl) {
+        nameEl.innerHTML = '<i class="fa fa-user-circle fa-lg me-2"></i> ' + data.first_name + ' ' + data.family_name;
+      }
 
-      // === Εδώ βάζουμε τα badges αντί για text === 
-	  var cookingDiv = document.getElementById('profile-cooking-method');
-		if (cookingDiv) {
-		  var html = "";
-		  if (data.cooking_method && data.cooking_method.length > 0) {
-			html = data.cooking_method.split(',').map(function(m){
-			  return '<span class="badge bg-warning text-dark me-1"><i class="fa fa-fire"></i> ' + m.trim() + '</span>';
-			}).join(' ');
-		  } else {
-			html = '<span class="text-muted">-</span>';
-		  }
-		  cookingDiv.innerHTML = html;
-		}
+      // Διεύθυνση
+      let addrEl = document.getElementById('profile-address');
+      if (addrEl) addrEl.textContent = data.address;
 
+      // Σεφ
+      let chefEl = document.getElementById('profile-chef');
+      if (chefEl) chefEl.textContent = data.chef;
+
+      // Ημέρα και ώρα μενού
+      let dayEl = document.getElementById('profile-menu-day');
+      let hourEl = document.getElementById('profile-menu-hour');
+      if (dayEl) dayEl.textContent = data.menu_day;
+      if (hourEl) hourEl.textContent = data.menu_hour;
+
+      // Μέθοδοι μαγειρέματος ως badges
+      var cookingDiv = document.getElementById('profile-cooking-method');
+      if (cookingDiv) {
+        var html = "";
+        if (data.cooking_method && data.cooking_method.length > 0) {
+          html = data.cooking_method.split(',').map(function(m){
+            return '<span class="badge bg-warning text-dark me-1"><i class="fa fa-fire"></i> ' + m.trim() + '</span>';
+          }).join(' ');
+        } else {
+          html = '<span class="text-muted">-</span>';
+        }
+        cookingDiv.innerHTML = html;
+      } else {
+      }
+
+      // Εναλλακτική διεύθυνση
       var altSpan = document.getElementById('profile-alt-address');
       if (altSpan) {
         if (data.alt_address) {
@@ -839,11 +927,20 @@ document.getElementById('profile-info-form').onsubmit = function(e) {
           altSpan.parentElement.style.display = 'none';
         }
       }
-      bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
+      // Κλείσιμο modal
+      var modal = document.getElementById('editProfileModal');
+      if (modal) {
+        var bsModal = bootstrap.Modal.getInstance(modal);
+        if (bsModal) bsModal.hide();
+        else console.warn('Bootstrap modal not found!');
+      } else {
+        console.warn('editProfileModal not found!');
+      }
+    } else {
+      console.error('Profile update failed:', res);
     }
   });
 };
-
 
 window.addEventListener('DOMContentLoaded', function() {
   window.choicesAllergies = new Choices('#member-allergies-select', {
@@ -861,6 +958,23 @@ window.addEventListener('DOMContentLoaded', function() {
   window.choicesAllergies.passedElement.element.addEventListener('addItem', function(e) {
     window.choicesAllergies.hideDropdown();
   });
+});
+
+window.addEventListener('DOMContentLoaded', function() {
+  if (!localStorage.getItem("onboarding_done") && !localStorage.getItem("onboarding_step2_shown")) {
+    document.body.classList.add("onboarding-step-2");
+    document.getElementById("onboardingOverlay2").style.display = "block";
+
+    const editBtn = document.querySelector('a[href="/edit_profile"]');
+    if (editBtn) {
+      editBtn.addEventListener("click", function() {
+        localStorage.setItem("onboarding_step2_shown", "1");
+        localStorage.setItem("onboarding_done", "1");
+        document.body.classList.remove("onboarding-step-2");
+        document.getElementById("onboardingOverlay2").style.display = "none";
+      });
+    }
+  }
 });
 
 </script>

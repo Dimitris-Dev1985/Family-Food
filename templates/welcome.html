@@ -48,6 +48,69 @@
 }
 </style>
 
+<style>
+#onboardingBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 999;
+}
+#onboardingTooltip {
+  position: fixed;
+  bottom: 90px;
+  right: 12px;
+  background: #fff9db;
+  padding: 10px 14px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  z-index: 1000;
+  max-width: 230px;
+  font-size: 14px;
+  text-align: center;
+  animation: pulse 1.5s infinite;
+  transform: translate(0, 0);
+  position: fixed;
+}
+#onboardingTooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  right: 16px;
+  width: 14px;
+  height: 14px;
+  background: #fff9db;
+  transform: rotate(45deg);
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  border-right: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.08);
+  z-index: 0;
+}
+
+
+
+/* Παλμός (αναβόσβημα) */
+@keyframes pulse {
+  0%   { transform: scale(1); box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
+  50%  { transform: scale(1.03); box-shadow: 0 0 20px rgba(255, 255, 255, 0.9); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
+}
+
+/* Κάνε ΟΛΑ τα κουμπιά του bottom nav ανενεργά */
+body.onboarding-active nav.navbar.fixed-bottom a.nav-link {
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* Ενεργοποίησε ΜΟΝΟ το κουμπί Προφίλ */
+body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+
+</style>
+
+
 <div class="main-welcome-container">
 
   <h1 class="display-5 text-center mb-3">{{ greeting }}, {{ user_name }}!</h1>
@@ -64,7 +127,21 @@
   </div>
   <div id="ai-chat-controls"></div>
 </div>
+
+<!-- Onboarding overlay -->
+<div id="onboardingOverlay" style="display:none;">
+  <div id="onboardingBackdrop"></div>
+  <div id="onboardingTooltip">
+    👉 Συμπλήρωσε το προφίλ σου για να ξεκινήσεις!
+    <div class="arrow-down"></div>
+  </div>
+</div>
+
+
+
+
 {% endblock %}
+
 
 {% block modals %}
 <!-- Pop-up modal για υλικά -->
@@ -527,6 +604,25 @@ window.addEventListener('DOMContentLoaded', function() {
     showMainChoices();
   }
 });
+
+
+window.addEventListener('DOMContentLoaded', function() {
+  if (!localStorage.getItem("onboarding_shown")) {
+    document.body.classList.add("onboarding-active");
+    document.getElementById("onboardingOverlay").style.display = "block";
+
+    const profileLink = document.querySelector('.bottom-nav a[href="/profile"]');
+    if (profileLink) {
+      profileLink.addEventListener("click", function() {
+        localStorage.setItem("onboarding_shown", "1");
+        document.body.classList.remove("onboarding-active");
+        document.getElementById("onboardingOverlay").style.display = "none";
+      });
+    }
+  }
+});
+
+
 
 
 </script>
