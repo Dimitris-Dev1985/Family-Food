@@ -1,42 +1,161 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
 import sqlite3, unicodedata, random
+import os
+from flask_dance.contrib.google import make_google_blueprint, google
 from datetime import datetime, timedelta
 from jinja2 import pass_context
+from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = "d7gAq2d9bJz@7qK2kLxw!"
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # επιτρέπει HTTP (μόνο για dev)
+
+google_bp = make_google_blueprint(
+    client_id="880897869431-mfkq1ebldt0eenh20abt4gs67mfgp9cl.apps.googleusercontent.com",
+    client_secret="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",
+    scope=[        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "openid"],
+    redirect_url="/login/google/callback"
+)
+app.register_blueprint(google_bp, url_prefix="/login")
+
+
 DB = "family_food_app.db"
 
 WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"]
 
+@app.route("/login/google/callback")
+def google_login_callback():
+    if not google.authorized:
+        return redirect(url_for("google.login"))
 
+    resp = google.get("/oauth2/v2/userinfo")
+    user_info = resp.json()
+    email = user_info["email"]
+    name = user_info.get("given_name", "Χρήστης")
+
+    # Έλεγχος αν υπάρχει ήδη ο χρήστης
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    existing = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
+
+    if existing:
+        user_id = existing["id"]
+    else:
+        # Δημιουργία νέου χρήστη
+        conn.execute(
+            "INSERT INTO users (email, first_name) VALUES (?, ?)",
+            (email, name)
+        )
+        conn.commit()
+        user_id = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()["id"]
+
+    conn.close()
+    session["user_id"] = user_id
+    return redirect(url_for("welcome"))
+
+
+def get_user():
+    user_id = session.get("user_id", 1)  # default = 1 για debug
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    members = conn.execute("SELECT * FROM family_members WHERE user_id=?", (user_id,)).fetchall()
+    conn.close()
+    return user, members
 
 @app.route("/")
 def home():
-    return redirect("/install")
+    return redirect("/login")
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "").strip()
+        first_name = request.form.get("first_name", "").strip()
+        family_name = request.form.get("family_name", "").strip()
+
+        if not email or not password:
+            flash("Email και κωδικός είναι υποχρεωτικά!", "danger")
+            return redirect(url_for("signup"))
+
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+        existing = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        if existing:
+            flash("Υπάρχει ήδη χρήστης με αυτό το email!", "warning")
+            conn.close()
+            return redirect(url_for("signup"))
+
+        # Προσθήκη νέου χρήστη
+        conn.execute("""
+            INSERT INTO users (email, password, first_name, family_name)
+            VALUES (?, ?, ?, ?)
+        """, (email, password, first_name, family_name))
+        conn.commit()
+
+        # Ανάκτηση του νέου id
+        user_id = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()["id"]
+        conn.close()
+
+        session["user_id"] = user_id
+        return redirect(url_for("welcome"))
+
+    return render_template("signup.html")
+
+
+def login_required(f):
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return wrapped
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
+        action = request.form.get("action")
+        
+        if action == "debug":
+            conn = sqlite3.connect(DB)
+            conn.row_factory = sqlite3.Row
+            user = conn.execute("SELECT * FROM users ORDER BY id LIMIT 1").fetchone()
+            conn.close()
+            if user:
+                session["user_id"] = user["id"]
+                return redirect(url_for("welcome"))
+            else:
+                flash("Δεν βρέθηκε χρήστης για debug login!", "danger")
+                return redirect(url_for("login"))
 
-        if username == "admin" and password == "1234":
-            session["username"] = username
-            session["onboarding_done"] = False   # <-- Εδώ το βάζεις
-            return redirect("/welcome")
+        # Κανονικό login
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "").strip()
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+        user = conn.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password)).fetchone()
+        conn.close()
+        if user:
+            session["user_id"] = user["id"]
+            return redirect(url_for("welcome"))
         else:
-            error = "Λάθος στοιχεία!"
-            return render_template("login.html", error=error)
-
+            flash("Λανθασμένο email ή κωδικός!", "danger")
     return render_template("login.html")
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
 @app.route("/install")
 def install():
     return render_template("install.html")
 
 @app.route("/welcome")
+@login_required
 def welcome():
         
     user, _ = get_user()
@@ -279,17 +398,8 @@ def delete_recipe(rid):
     conn.close()
     return redirect(url_for("admin_recipes"))
 
-def get_user():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    user = conn.execute("SELECT * FROM users LIMIT 1").fetchone()
-    members = conn.execute("SELECT * FROM family_members WHERE user_id=?", (user["id"],)).fetchall()
-    conn.close()
-    return user, members
-
-
-
 @app.route("/favorites")
+@login_required
 def favorites():
     user, _ = get_user()
     user_id = user["id"] if "id" in user else 1
@@ -562,6 +672,7 @@ def get_all_allergens():
 
 
 @app.route("/profile")
+@login_required
 def profile():
     user, members = get_user()
     conn = sqlite3.connect(DB)
@@ -713,6 +824,7 @@ def normalize_title(title):
     return t.lower().strip()
 
 @app.route("/menu")
+@login_required
 def menu():
     user, members = get_user()
     user_id = user["id"]
@@ -1353,6 +1465,7 @@ def ai_suggest_dish():
             })
  
 @app.route("/history")
+@login_required
 def cooked_history():
     user, _ = get_user()
     conn = sqlite3.connect(DB)
