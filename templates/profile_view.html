@@ -12,16 +12,19 @@
 
 #onboardingTooltip2 {
   position: fixed;
-  bottom: 70px;
-  right: 16px;
+  top: 220px;
+  right: 90px;
   background: #fff9db;
-  padding: 14px 18px;
+  padding: 10px 10px;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   z-index: 1000;
   max-width: 200px;
   font-size: 14px;
   animation: pulse 1.5s infinite;
+  max-width: 220px;
+  word-wrap: break-word;
+  line-height: 1.4;
 }
 
 #onboardingTooltip2 .arrow-down {
@@ -43,31 +46,49 @@
   50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(255,255,255,0.9); }
   100% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
 }
+   
+</style>
 
-/* Γκριζάρει όλα τα στοιχεία του body, εκτός από το tooltip και το κουμπί edit */
-body.onboarding-step-2 :not(#onboardingOverlay2):not(#onboardingOverlay2 *):not(a[href="/edit_profile"]) {
-  pointer-events: none !important;
-  opacity: 0.3 !important;
+<style>
+.onboarding-tooltip {
+  position: absolute;
+  max-width: 220px;
+  background: #fff9db;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  font-size: 13px;
+  animation: pulse 1.5s infinite;
+  z-index: 2000;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
 }
 
-body.onboarding-step-2 {
-  opacity: 1 !important;
+.onboarding-tooltip .arrow-down {
+  width: 12px;
+  height: 12px;
+  background: #fff9db;
+  transform: rotate(45deg);
+  position: absolute;
+  bottom: -6px;
+  left: 20px;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
 }
 
-/* Ενεργό μόνο το κουμπί "Επεξεργασία" */
-body.onboarding-step-2 a[href="/edit_profile"] {
-  pointer-events: auto !important;
-  opacity: 1 !important;
-  z-index: 1001 !important;
-  position: relative;
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+  50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(255,255,255,0.9); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
 }
 </style>
+
 
 
 <div class="row mb-4">
 
   <div class="col-12 col-md-7">
-
 	<div class="card shadow-sm mb-2">
 	  <div class="card-body">
 		<h4 class="card-title mb-3" id="profile-name">
@@ -83,7 +104,6 @@ body.onboarding-step-2 a[href="/edit_profile"] {
 		  <span id="profile-menu-day">{{ profile.menu_day }}</span>
 		  <span class="ms-2"><i class="fa fa-clock"></i> <span id="profile-menu-hour">{{ profile.menu_hour }}</span></span>
 		</p>
-
 		 <p>
 		  <i class="fa fa-fire"></i>
 		  <strong>Προτιμώμενος τρόπος μαγειρέματος:</strong>
@@ -100,14 +120,12 @@ body.onboarding-step-2 a[href="/edit_profile"] {
 
 
 		<div class="text-end mt-2">
-		  <button class="btn btn-outline-primary btn-sm" onclick="editProfileInfo()">
+		  <button class="btn btn-outline-primary btn-sm active" onclick="editProfileInfo()" id="edit-profile-button" style="z-index:1002!important; position:sticky">
 			<i class="fa fa-pen"></i> Επεξεργασία προφίλ
 		  </button>
 		</div>
 	  </div>
 	</div>
- 
- 
 	<div class="card shadow-sm mb-2">
 	  <div class="card-body">
 		<h5 class="card-title mb-3" style="font-size:1.1em">Διαθέσιμος χρόνος μαγειρέματος</h5>
@@ -124,17 +142,15 @@ body.onboarding-step-2 a[href="/edit_profile"] {
 
 
 		<div class="text-end mt-2">
-		  <button class="btn btn-outline-primary btn-sm" onclick="editCookingTimes()">
+		  <button class="btn btn-outline-primary btn-sm" id="edit-cook-times" onclick="editCookingTimes()">
 			<i class="fa fa-pen"></i> Επεξεργασία
 		  </button>
 		</div>
 	  </div>
-	</div>
-		
+	</div>	
   </div>
 
   <div class="col-12 col-md-5">
-
 	<div class="card shadow-sm mb-2">
 	  <div class="card-body">
 		<h5 class="card-title mb-3" style="font-size:1.1em">Μέλη Οικογένειας</h5>
@@ -173,12 +189,11 @@ body.onboarding-step-2 a[href="/edit_profile"] {
 			</tbody>
 		  </table>
 		</div>
-		<button class="btn btn-success btn-sm mt-2" onclick="openAddMemberModal()">
+		<button class="btn btn-success btn-sm mt-2" id="add-member" onclick="openAddMemberModal()">
 		  <i class="fa fa-plus"></i> Προσθήκη μέλους
 		</button>
 	  </div>
 	</div>
-
     <div class="card shadow-sm mb-2">
       <div class="card-body">
         <h5 class="card-title mb-3" style="font-size:1.1em">Στόχοι Εβδομάδας</h5>
@@ -224,7 +239,7 @@ body.onboarding-step-2 a[href="/edit_profile"] {
 		  </tbody>
 		</table>
         </div>
-        <button class="btn btn-success btn-sm" onclick="addGoalRow()"><i class="fa fa-plus"></i> Προσθήκη στόχου</button>
+        <button class="btn btn-success btn-sm" id="add-goal-btn" onclick="addGoalRow()"><i class="fa fa-plus"></i> Προσθήκη στόχου</button>
         {% if weekly_goals|length > 0 %}
         <button class="btn btn-outline-danger btn-sm float-end" onclick="deleteAllGoals()">
           <i class="fa fa-trash"></i> Διαγραφή όλων
@@ -232,10 +247,9 @@ body.onboarding-step-2 a[href="/edit_profile"] {
         {% endif %}
       </div>
     </div>
-  
   </div>
-
 </div>
+
 
 <div id="onboardingOverlay2" style="display:none;">
   <div id="onboardingBackdrop2"></div>
@@ -243,6 +257,24 @@ body.onboarding-step-2 a[href="/edit_profile"] {
     👉 Πάτα εδώ!
     <div class="arrow-down"></div>
   </div>
+</div>
+
+<!-- Tooltip 3 - Χρόνοι μαγειρέματος -->
+<div id="onboardingTooltip3" class="onboarding-tooltip" style="display:none;">
+  ⏱️ Πες μου πόσο χρόνο μπορείς να αφιερώσεις κάθε μέρα για μαγείρεμα! Θα το λάβω υπόψιν!
+  <div class="arrow-down"></div>
+</div>
+
+<!-- Tooltip 4 - Μέλη -->
+<div id="onboardingTooltip4" class="onboarding-tooltip" style="display:none;">
+  👨‍👩‍👧 Πρόσθεσε τα μέλη της οικογένειάς σου! Είναι σημαντικά!
+  <div class="arrow-down"></div>
+</div>
+
+<!-- Tooltip 5 - Στόχοι -->
+<div id="onboardingTooltip5" class="onboarding-tooltip" style="display:none;">
+  🎯 Εδώ μπορείς να προσθέσεις τους διατροφικούς σου στόχους! Θα με βοηθήσει να σου προτείνω πιάτα!
+  <div class="arrow-down"></div>
 </div>
 
 
@@ -428,7 +460,6 @@ body.onboarding-step-2 a[href="/edit_profile"] {
 
 {% block scripts %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
-<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <script>
 
@@ -931,8 +962,10 @@ document.getElementById('profile-info-form').onsubmit = function(e) {
       var modal = document.getElementById('editProfileModal');
       if (modal) {
         var bsModal = bootstrap.Modal.getInstance(modal);
-        if (bsModal) bsModal.hide();
-        else console.warn('Bootstrap modal not found!');
+        if (bsModal) {
+		bsModal.hide();
+        }
+		else console.warn('Bootstrap modal not found!');
       } else {
         console.warn('editProfileModal not found!');
       }
@@ -960,22 +993,149 @@ window.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-window.addEventListener('DOMContentLoaded', function() {
-  if (!localStorage.getItem("onboarding_done") && !localStorage.getItem("onboarding_step2_shown")) {
-    document.body.classList.add("onboarding-step-2");
-    document.getElementById("onboardingOverlay2").style.display = "block";
+window.onload = function () {
+  const overlay = document.getElementById("onboardingOverlay2");
+  const editBtn = document.getElementById("edit-profile-button");
 
-    const editBtn = document.querySelector('a[href="/edit_profile"]');
-    if (editBtn) {
-      editBtn.addEventListener("click", function() {
-        localStorage.setItem("onboarding_step2_shown", "1");
+  if (!localStorage.getItem("onboarding_done") &&
+      !localStorage.getItem("onboarding_step2_shown") &&
+      overlay && editBtn) {
+
+    document.body.classList.add("onboarding-step-2");
+    overlay.style.display = "block";
+
+    editBtn.addEventListener("click", function () {
+      localStorage.setItem("onboarding_step2_shown", "1");
+      document.body.classList.remove("onboarding-step-2");
+      overlay.style.display = "none";
+    });
+  }
+};
+
+
+function showTooltipAuto(step, tooltipId, targetId, nextStep) {
+  const tooltip = document.getElementById(tooltipId);
+  const target = document.getElementById(targetId);
+
+  if (
+    tooltip && target &&
+    !localStorage.getItem(`onboarding_step${step}_shown`)
+  ) {
+    // Εμφάνιση προσωρινά για μέτρηση
+    tooltip.style.visibility = "hidden";
+    tooltip.style.display = "block";
+
+    const rect = target.getBoundingClientRect();
+    const tipWidth = tooltip.offsetWidth;
+    const tipHeight = tooltip.offsetHeight;
+
+    let left = rect.right + window.scrollX - tipWidth;
+    let top = rect.top + window.scrollY - tipHeight - 10;
+
+    const padding = 10;
+    const maxX = window.innerWidth - tipWidth - padding;
+    const maxY = window.innerHeight - tipHeight - padding;
+
+    // clamp οριζόντια και κάθετα
+    if (left < padding) left = padding;
+    if (left > maxX) left = maxX;
+    if (top < padding) top = rect.bottom + window.scrollY + 10; // αν δεν χωράει πάνω, δείξε κάτω
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.visibility = "visible";
+
+    const handler = () => {
+      tooltip.style.display = "none";
+      localStorage.setItem(`onboarding_step${step}_shown`, "1");
+
+      if (nextStep) {
+        setTimeout(nextStep, 300);
+      } else {
         localStorage.setItem("onboarding_done", "1");
-        document.body.classList.remove("onboarding-step-2");
-        document.getElementById("onboardingOverlay2").style.display = "none";
+      }
+
+      target.removeEventListener("click", handler);
+    };
+
+    target.addEventListener("click", handler);
+  }
+}
+
+function showTooltipCenteredAbove(step, tooltipId, targetId, nextStep) {
+  const tooltip = document.getElementById(tooltipId);
+  const target = document.getElementById(targetId);
+
+  if (
+    tooltip && target &&
+    !localStorage.getItem(`onboarding_step${step}_shown`)
+  ) {
+    tooltip.style.visibility = "hidden";
+    tooltip.style.display = "block";
+
+    const rect = target.getBoundingClientRect();
+    const tipWidth = tooltip.offsetWidth;
+    const tipHeight = tooltip.offsetHeight;
+
+    // Θέση: κέντρο πάνω από το κουμπί
+    let left = rect.left + window.scrollX + (rect.width - tipWidth) / 2;
+    let top = rect.top + window.scrollY - tipHeight - 10;
+
+    // Clamp αριστερά/δεξιά για να μην βγει έξω
+    const padding = 10;
+    const maxX = window.innerWidth - tipWidth - padding;
+    if (left < padding) left = padding;
+    if (left > maxX) left = maxX;
+
+    if (top < padding) top = rect.bottom + window.scrollY + 10;
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.visibility = "visible";
+
+    const handler = () => {
+      tooltip.style.display = "none";
+      localStorage.setItem(`onboarding_step${step}_shown`, "1");
+
+      if (nextStep) {
+        setTimeout(nextStep, 300);
+      } else {
+        localStorage.setItem("onboarding_done", "1");
+      }
+
+      target.removeEventListener("click", handler);
+    };
+
+    target.addEventListener("click", handler);
+  }
+}
+
+
+
+// Ξεκινά το onboarding flow μετά το overlay (step 2)
+document.addEventListener("DOMContentLoaded", function () {
+  const profileModal = document.getElementById("editProfileModal");
+  if (profileModal) {
+    profileModal.addEventListener("hidden.bs.modal", () => {
+      showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
+        const cookModal = document.getElementById("editCookTimesModal");
+        if (cookModal) {
+          cookModal.addEventListener("hidden.bs.modal", () => {
+            showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+              const memberModal = document.getElementById("memberModal");
+              if (memberModal) {
+                memberModal.addEventListener("hidden.bs.modal", () => {
+                  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+                });
+              }
+            });
+          });
+        }
       });
-    }
+    });
   }
 });
+
 
 </script>
 

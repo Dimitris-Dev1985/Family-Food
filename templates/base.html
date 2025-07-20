@@ -136,6 +136,11 @@ body {
 
 
 </head>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+
 <body>
   <div class="container{% if request.endpoint == 'welcome' %} main-welcome-container{% endif %}">
     {% with messages = get_flashed_messages() %}
@@ -150,40 +155,84 @@ body {
     {% block content %}{% endblock %}
   </div>
 
-  <!-- Bottom nav -->
+{% if request.endpoint not in ['login', 'signup'] and session.get('user_id') %}
+<!-- Side Menu Button -->
+<button class="btn btn-outline-secondary position-fixed top-0 start-0 m-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu" aria-controls="sideMenu">
+  <i class="fa fa-bars"></i>
+</button>
+
+<!-- Side Slide Offcanvas -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sideMenu" aria-labelledby="sideMenuLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="sideMenuLabel">🍽 Family Food</h5>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Κλείσιμο"></button>
+  </div>
+  <div class="offcanvas-body">
+    <ul class="list-group">
+      <li class="list-group-item"><a href="/welcome" class="text-decoration-none">🏠 Αρχική</a></li>
+      <li class="list-group-item"><a href="/menu" class="text-decoration-none">📅 Εβδομαδιαίο Μενού</a></li>
+      <li class="list-group-item"><a href="/history" class="text-decoration-none">📜 Ιστορικό</a></li>
+      <li class="list-group-item"><a href="/favorites" class="text-decoration-none">⭐ Αγαπημένα</a></li>
+      <li class="list-group-item"><a href="/profile" class="text-decoration-none">👤 Προφίλ</a></li>
+      <li class="list-group-item">
+        <a href="/logout" class="text-danger text-decoration-none" onclick="return confirmLogout();">🚪 Έξοδος</a>
+      </li>
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+ 
+<!-- Bottom nav -->
+{% if request.endpoint not in ['login', 'signup'] and session.get('user_id') %}  
   <nav class="navbar fixed-bottom navbar-light bg-light shadow-sm" style="z-index:999;">
     <div class="container-fluid justify-content-center p-0">
-      <div class="row w-100 text-center">
-        <div class="col">
-          <a href="/welcome" class="nav-link py-2{% if request.endpoint=='welcome' %} active{% endif %}">
-            <i class="fa fa-home fa-lg"></i><div style="font-size:12px;">Αρχική</div>
-          </a>
-        </div>
-        <div class="col">
-          <a href="/menu" class="nav-link py-2{% if request.endpoint=='menu' %} active{% endif %}">
-            <i class="fa fa-calendar-week fa-lg"></i><div style="font-size:12px;">Μενού</div>
-          </a>
-        </div>
-        <div class="col">
-          <a href="/history" class="nav-link py-2{% if request.endpoint=='history' %} active{% endif %}">
-            <i class="fa fa-history fa-lg"></i><div style="font-size:12px;">Ιστορικό</div>
-          </a>
-        </div>
-        <div class="col">
-          <a href="/favorites" class="nav-link py-2{% if request.endpoint=='favorites' %} active{% endif %}">
-            <i class="fa fa-star fa-lg"></i><div style="font-size:12px;">Αγαπημένα</div>
-          </a>
-        </div>
-        <div class="col">
-          <a href="/profile" class="nav-link py-2{% if request.endpoint=='profile' %} active{% endif %}">
-            <i class="fa fa-user fa-lg"></i><div style="font-size:12px;">Προφίλ</div>
-          </a>
-        </div>
-      </div>
+		<div class="row w-100 text-center">
+		  <div class="col-2">
+			<a href="/welcome" class="nav-link py-2{% if request.endpoint=='welcome' %} active{% endif %}">
+			  <i class="fa fa-home fa-lg"></i><div style="font-size:12px;">Αρχική</div>
+			</a>
+		  </div>
+		  <div class="col-2">
+			<a href="/menu" class="nav-link py-2{% if request.endpoint=='menu' %} active{% endif %}">
+			  <i class="fa fa-calendar-week fa-lg"></i><div style="font-size:12px;">Μενού</div>
+			</a>
+		  </div>
+		  <div class="col-2">
+			<a href="/history" class="nav-link py-2{% if request.endpoint=='history' %} active{% endif %}">
+			  <i class="fa fa-history fa-lg"></i><div style="font-size:12px;">Ιστορικό</div>
+			</a>
+		  </div>
+		  <div class="col-2">
+			<a href="/favorites" class="nav-link py-2{% if request.endpoint=='favorites' %} active{% endif %}">
+			  <i class="fa fa-star fa-lg"></i><div style="font-size:12px;">Αγαπημένα</div>
+			</a>
+		  </div>
+		  <div class="col-2">
+			<a href="/profile" class="nav-link py-2{% if request.endpoint=='profile' %} active{% endif %}">
+			  <i class="fa fa-user fa-lg"></i><div style="font-size:12px;">Προφίλ</div>
+			</a>
+		  </div>
+		  <div class="col-2">
+			<a href="/logout" class="nav-link py-2 text-danger">
+			  <i class="fa fa-sign-out-alt fa-lg"></i><div onclick="return confirmLogout();" style="font-size:12px;">Έξοδος</div>
+			</a>
+		  </div>
+		</div>
+
     </div>
   </nav>
+{% endif %}
 
-  {% block modals %}{% endblock %}
+
+
+<!--
+{% if session.user_id %}
+  <div class="nav-item"><a href="/logout"><i class="fas fa-sign-out-alt"></i> Έξοδος</a></div>
+{% endif %}
+-->
+
+  {% block modals %}{% endblock %} 
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
@@ -191,6 +240,9 @@ body {
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/plugins/Swap/Sortable.swap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
   
+   
+   
+   
   
   
   
@@ -199,6 +251,11 @@ body {
 	  navigator.serviceWorker.register('/static/service-worker.js')
 		.then(function() { console.log('Service Worker Registered'); });
 	}
+	
+	function confirmLogout() {
+	  return confirm("Θέλεις σίγουρα να αποσυνδεθείς;");
+	}
+	
   </script>
 
   {% block scripts %}{% endblock %}
