@@ -11,8 +11,6 @@ WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη",
 
 @app.route("/")
 def home():
-    if "username" in session:
-        return redirect("/welcome")
     return redirect("/install")
 
 
