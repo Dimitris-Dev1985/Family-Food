@@ -13,7 +13,7 @@ WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη",
 
 @app.route("/")
 def home():
-    return redirect("/login")
+    return redirect("/install")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
