@@ -24,8 +24,10 @@ body {
   overflow: visible !important;
 }
 .card-header {
-  background: #f8f9fa;
+  background: #e6f0ff  /* ανοιχτό μπλε */;
   border-bottom: none;
+  font-weight: bold;
+  font-size: 1.1em;
 }
 .card .fw-bold { letter-spacing: 0.5px; }
 .card-body { padding: 1.1em 1.2em; }
@@ -132,6 +134,34 @@ body {
 
 /* Για fading alert */
 .goalerror-alert.fade { transition: opacity 1s linear; }
+</style>
+
+<style>
+.goals-table thead {
+  background-color: #e9f2fb;
+  color: #003366;
+}
+
+.goals-table tbody tr:nth-child(odd) {
+  background-color: #f8fbff;
+}
+
+.goals-table td {
+  vertical-align: middle;
+}
+
+.goal-check {
+  font-weight: bold;
+  margin-left: 6px;
+}
+
+.goal-check.success {
+  color: #198754; /* Bootstrap πράσινο */
+}
+
+.goal-check.fail {
+  color: #dc3545; /* Bootstrap κόκκινο */
+}
 </style>
 
 

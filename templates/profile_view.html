@@ -1012,10 +1012,6 @@ window.onload = function () {
   }
 };
 
-
-
-
-
 function getNextOnboardingStep() {
   if (localStorage.getItem("onboarding_done") === "1") return null;
 
@@ -1068,83 +1064,102 @@ function showTooltipCenteredAbove(step, tooltipId, targetId, nextStep) {
   }
 }
 
-// === Κοινό trigger για όλες τις σελίδες ===
 window.addEventListener("DOMContentLoaded", function () {
   const step = getNextOnboardingStep();
-  if (!step) return;
+  if (!step || window.location.pathname !== "/profile") return;
 
-  if (step === 1 && window.location.pathname === "/welcome") {
-    document.body.classList.add("onboarding-active");
-    document.getElementById("onboardingOverlay").style.display = "block";
+  const profileModal = document.getElementById("editProfileModal");
+  const cookModal = document.getElementById("editCookTimesModal");
+  const memberModal = document.getElementById("memberModal");
 
-    const profileLink = document.querySelector('nav.navbar.fixed-bottom a[href="/profile"]');
-    if (profileLink) {
-      profileLink.addEventListener("click", function(e) {
-        e.preventDefault();
-        localStorage.setItem("onboarding_step1_shown", "1");
-        document.body.classList.remove("onboarding-active");
-        document.getElementById("onboardingOverlay").style.display = "none";
-        window.location.href = "/profile";
+  // STEP 2
+  if (step === 2 && profileModal) {
+    profileModal.addEventListener("hidden.bs.modal", () => {
+      localStorage.setItem("onboarding_step2_shown", "1");
+      showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
+        // STEP 4 εξαρτάται από cookModal
+        if (cookModal && cookModal.classList.contains("show")) {
+          cookModal.addEventListener("hidden.bs.modal", () => {
+            localStorage.setItem("onboarding_step3_shown", "1");
+            showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+              if (memberModal && memberModal.classList.contains("show")) {
+                memberModal.addEventListener("hidden.bs.modal", () => {
+                  localStorage.setItem("onboarding_step4_shown", "1");
+                  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+                });
+              } else {
+                showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+              }
+            });
+          });
+        } else {
+          showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+            if (memberModal && memberModal.classList.contains("show")) {
+              memberModal.addEventListener("hidden.bs.modal", () => {
+                localStorage.setItem("onboarding_step4_shown", "1");
+                showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+              });
+            } else {
+              showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+            }
+          });
+        }
       });
-    }
+    });
   }
 
-  // από εδώ και πέρα τρέχουν μόνο στη σελίδα profile
-	if (window.location.pathname === "/profile") {
-	  const profileModal = document.getElementById("editProfileModal");
-	  const cookModal = document.getElementById("editCookTimesModal");
-	  const memberModal = document.getElementById("memberModal");
+  // STEP 3
+  if (step === 3) {
+    showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
+      if (cookModal && cookModal.classList.contains("show")) {
+        cookModal.addEventListener("hidden.bs.modal", () => {
+          localStorage.setItem("onboarding_step3_shown", "1");
+          showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+            if (memberModal && memberModal.classList.contains("show")) {
+              memberModal.addEventListener("hidden.bs.modal", () => {
+                localStorage.setItem("onboarding_step4_shown", "1");
+                showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+              });
+            } else {
+              showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+            }
+          });
+        });
+      } else {
+        showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+          if (memberModal && memberModal.classList.contains("show")) {
+            memberModal.addEventListener("hidden.bs.modal", () => {
+              localStorage.setItem("onboarding_step4_shown", "1");
+              showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+            });
+          } else {
+            showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+          }
+        });
+      }
+    });
+  }
 
-	  if (step === 2 && profileModal) {
-		profileModal.addEventListener("hidden.bs.modal", () => {
-		  localStorage.setItem("onboarding_step2_shown", "1");
-		  // Μόλις κλείσει, ξεκινά το επόμενο (tooltip3)
-		  showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
-			// Tooltip 4 ξεκινά ΟΧΙ απευθείας αλλά μόλις κλείσει το cookModal
-			if (cookModal) {
-			  cookModal.addEventListener("hidden.bs.modal", () => {
-				localStorage.setItem("onboarding_step3_shown", "1");
-				showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-				  if (memberModal) {
-					memberModal.addEventListener("hidden.bs.modal", () => {
-					  localStorage.setItem("onboarding_step4_shown", "1");
-					  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-					});
-				  }
-				});
-			  });
-			}
-		  });
-		});
-	  }
+  // STEP 4
+  if (step === 4) {
+    showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+      if (memberModal && memberModal.classList.contains("show")) {
+        memberModal.addEventListener("hidden.bs.modal", () => {
+          localStorage.setItem("onboarding_step4_shown", "1");
+          showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+        });
+      } else {
+        showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+      }
+    });
+  }
 
-	  if (step === 3 && cookModal) {
-		cookModal.addEventListener("hidden.bs.modal", () => {
-		  localStorage.setItem("onboarding_step3_shown", "1");
-		  showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-			if (memberModal) {
-			  memberModal.addEventListener("hidden.bs.modal", () => {
-				localStorage.setItem("onboarding_step4_shown", "1");
-				showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-			  });
-			}
-		  });
-		});
-	  }
-
-	  if (step === 4 && memberModal) {
-		memberModal.addEventListener("hidden.bs.modal", () => {
-		  localStorage.setItem("onboarding_step4_shown", "1");
-		  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-		});
-	  }
-
-	  if (step === 5) {
-		showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-	  }
-	}
-
+  // STEP 5
+  if (step === 5) {
+    showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+  }
 });
+
 
 
 </script>

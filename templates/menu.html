@@ -2,6 +2,62 @@
 {% block title %}Μενού Εβδομάδας{% endblock %}
 {% block content %}
 
+<style>
+.card {
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  overflow: hidden;
+  border: none;
+}
+
+.card-header {
+  background-color: #e6f0ff !important; /* ανοιχτό μπλε */
+  border-bottom: 1px solid #d0e2ff;
+  color: #003366;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.card-body {
+  background-color: #fdfdfd !important; /* πιο φωτεινό από το default */
+  padding: 1rem 1.25rem;
+}
+
+.recipe-card {
+  background-color: #ebe8df !important;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  transition: background-color 0.2s;
+}
+
+.recipe-card:hover {
+  background-color: #eef6ff !important;
+}
+</style>
+
+
+<style>
+.voice-enabled {
+  background-image: url("data:image/svg+xml,%3Csvg fill='gray' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 12a3 3 0 0 0 3-3V4a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z'/%3E%3Cpath d='M5 9.995a5 5 0 0 0 10 0h-1a4 4 0 0 1-8 0H5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 18px 18px;
+  padding-right: 36px;
+  cursor: text;
+}
+</style>
+
+<style>
+.voice-enabled.listening {
+  background-color: #fff7cc !important; /* απαλό κίτρινο */
+  transition: background-color 0.3s ease;
+}
+
+</style>
+
+
+
 <div class="d-flex justify-content-center mb-3">
   <h2 class="fw-bold mb-1" style="font-size:2em;">Μενού Εβδομάδας</h2>
 </div>
@@ -19,6 +75,7 @@
     </button>
   </form>
 </div>
+
 {% endif %}
 
 {# --- Υπολογισμός νέας σειράς --- #}
@@ -26,11 +83,9 @@
 {% set shift = (menu_1st_day - 1) %}
 {% set menu_rotated = menu[shift:] + menu[:shift] %}
 
-
 <div class="row g-3">
   {% for entry in menu_rotated %}
     <div class="col-12">
-      <!-- Card για κάθε μέρα, full width -->
       <div class="card shadow-sm h-100">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
           <span class="fw-bold" style="font-size:1.18em;">{{ entry.day }}</span>
@@ -40,32 +95,47 @@
             <i class="fa fa-pen"></i>
           </button>
         </div>
-        <!-- Menu-dropzone (για SortableJS) -->
+
         <div class="card-body menu-dropzone py-3 d-flex flex-column align-items-stretch justify-content-center" id="dropzone-{{ entry.menu_id }}">
           {% if entry.recipe_id %}
-            <!-- Card πιάτου -->
+
             <div class="recipe-card border rounded px-3 py-2 d-flex flex-row align-items-center"
-                 style="background:#f8f9fa;"
+                 id="recipe-card-{{ entry.menu_id }}"
+				 style="background:#f8f9fa; cursor:pointer;"
+                 onclick="openRecipeModal(this)"
+                 data-title="{{ entry.title }}"
+                 data-chef="{{ entry.chef }}"
+                 data-duration="{{ entry.duration }}"
+                 data-method="{{ entry.method }}"
+                 data-tags="{{ entry.tags }}"
+                 data-category="{{ entry.category }}"
+                 data-url="{{ entry.url }}"
+                 data-recipeid="{{ entry.recipe_id }}"
                  data-menuid="{{ entry.menu_id }}"
-                 data-recipeid="{{ entry.recipe_id }}">
+                 data-prep="{{ entry.prep_time }}"
+                 data-cook="{{ entry.cook_time }}"
+                 data-ingredients="{{ entry.ingredients }}"
+                 data-instructions="{{ entry.instructions }}">
               <div class="flex-grow-1">
-                <!-- Τίτλος ως span ή input ανάλογα με το edit mode -->
                 <div class="d-flex align-items-center">
                   <div id="dish-title-{{ entry.menu_id }}">
                     <span class="fw-bold" style="font-size:1.08em;">
                       {{ entry.title or '-' }}
-                      <a href="javascript:void(0);" class="favorite-btn ms-1 d-inline-block" data-recipeid="{{ entry.recipe_id }}">
-                        <i class="fa{{ 's' if entry.is_favorite else 'r' }} fa-heart"
-                           onclick="toggleFavorite(this, {{ entry.recipe_id }})"
-                           style="color: {{ 'gray' if not entry.is_favorite else '#c33' }}; font-size:18px; cursor:pointer; vertical-align:-2px;"></i>
-                      </a>
+						<a href="#" class="favorite-btn ms-1 d-inline-block"
+						   onclick="event.preventDefault(); event.stopPropagation(); toggleFavorite(this.firstElementChild, {{ entry.recipe_id }})">
+						  <i class="fa{{ 's' if entry.is_favorite else 'r' }} fa-heart"
+							 style="color: {{ 'gray' if not entry.is_favorite else '#c33' }};
+									font-size:18px; cursor:pointer; vertical-align:-2px;"></i>
+						</a>
+
                     </span>
                   </div>
                   <div id="dish-edit-{{ entry.menu_id }}" style="display:none; width: 100%;">
                     <input type="text"
-                           class="form-control recipe-input"
+                           class="form-control recipe-input voice-enabled"
+						   id="recipe-input-{{ entry.menu_id }}"
                            value="{{ entry.title }}"
-                           placeholder="Αναζήτηση πιάτου..."
+                           placeholder="Πληκτρολόγησε ή πάτα 🎤"
                            data-original="{{ entry.title }}"
                            data-menuid="{{ entry.menu_id }}"
                            autocomplete="off"
@@ -85,6 +155,7 @@
                 <i class="fa fa-bars"></i>
               </span>
             </div>
+
           {% else %}
             <div class="alert alert-secondary text-center py-4 mb-0" style="font-size:0.97em;">
               Δεν έχεις ορίσει πιάτο για αυτή τη μέρα.
@@ -95,6 +166,7 @@
     </div>
   {% endfor %}
 </div>
+
 
 
 <!-- Card: Επίτευξη στόχων -->
@@ -174,12 +246,44 @@
   </div>
 </div>
 
+<div class="modal fade" id="recipeModal" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="recipeModalLabel">Λεπτομέρειες Συνταγής</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="background:#fefefe; max-height:75vh; overflow-y:auto;">
+        <p><strong>Τίτλος:</strong> <span id="modalTitle"></span></p>
+        <p><strong>Σεφ:</strong> <span id="modalChef"></span></p>
+        <p><strong>Χρόνος:</strong>
+          <span id="modalPrepTime"></span>′ προετοιμασία,
+          <span id="modalCookTime"></span>′ μαγείρεμα
+        </p>
+        <p><strong>Μέθοδος:</strong> <span id="modalMethod"></span></p>
+        <p><strong>Κατηγορία:</strong> <span id="modalCategory"></span></p>
+        <p><strong>Tags:</strong> <span id="modalTags"></span></p>
+        <p><strong>Σύνδεσμος:</strong> <a href="#" id="modalUrl" target="_blank">Δες τη συνταγή</a></p>
+
+        <hr>
+        <p><strong>Υλικά:</strong></p>
+        <ul id="modalIngredients" style="padding-left: 20px;"></ul>
+
+        <p class="mt-3"><strong>Οδηγίες:</strong></p>
+        <div id="modalInstructions" style="white-space: pre-wrap; word-break: break-word;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 {% endblock %}
 
 
 {% block scripts %}
 
 <script>
+let isAutocompleteClick = false;
 let allRecipes = [];
 fetch('/get_recipes_for_autocomplete')
   .then(r => r.json())
@@ -225,6 +329,7 @@ function showAutocomplete(input) {
     opt.textContent = r.title;
     opt.style.cursor = "pointer";
     opt.onclick = () => {
+	  isAutocompleteClick = true;
       input.value = r.title;
       hideAutocomplete(input);
     };
@@ -258,7 +363,13 @@ function toggleFavorite(icon, recipe_id) {
   });
 }
 
+
 function enableEdit(menu_id) {
+  // Απενεργοποίησε όλα τα clickable recipe-cards
+  document.querySelectorAll('.recipe-card').forEach(card => {
+    card.classList.add('no-click');
+  });
+
   // Απόκρυψε το title, δείξε το input
   document.getElementById('dish-title-' + menu_id).style.display = 'none';
   document.getElementById('dish-edit-' + menu_id).style.display = '';
@@ -266,25 +377,48 @@ function enableEdit(menu_id) {
   document.querySelector('#dish-edit-' + menu_id + ' input').focus();
 }
 
-// Προαιρετικά, όταν βγαίνεις από το input (onblur) ή όταν κάνεις Enter,
-// μπορείς να κάνεις save/submit και να επαναφέρεις το display.
-// Αν θέλεις να επαναφέρεται πάντα όταν φεύγει το focus:
+function disableAllEdit() {
+  // Κρύψε όλα τα edit πεδία και εμφάνισε τίτλους
+  document.querySelectorAll('[id^="dish-edit-"]').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('[id^="dish-title-"]').forEach(el => el.style.display = 'block');
+
+  // Ξανακάνε τις κάρτες clickable
+  document.querySelectorAll('.recipe-card').forEach(card => {
+    card.classList.remove('no-click');
+  });
+}
+
 function onRecipeBlur(input) {
-  setTimeout(function(){
-    var parent = input.closest('[id^=dish-edit-]');
-    if (parent) {
-      var menu_id = input.dataset.menuid;
-      var new_title = input.value.trim();
-      if (new_title && new_title !== input.getAttribute('data-original')) {
-        saveMenuEditsForOne(menu_id, new_title, false, input); // <--- ΕΔΩ
+  setTimeout(function() {
+    const parent = input.closest('[id^=dish-edit-]');
+    const menu_id = input.dataset.menuid;
+    const new_title = input.value.trim();
+    const original = input.getAttribute('data-original');
+
+    // Αν έγινε click σε επιλογή, συνέχισε κανονικά με save
+    if (isAutocompleteClick) {
+      isAutocompleteClick = false;
+      if (new_title && new_title !== original) {
+        saveMenuEditsForOne(menu_id, new_title, false, input);
       } else {
         parent.style.display = 'none';
         document.getElementById('dish-title-' + menu_id).style.display = '';
       }
+      hideAutocomplete(input);
+      disableAllEdit();
+      return;
+    }
+
+    // Κανονική συμπεριφορά blur χωρίς αλλαγή
+    if (parent) {
+      parent.style.display = 'none';
+      document.getElementById('dish-title-' + menu_id).style.display = '';
     }
     hideAutocomplete(input);
-  }, 200);
+    disableAllEdit();
+  }, 250);
 }
+
 
 
 function saveMenuEditsForOne(menu_id, recipe_title, ignoreAllergy=false, inputEl = null) {
@@ -297,6 +431,7 @@ function saveMenuEditsForOne(menu_id, recipe_title, ignoreAllergy=false, inputEl
   .then(r => r.json())
   .then(data => {
     if (data.success) {
+	  disableAllEdit(); // 👉 επαναφέρει clickability
       location.reload();
     } else if (data.allergy_warnings) {
       let w = data.allergy_warnings[0];
@@ -377,6 +512,95 @@ function swapDishes(menuIdFrom, menuIdTo) {
     }
       else location.reload(); // προαιρετικά refresh για σιγουριά
   });
+}
+
+
+function openRecipeModal(card) {
+  // Αν η κάρτα έχει την κλάση no-click, μην κάνεις τίποτα
+  if (card.classList.contains('no-click')) {
+    console.log("Modal μπλοκαρισμένο: είμαστε σε edit mode");
+    return;
+  }
+
+  const menuId = card.getAttribute('data-menuid');
+  const modal = new bootstrap.Modal(document.getElementById('recipeModal'));
+  document.getElementById('modalTitle').innerText = card.getAttribute('data-title') || '-';
+  document.getElementById('modalChef').innerText = card.getAttribute('data-chef') || '-';
+  document.getElementById('modalMethod').innerText = card.getAttribute('data-method') || '-';
+  document.getElementById('modalCategory').innerText = card.getAttribute('data-category') || '-';
+  document.getElementById('modalTags').innerText = card.getAttribute('data-tags') || '-';
+  document.getElementById('modalUrl').href = card.getAttribute('data-url') || '#';
+  document.getElementById('modalPrepTime').innerText = card.getAttribute('data-prep') || '-';
+  document.getElementById('modalCookTime').innerText = card.getAttribute('data-cook') || '-';
+
+  const ingStr = card.getAttribute('data-ingredients') || '';
+  const ingredients = ingStr.split(',').map(i => i.trim()).filter(Boolean);
+  const ingList = document.getElementById('modalIngredients');
+  ingList.innerHTML = '';
+  ingredients.forEach(i => {
+    const li = document.createElement('li');
+    li.innerText = i;
+    ingList.appendChild(li);
+  });
+
+  const instructions = card.getAttribute('data-instructions') || '';
+  document.getElementById('modalInstructions').innerText = instructions.trim();
+
+  modal.show();
+}
+
+document.addEventListener('click', function(e) {
+  const input = e.target.closest('.voice-enabled');
+  if (!input) return;
+
+  // Έλεγχος αν το click ήταν πάνω στο 🎤 (τελευταία 36px δεξιά)
+  const clickX = e.clientX - input.getBoundingClientRect().left;
+  const inputWidth = input.offsetWidth;
+  if (clickX >= inputWidth - 36) {
+    const menuid = input.dataset.menuid;
+    startSpeechForRecipe(menuid);
+  }
+});
+
+function startSpeechForRecipe(menuid) {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert("Ο browser σου δεν υποστηρίζει φωνητική αναγνώριση.");
+    return;
+  }
+
+  const input = document.getElementById('recipe-input-' + menuid);
+  if (!input) return;
+
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = 'el-GR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onaudiostart = function() {
+    input.classList.add('listening');
+    input.placeholderBackup = input.placeholder;
+    input.placeholder = "🎙️ Μίλα τώρα...";
+  };
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript.trim();
+    input.value = transcript;
+    input.dispatchEvent(new Event('input'));
+  };
+
+  recognition.onerror = function(event) {
+    console.warn("Speech error:", event.error);
+  };
+
+  recognition.onend = function() {
+    input.classList.remove('listening');
+    if (input.placeholderBackup) {
+      input.placeholder = input.placeholderBackup;
+      delete input.placeholderBackup;
+    }
+  };
+
+  recognition.start();
 }
 
 </script>

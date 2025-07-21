@@ -143,9 +143,12 @@
         </div>
         <div id="manualEntryBox" style="display:none;">
           <label>Γράψε τι καλό έφαγες τη(ν) <b id="currentDay"></b></label>
-          <input type="text" id="manualDishTitle" class="form-control mb-2" autocomplete="off" placeholder="Αναζήτηση...">
-          <div id="manual-autocomplete" class="autocomplete-list"></div>
-          <div id="manualEntryFeedback" class="mb-2"></div>
+			<div class="d-flex align-items-center gap-2 mb-2">
+			  <input type="text" id="manualDishTitle" class="form-control" autocomplete="off" placeholder="Αναζήτηση..." style="max-width: 300px;">
+			  <button class="btn btn-secondary" onclick="startSpeechForManual()">🎤</button>
+			  <span id="manualVoiceFeedback" style="font-weight:bold; color:#c00;"></span>
+			</div>
+			<div id="manual-autocomplete" class="autocomplete-list"></div>
           <button class="btn btn-primary" onclick="submitManualDish()">Καταχώρηση</button>
           <button class="btn btn-secondary" type="button" onclick="cancelManualEntry()">Άκυρο</button>
         </div>
@@ -493,5 +496,40 @@ function deleteHistoryEntry(id) {
     }
   });
 }
+
+function startSpeechForManual() {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert("Ο browser σου δεν υποστηρίζει φωνητική αναγνώριση.");
+    return;
+  }
+
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = 'el-GR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  const feedbackSpan = document.getElementById('manualVoiceFeedback');
+  if (feedbackSpan) feedbackSpan.textContent = "🎙️ Ακούω...";
+
+	recognition.onresult = function(event) {
+	  const transcript = event.results[0][0].transcript.trim();
+	  const input = document.getElementById('manualDishTitle');
+	  input.value = transcript;
+	  input.dispatchEvent(new Event('input')); // <--- Αυτό ενεργοποιεί το autosearch!
+	};
+
+
+  recognition.onerror = function(event) {
+    alert("Σφάλμα μικροφώνου: " + event.error);
+  };
+
+  recognition.onend = function() {
+    if (feedbackSpan) feedbackSpan.textContent = "";
+  };
+
+  recognition.start();
+}
+
+
 </script>
 {% endblock %}
