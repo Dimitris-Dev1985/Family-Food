@@ -1013,63 +1013,25 @@ window.onload = function () {
 };
 
 
-function showTooltipAuto(step, tooltipId, targetId, nextStep) {
-  const tooltip = document.getElementById(tooltipId);
-  const target = document.getElementById(targetId);
 
-  if (
-    tooltip && target &&
-    !localStorage.getItem(`onboarding_step${step}_shown`)
-  ) {
-    // Εμφάνιση προσωρινά για μέτρηση
-    tooltip.style.visibility = "hidden";
-    tooltip.style.display = "block";
 
-    const rect = target.getBoundingClientRect();
-    const tipWidth = tooltip.offsetWidth;
-    const tipHeight = tooltip.offsetHeight;
 
-    let left = rect.right + window.scrollX - tipWidth;
-    let top = rect.top + window.scrollY - tipHeight - 10;
+function getNextOnboardingStep() {
+  if (localStorage.getItem("onboarding_done") === "1") return null;
 
-    const padding = 10;
-    const maxX = window.innerWidth - tipWidth - padding;
-    const maxY = window.innerHeight - tipHeight - padding;
-
-    // clamp οριζόντια και κάθετα
-    if (left < padding) left = padding;
-    if (left > maxX) left = maxX;
-    if (top < padding) top = rect.bottom + window.scrollY + 10; // αν δεν χωράει πάνω, δείξε κάτω
-
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top = `${top}px`;
-    tooltip.style.visibility = "visible";
-
-    const handler = () => {
-      tooltip.style.display = "none";
-      localStorage.setItem(`onboarding_step${step}_shown`, "1");
-
-      if (nextStep) {
-        setTimeout(nextStep, 300);
-      } else {
-        localStorage.setItem("onboarding_done", "1");
-      }
-
-      target.removeEventListener("click", handler);
-    };
-
-    target.addEventListener("click", handler);
+  for (let i = 1; i <= 5; i++) {
+    if (!localStorage.getItem(`onboarding_step${i}_shown`)) {
+      return i;
+    }
   }
+  return null;
 }
 
 function showTooltipCenteredAbove(step, tooltipId, targetId, nextStep) {
   const tooltip = document.getElementById(tooltipId);
   const target = document.getElementById(targetId);
 
-  if (
-    tooltip && target &&
-    !localStorage.getItem(`onboarding_step${step}_shown`)
-  ) {
+  if (tooltip && target) {
     tooltip.style.visibility = "hidden";
     tooltip.style.display = "block";
 
@@ -1077,16 +1039,13 @@ function showTooltipCenteredAbove(step, tooltipId, targetId, nextStep) {
     const tipWidth = tooltip.offsetWidth;
     const tipHeight = tooltip.offsetHeight;
 
-    // Θέση: κέντρο πάνω από το κουμπί
     let left = rect.left + window.scrollX + (rect.width - tipWidth) / 2;
     let top = rect.top + window.scrollY - tipHeight - 10;
 
-    // Clamp αριστερά/δεξιά για να μην βγει έξω
     const padding = 10;
     const maxX = window.innerWidth - tipWidth - padding;
     if (left < padding) left = padding;
     if (left > maxX) left = maxX;
-
     if (top < padding) top = rect.bottom + window.scrollY + 10;
 
     tooltip.style.left = `${left}px`;
@@ -1096,13 +1055,12 @@ function showTooltipCenteredAbove(step, tooltipId, targetId, nextStep) {
     const handler = () => {
       tooltip.style.display = "none";
       localStorage.setItem(`onboarding_step${step}_shown`, "1");
-
       if (nextStep) {
         setTimeout(nextStep, 300);
       } else {
         localStorage.setItem("onboarding_done", "1");
+        fetch("/api/onboarding_complete", { method: "POST" });
       }
-
       target.removeEventListener("click", handler);
     };
 
@@ -1110,30 +1068,82 @@ function showTooltipCenteredAbove(step, tooltipId, targetId, nextStep) {
   }
 }
 
+// === Κοινό trigger για όλες τις σελίδες ===
+window.addEventListener("DOMContentLoaded", function () {
+  const step = getNextOnboardingStep();
+  if (!step) return;
 
+  if (step === 1 && window.location.pathname === "/welcome") {
+    document.body.classList.add("onboarding-active");
+    document.getElementById("onboardingOverlay").style.display = "block";
 
-// Ξεκινά το onboarding flow μετά το overlay (step 2)
-document.addEventListener("DOMContentLoaded", function () {
-  const profileModal = document.getElementById("editProfileModal");
-  if (profileModal) {
-    profileModal.addEventListener("hidden.bs.modal", () => {
-      showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
-        const cookModal = document.getElementById("editCookTimesModal");
-        if (cookModal) {
-          cookModal.addEventListener("hidden.bs.modal", () => {
-            showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-              const memberModal = document.getElementById("memberModal");
-              if (memberModal) {
-                memberModal.addEventListener("hidden.bs.modal", () => {
-                  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-                });
-              }
-            });
-          });
-        }
+    const profileLink = document.querySelector('nav.navbar.fixed-bottom a[href="/profile"]');
+    if (profileLink) {
+      profileLink.addEventListener("click", function(e) {
+        e.preventDefault();
+        localStorage.setItem("onboarding_step1_shown", "1");
+        document.body.classList.remove("onboarding-active");
+        document.getElementById("onboardingOverlay").style.display = "none";
+        window.location.href = "/profile";
       });
-    });
+    }
   }
+
+  // από εδώ και πέρα τρέχουν μόνο στη σελίδα profile
+	if (window.location.pathname === "/profile") {
+	  const profileModal = document.getElementById("editProfileModal");
+	  const cookModal = document.getElementById("editCookTimesModal");
+	  const memberModal = document.getElementById("memberModal");
+
+	  if (step === 2 && profileModal) {
+		profileModal.addEventListener("hidden.bs.modal", () => {
+		  localStorage.setItem("onboarding_step2_shown", "1");
+		  // Μόλις κλείσει, ξεκινά το επόμενο (tooltip3)
+		  showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
+			// Tooltip 4 ξεκινά ΟΧΙ απευθείας αλλά μόλις κλείσει το cookModal
+			if (cookModal) {
+			  cookModal.addEventListener("hidden.bs.modal", () => {
+				localStorage.setItem("onboarding_step3_shown", "1");
+				showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+				  if (memberModal) {
+					memberModal.addEventListener("hidden.bs.modal", () => {
+					  localStorage.setItem("onboarding_step4_shown", "1");
+					  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+					});
+				  }
+				});
+			  });
+			}
+		  });
+		});
+	  }
+
+	  if (step === 3 && cookModal) {
+		cookModal.addEventListener("hidden.bs.modal", () => {
+		  localStorage.setItem("onboarding_step3_shown", "1");
+		  showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+			if (memberModal) {
+			  memberModal.addEventListener("hidden.bs.modal", () => {
+				localStorage.setItem("onboarding_step4_shown", "1");
+				showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+			  });
+			}
+		  });
+		});
+	  }
+
+	  if (step === 4 && memberModal) {
+		memberModal.addEventListener("hidden.bs.modal", () => {
+		  localStorage.setItem("onboarding_step4_shown", "1");
+		  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+		});
+	  }
+
+	  if (step === 5) {
+		showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+	  }
+	}
+
 });
 
 

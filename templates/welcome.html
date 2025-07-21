@@ -186,6 +186,47 @@ let tomorrowMenu = "{{ tomorrow_menu|safe }}";
 let tomorrowMenuId = "{{ tomorrow_menu_id }}";
 let cookingDay = "today"; // default: σήμερα
 
+function startSpeechRecognition() {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert("Ο browser σου δεν υποστηρίζει φωνητική αναγνώριση.");
+    return;
+  }
+
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = 'el-GR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  const feedbackSpan = document.createElement('span');
+  feedbackSpan.id = "voiceFeedback";
+  feedbackSpan.textContent = "🎙️ Ακούω...";
+  feedbackSpan.style.marginLeft = "10px";
+  feedbackSpan.style.fontWeight = "bold";
+  feedbackSpan.style.color = "#c00";
+
+  const parentDiv = document.querySelector('#ai_ingredient')?.parentNode;
+  if (parentDiv && !document.getElementById("voiceFeedback")) {
+    parentDiv.appendChild(feedbackSpan);
+  }
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript.trim();
+    document.getElementById('ai_ingredient').value = transcript;
+  };
+
+  recognition.onerror = function(event) {
+    alert("Σφάλμα μικροφώνου: " + event.error);
+  };
+
+  recognition.onend = function() {
+    const f = document.getElementById("voiceFeedback");
+    if (f) f.remove();
+  };
+
+  recognition.start();
+}
+
+
 // ---- Αποθήκευση/restore chat ιστορικού και controls ----
 function saveChatHistory() {
   localStorage.setItem('chatHistory', document.getElementById('chatbox').innerHTML);
@@ -340,7 +381,6 @@ function showTomorrow() {
   showActionsAfterMenu(tomorrowMenuId, dishTitle);
 }
 
-
 // ----------- AI CHAT ----------- //
 let aiChatStep = 1;
 let aiChatFilters = {};
@@ -406,11 +446,17 @@ function nextAIChatStep(userAnswer) {
         '<button onclick="submitAIAnswer()" class="btn btn-primary ms-2">OK</button>';
       setChatControls(html2);
     }
-    else if (data.step === 3) {
-      var html3 = '<label>Υλικό: <input id="ai_ingredient" type="text" placeholder="π.χ. κοτόπουλο" class="form-control d-inline" style="width:150px"></label>' +
-        '<button onclick="submitAIAnswer()" class="btn btn-primary ms-2">OK</button>';
-      setChatControls(html3);
-    }
+	else if (data.step === 3) {
+	  var html3 = `
+		<label>Υλικό προτίμησης:</label>
+		<div class="d-flex align-items-center gap-2">
+		  <input id="ai_ingredient" type="text" placeholder="π.χ. κοτόπουλο" class="form-control d-inline" style="width:150px">
+		  <button onclick="startSpeechRecognition()" class="btn btn-secondary">🎤</button>
+		  <button onclick="submitAIAnswer()" class="btn btn-primary">OK</button>
+		</div>
+	  `;
+	  setChatControls(html3);
+	}
     else if (data.step === 0) {
       var html0 = "";
       if (data.dishes && data.dishes.length > 0) {
@@ -460,7 +506,6 @@ function updateCookedDish(recipe_id, title, date) {
     }
   });
 }
-
 
 // ---- Show συνταγή/URL ή custom modal ----
 function showRecipeUrl(recipe_id) {
@@ -606,23 +651,37 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 
-window.addEventListener('DOMContentLoaded', function() {
-  if (!localStorage.getItem("onboarding_shown")) {
+
+function getNextOnboardingStep() {
+  if (localStorage.getItem("onboarding_done") === "1") return null;
+
+  for (let i = 1; i <= 5; i++) {
+    if (!localStorage.getItem(`onboarding_step${i}_shown`)) {
+      return i;
+    }
+  }
+  return null;
+}
+
+window.addEventListener("DOMContentLoaded", function () {
+  const step = getNextOnboardingStep();
+
+  if (step === 1 && window.location.pathname === "/welcome") {
     document.body.classList.add("onboarding-active");
     document.getElementById("onboardingOverlay").style.display = "block";
 
-    const profileLink = document.querySelector('.bottom-nav a[href="/profile"]');
+    const profileLink = document.querySelector('nav.navbar.fixed-bottom a[href="/profile"]');
     if (profileLink) {
-      profileLink.addEventListener("click", function() {
-        localStorage.setItem("onboarding_shown", "1");
+      profileLink.addEventListener("click", function (e) {
+        e.preventDefault();
+        localStorage.setItem("onboarding_step1_shown", "1");
         document.body.classList.remove("onboarding-active");
         document.getElementById("onboardingOverlay").style.display = "none";
+        window.location.href = "/profile";
       });
     }
   }
 });
-
-
 
 
 </script>

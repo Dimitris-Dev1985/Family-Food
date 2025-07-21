@@ -139,8 +139,6 @@ body {
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-
-
 <body>
   <div class="container{% if request.endpoint == 'welcome' %} main-welcome-container{% endif %}">
     {% with messages = get_flashed_messages() %}
@@ -188,34 +186,29 @@ body {
   <nav class="navbar fixed-bottom navbar-light bg-light shadow-sm" style="z-index:999;">
     <div class="container-fluid justify-content-center p-0">
 		<div class="row w-100 text-center">
-		  <div class="col-2">
+		  <div class="col">
 			<a href="/welcome" class="nav-link py-2{% if request.endpoint=='welcome' %} active{% endif %}">
 			  <i class="fa fa-home fa-lg"></i><div style="font-size:12px;">Αρχική</div>
 			</a>
 		  </div>
-		  <div class="col-2">
+		  <div class="col">
 			<a href="/menu" class="nav-link py-2{% if request.endpoint=='menu' %} active{% endif %}">
 			  <i class="fa fa-calendar-week fa-lg"></i><div style="font-size:12px;">Μενού</div>
 			</a>
 		  </div>
-		  <div class="col-2">
+		  <div class="col">
 			<a href="/history" class="nav-link py-2{% if request.endpoint=='history' %} active{% endif %}">
 			  <i class="fa fa-history fa-lg"></i><div style="font-size:12px;">Ιστορικό</div>
 			</a>
 		  </div>
-		  <div class="col-2">
+		  <div class="col">
 			<a href="/favorites" class="nav-link py-2{% if request.endpoint=='favorites' %} active{% endif %}">
 			  <i class="fa fa-star fa-lg"></i><div style="font-size:12px;">Αγαπημένα</div>
 			</a>
 		  </div>
-		  <div class="col-2">
+		  <div class="col">
 			<a href="/profile" class="nav-link py-2{% if request.endpoint=='profile' %} active{% endif %}">
 			  <i class="fa fa-user fa-lg"></i><div style="font-size:12px;">Προφίλ</div>
-			</a>
-		  </div>
-		  <div class="col-2">
-			<a href="/logout" class="nav-link py-2 text-danger">
-			  <i class="fa fa-sign-out-alt fa-lg"></i><div onclick="return confirmLogout();" style="font-size:12px;">Έξοδος</div>
 			</a>
 		  </div>
 		</div>
@@ -223,7 +216,6 @@ body {
     </div>
   </nav>
 {% endif %}
-
 
 
 <!--
@@ -239,13 +231,7 @@ body {
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/plugins/Swap/Sortable.swap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-  
-   
-   
-   
-  
-  
-  
+
   <script>
 	if ('serviceWorker' in navigator) {
 	  navigator.serviceWorker.register('/static/service-worker.js')
