@@ -1,29 +1,33 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
 import sqlite3, unicodedata, random
-import os
-from flask_dance.contrib.google import make_google_blueprint, google
+
+
 from datetime import datetime, timedelta
 from jinja2 import pass_context
 from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = "d7gAq2d9bJz@7qK2kLxw!"
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # επιτρέπει HTTP (μόνο για dev)
-
-google_bp = make_google_blueprint(
-    client_id="880897869431-mfkq1ebldt0eenh20abt4gs67mfgp9cl.apps.googleusercontent.com",
-    client_secret="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",
-    scope=[        "https://www.googleapis.com/auth/userinfo.profile",
-        "https://www.googleapis.com/auth/userinfo.email",
-        "openid"],
-    redirect_url="/login/google/callback"
-)
-app.register_blueprint(google_bp, url_prefix="/login")
-
 
 DB = "family_food_app.db"
 
 WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"]
+
+
+@app.route("/api/onboarding_complete", methods=["POST"])
+def onboarding_complete():
+    user_id = session.get("user_id")
+    if not user_id:
+        return "", 401  # Unauthorized
+
+    conn = sqlite3.connect(DB)
+    conn.execute("UPDATE users SET onboarding_done = 1 WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+    session["onboarding_done"] = 1  # για άμεση χρήση στη session
+    return "", 204  # No content
+
 
 @app.route("/login/google/callback")
 def google_login_callback():
@@ -105,7 +109,6 @@ def signup():
 
     return render_template("signup.html")
 
-
 def login_required(f):
     @wraps(f)
     def wrapped(*args, **kwargs):
@@ -118,14 +121,15 @@ def login_required(f):
 def login():
     if request.method == "POST":
         action = request.form.get("action")
-        
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+
         if action == "debug":
-            conn = sqlite3.connect(DB)
-            conn.row_factory = sqlite3.Row
             user = conn.execute("SELECT * FROM users ORDER BY id LIMIT 1").fetchone()
             conn.close()
             if user:
                 session["user_id"] = user["id"]
+                session["onboarding_done"] = user["onboarding_done"]
                 return redirect(url_for("welcome"))
             else:
                 flash("Δεν βρέθηκε χρήστης για debug login!", "danger")
@@ -134,15 +138,15 @@ def login():
         # Κανονικό login
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
-        conn = sqlite3.connect(DB)
-        conn.row_factory = sqlite3.Row
         user = conn.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password)).fetchone()
         conn.close()
         if user:
             session["user_id"] = user["id"]
+            session["onboarding_done"] = user["onboarding_done"]
             return redirect(url_for("welcome"))
         else:
             flash("Λανθασμένο email ή κωδικός!", "danger")
+
     return render_template("login.html")
 
 @app.route("/logout")
@@ -207,58 +211,6 @@ def welcome():
         tomorrow_menu=tomorrow_menu,
         tomorrow_menu_id=tomorrow_menu_id
     )
-
-
-# --- ADMIN PANEL ΓΙΑ ΣΥΝΤΑΓΕΣ ---
-# Λίστα συνταγών + διαγραφή
-@app.route("/admin/recipes")
-def admin_recipes():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    recipes = conn.execute("SELECT * FROM recipes ORDER BY id DESC").fetchall()
-    conn.close()
-    return render_template("admin_recipes.html", recipes=recipes)
-
-# Προσθήκη νέας συνταγής
-@app.route("/admin/recipes/new", methods=["GET", "POST"])
-def new_recipe():
-    if request.method == "POST":
-        form = request.form
-        conn = sqlite3.connect(DB)
-        conn.execute("""
-            INSERT INTO recipes
-            (title, chef, ingredients, prep_time, cook_time, total_time, method, instructions, tags, allergens, url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            form["title"], form["chef"], form["ingredients"], form["prep_time"], form["cook_time"],
-            form["total_time"], form["method"], form["instructions"], form["tags"], form["allergens"], form["url"]
-        ))
-        conn.commit()
-        conn.close()
-        return redirect(url_for("admin_recipes"))
-    return render_template("edit_recipe.html", recipe=None)
-
-# Επεξεργασία συνταγής
-@app.route("/admin/recipes/edit/<int:rid>", methods=["GET", "POST"])
-def edit_recipe(rid):
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    recipe = conn.execute("SELECT * FROM recipes WHERE id=?", (rid,)).fetchone()
-    if request.method == "POST":
-        form = request.form
-        conn.execute("""
-            UPDATE recipes
-            SET title=?, chef=?, ingredients=?, prep_time=?, cook_time=?, total_time=?, method=?, instructions=?, tags=?, allergens=?, url=?
-            WHERE id=?
-        """, (
-            form["title"], form["chef"], form["ingredients"], form["prep_time"], form["cook_time"],
-            form["total_time"], form["method"], form["instructions"], form["tags"], form["allergens"], form["url"], rid
-        ))
-        conn.commit()
-        conn.close()
-        return redirect(url_for("admin_recipes"))
-    conn.close()
-    return render_template("edit_recipe.html", recipe=recipe)
 
 @app.route('/delete_user_recipe', methods=['POST'])
 def delete_user_recipe():
