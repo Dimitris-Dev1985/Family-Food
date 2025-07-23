@@ -64,12 +64,8 @@ body {
 .autocomplete-option:hover { background: #f0f0f0; }
 
 /* Choices.js dropdown above modals */
-.modal, .modal-body { overflow: visible !important; }
 .choices__list--dropdown { z-index: 2055 !important; }
 
-/* Centered modal titles */
-.modal-header { justify-content: center !important; }
-.modal-title { width: 100%; text-align: center; }
 
 /* Responsive containers and tables */
 .container, .main-welcome-container { padding-bottom: 70px; padding-top: 1rem; }
@@ -83,14 +79,14 @@ body {
 /* Responsive forms/inputs/buttons */
 @media (max-width: 576px) {
   input[type="text"], input[type="number"], select, textarea, .choices__inner, .form-control {
-    min-width: 0 !important; width: auto; font-size: 1.02em;
+    min-width: 0 !important; width: auto; font-size: 1em; padding:0.3rem 0.3rem;
   }
   .autocomplete-input, #autocomplete-input {
     width: 100% !important; min-width: 0 !important; max-width: 100% !important;
   }
   .btn, .btn-sm, .btn-group .btn, .modal-footer .btn {
     width: auto; min-width: 0 !important; margin-top: 1px; margin-bottom: 1px;
-    font-size: 0.8em; padding: .2rem .4rem; box-sizing: border-box;
+    font-size: 0.8em; padding: .2rem .3rem; box-sizing: border-box;
   }
   .btn-inline, .btn-inline.btn, .btn-inline.btn-sm {
     width: auto !important; margin-bottom: 0 !important; display: inline-block !important;
@@ -102,16 +98,21 @@ body {
   .navbar.fixed-bottom .nav-link { font-size: 1.01em; padding: 0.4rem 0 0.2rem 0; }
   .navbar.fixed-bottom .fa { font-size: 1.35em; }
 }
+</style>
 
+<!--modals styling-->
+<style>
 /* Mobile-friendly modals */
 @media (max-width: 600px) {
   .modal-dialog { max-width: 380px !important; margin: 0.5rem auto; position: relative; }
   .modal-content {
     display: flow; border-radius: 2rem; padding: 0.5em 0.5em 0.4em 0.5em;
-    overflow-y: visible; max-height: 90vh; align-items: center; z-index: 1005;
-
+    overflow-y: visible;  overflow: hidden; max-height: 90vh; align-items: center; z-index: 1005;
   }
-  .modal-title { font-size: 1.1rem !important; }
+  
+  .modal-header { justify-content: center !important; }
+
+  .modal-title { font-size: 1.1rem !important; width: 100%; text-align: center;}
   .modal-body { flex: 1 1 auto; overflow-y: auto; }
   .modal-footer {
     position: sticky; bottom: 0; background: inherit; z-index: 2;
@@ -122,7 +123,9 @@ body {
     font-size: 0.85em !important;
   }
 }
+</style>
 
+<style>
 /* Offcanvas styling */
 .offcanvas {
   width: 300px !important; max-width: 94vw !important; min-width: 200px !important; border-radius: 16px 0 0 16px !important;
@@ -207,8 +210,22 @@ body {
   50%  { transform: scale(1.03); box-shadow: 0 0 20px rgba(255, 255, 255, 0.9); }
   100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
 }
+</style>
 
+<style>
+.voice-enabled {
+  background-image: url("data:image/svg+xml,%3Csvg fill='gray' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 12a3 3 0 0 0 3-3V4a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z'/%3E%3Cpath d='M5 9.995a5 5 0 0 0 10 0h-1a4 4 0 0 1-8 0H5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 18px 18px;
+  padding-right: 36px;
+  cursor: text;
+}
 
+.voice-enabled.listening {
+  background-color: #fff7cc !important; /* απαλό κίτρινο */
+  transition: background-color 0.3s ease;
+}
 </style>
 
 
@@ -231,6 +248,38 @@ body {
     {% endwith %}
     {% block content %}{% endblock %}
   </div>
+
+<!-- Show recipe modal -->
+<div class="modal fade" id="recipeModal" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary" style="border-radius: 1.5rem !important;">
+        <h5 class="modal-title" id="recipeModalLabel">Λεπτομέρειες Συνταγής</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="background:#fefefe; max-height:75vh; overflow-y:auto;">
+        <p><strong>Τίτλος:</strong> <span id="modalTitle"></span></p>
+        <p><strong>Σεφ:</strong> <span id="modalChef"></span></p>
+        <p><strong>Χρόνος:</strong>
+          <span id="modalPrepTime"></span>′ προετοιμασία,
+          <span id="modalCookTime"></span>′ μαγείρεμα
+        </p>
+        <p><strong>Μέθοδος:</strong> <span id="modalMethod"></span></p>
+        <p><strong>Κατηγορία:</strong> <span id="modalCategory"></span></p>
+        <p><strong>Tags:</strong> <span id="modalTags"></span></p>
+        <p><strong>Σύνδεσμος:</strong> <a href="#" id="modalUrl" target="_blank">Δες τη συνταγή</a></p>
+
+        <hr>
+        <p><strong>Υλικά:</strong></p>
+        <ul id="modalIngredients" style="padding-left: 20px;"></ul>
+
+        <p class="mt-3"><strong>Οδηγίες:</strong></p>
+        <div id="modalInstructions" style="white-space: pre-wrap; word-break: break-word;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 {% if request.endpoint not in ['login', 'signup'] and session.get('user_id') %}
 <!-- Side Menu Button -->

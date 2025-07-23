@@ -7,44 +7,59 @@
 
 <div class="container mt-4">
    <div class="row g-3">
-    {% for rec in favorites %}
-      <div class="col-12">
-        <div class="card shadow-sm h-100">
-          <div class="card-header d-flex justify-content-between align-items-center bg-light">
-            <span class="fw-bold" style="font-size:1.14em;">{{ rec.title }}</span>
-            <div>
-              <a href="{{ url_for('edit_favorite_recipe', recipe_id=rec.id) }}" class="btn btn-outline-primary btn-sm" title="Επεξεργασία">
-                <i class="fa fa-pen"></i>
-              </a>		
-				<button class="btn btn-danger btn-sm ms-1"
-						data-id="{{ rec.id }}"
-						data-title="{{ rec.title|tojson }}"
-						data-createdby="{{ rec.created_by or 0 }}"
-						onclick="deleteFavFromDataAttr(this)">
-				  <i class="fa fa-trash"></i>
-				</button>
-            </div>
-          </div>
-		  
-			<div class="card-body py-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between">
-			  <div>
-				<div class="mb-2 d-flex flex-wrap align-items-center gap-2" style="padding-top: 10px">
-				  <span class="badge bg-info text-dark"><i class="fa fa-user"></i> {{ rec.chef or '-' }}</span>
-				  <span class="badge bg-success"><i class="fa fa-clock"></i> {{ rec.total_time or '-' }}'</span>
-				  {% if rec.method %}
-					  <span class="badge bg-warning text-dark"><i class="fa fa-fire"></i> {{ rec.method }}</span>
-				  {% endif %}
-				  {% if rec.tags %}
-					  <span class="badge bg-secondary"><i class="fa fa-tag"></i> {{ rec.tags }}</span>
-				  {% endif %}				  
-				</div>
+	{% for rec in favorites %}
+	  <div class="col-12">
+		<div class="card shadow-sm h-100"
+			 onclick="openRecipeModal(this)"
+			 style="cursor: pointer;"
+			 data-title="{{ rec.title }}"
+			 data-chef="{{ rec.chef or '' }}"
+			 data-method="{{ rec.method or '' }}"
+			 data-category="{{ rec.main_dish_tag or '' }}"
+			 data-tags="{{ rec.tags or '' }}"
+			 data-url="{{ rec.url or '' }}"
+			 data-prep="{{ rec.prep_time or '' }}"
+			 data-cook="{{ rec.cook_time or '' }}"
+			 data-ingredients="{{ rec.ingredients or '' }}"
+			 data-instructions="{{ rec.instructions or '' }}"
+		>
+		  <div class="card-header d-flex justify-content-between align-items-center no-click" style="background-color: mintcream;">
+			<span class="fw-bold" style="font-size:1.1em;max-width: 300px;">{{ rec.title }}</span>
+			<div>
+			  <a href="{{ url_for('edit_favorite_recipe', recipe_id=rec.id) }}"
+				 class="btn btn-outline-primary btn-sm no-click"
+				 title="Επεξεργασία"
+				 onclick="event.stopPropagation()">
+				<i class="fa fa-pen"></i>
+			  </a>
+			  <button class="btn btn-danger btn-sm ms-1 no-click"
+					  data-id="{{ rec.id }}"
+					  data-title="{{ rec.title|tojson }}"
+					  data-createdby="{{ rec.created_by or 0 }}"
+					  onclick="event.stopPropagation(); deleteFavFromDataAttr(this)">
+				<i class="fa fa-trash"></i>
+			  </button>
+			</div>
+		  </div>
+
+		  <div class="card-body py-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between" style="background-color: beige;">
+			<div>
+			  <div class="d-flex flex-wrap align-items-center gap-2">
+				<span class="badge bg-info text-dark"><i class="fa fa-user"></i> {{ rec.chef or '-' }}</span>
+				<span class="badge bg-success"><i class="fa fa-clock"></i> {{ rec.total_time or '-' }}'</span>
+				{% if rec.method %}
+				  <span class="badge bg-warning text-dark"><i class="fa fa-fire"></i> {{ rec.method }}</span>
+				{% endif %}
+				{% if rec.tags %}
+				  <span class="badge bg-secondary"><i class="fa fa-tag"></i> {{ rec.tags }}</span>
+				{% endif %}
 			  </div>
 			</div>
+		  </div>
+		</div>
+	  </div>
+	{% endfor %}
 
-		  
-        </div>
-      </div>
-    {% endfor %}
 
     {% if favorites|length == 0 %}
       <div class="col-12">
@@ -86,6 +101,8 @@
 
 
 {% block modals %}
+
+
 
 <div class="modal fade" id="deleteFavoriteModal" tabindex="-1" aria-labelledby="deleteFavoriteModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -151,8 +168,6 @@ function deleteFavFromDataAttr(btn) {
   const created = btn.getAttribute('data-createdby');
   deleteFavorite(id, title, created);
 }
-
-
 
 function deleteFavorite(recipeId, title=null, created_by=0) {
   console.log("OK")
@@ -249,28 +264,35 @@ function showDeleteRecipeModal() {
 // Live search για προσθήκη
 function showAddFavorite() {
   let cell = document.getElementById("add-favorite-cell");
-  cell.innerHTML =
-    '<input type="text" id="fav-input" class="form-control" placeholder="Αναζήτηση πιάτου..." autocomplete="off" style="display:inline-block; width:220px;">' +
-    '<div id="fav-autocomplete" class="autocomplete-list"></div>';
+  cell.innerHTML = `
+    <div class="position-relative">
+      <input type="text"
+             id="fav-input"
+             class="form-control voice-enabled"
+             placeholder="Αναζήτηση πιάτου.. ή πάτα 🎤"
+             autocomplete="off"
+             style="display:inline-block; width:240px;">
+      <div id="fav-autocomplete" class="autocomplete-list"></div>
+    </div>
+  `;
+
   let input = document.getElementById("fav-input");
   let listDiv = document.getElementById("fav-autocomplete");
 
   input.focus();
-  
-    // Προσθέτεις global click handler
+
+  // Κλείσιμο input αν γίνει click εκτός
   function onClickOutside(event) {
-    // Αν το click ΔΕΝ είναι μέσα στο cell, κλείσε το input
     if (!cell.contains(event.target)) {
       cell.innerHTML = "";
       document.removeEventListener('mousedown', onClickOutside);
     }
   }
-  // Βάζεις τον handler
+
   setTimeout(() => {
     document.addEventListener('mousedown', onClickOutside);
   }, 0);
-  
-  
+
   input.addEventListener('input', function() {
     let val = removeTonos(input.value.trim());
     if (val.length < 2) {
@@ -318,6 +340,85 @@ function addFavorite(recipeId) {
     }
   });
 }
+
+function openRecipeModal(card) {
+  // Αν η κάρτα έχει την κλάση no-click, μην κάνεις τίποτα
+  if (card.classList.contains('no-click')) {
+    console.log("Modal μπλοκαρισμένο: είμαστε σε edit mode");
+    return;
+  }
+
+  const menuId = card.getAttribute('data-menuid');
+  const modal = new bootstrap.Modal(document.getElementById('recipeModal'));
+  document.getElementById('modalTitle').innerText = card.getAttribute('data-title') || '-';
+  document.getElementById('modalChef').innerText = card.getAttribute('data-chef') || '-';
+  document.getElementById('modalMethod').innerText = card.getAttribute('data-method') || '-';
+  document.getElementById('modalCategory').innerText = card.getAttribute('data-category') || '-';
+  document.getElementById('modalTags').innerText = card.getAttribute('data-tags') || '-';
+  document.getElementById('modalUrl').href = card.getAttribute('data-url') || '#';
+  document.getElementById('modalPrepTime').innerText = card.getAttribute('data-prep') || '-';
+  document.getElementById('modalCookTime').innerText = card.getAttribute('data-cook') || '-';
+
+  const ingStr = card.getAttribute('data-ingredients') || '';
+  const ingredients = ingStr.split(',').map(i => i.trim()).filter(Boolean);
+  const ingList = document.getElementById('modalIngredients');
+  ingList.innerHTML = '';
+  ingredients.forEach(i => {
+    const li = document.createElement('li');
+    li.innerText = i;
+    ingList.appendChild(li);
+  });
+
+  const instructions = card.getAttribute('data-instructions') || '';
+  document.getElementById('modalInstructions').innerText = instructions.trim();
+
+  modal.show();
+}
+
+document.addEventListener('click', function(e) {
+  const input = e.target.closest('.voice-enabled');
+  if (!input) return;
+
+  const clickX = e.clientX - input.getBoundingClientRect().left;
+  const inputWidth = input.offsetWidth;
+
+  if (clickX >= inputWidth - 36) {
+    startSpeechForFavorites();
+  }
+});
+
+function startSpeechForFavorites() {
+  const input = document.getElementById("fav-input");
+  if (!input || !('webkitSpeechRecognition' in window)) return;
+
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = 'el-GR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onaudiostart = function() {
+    input.classList.add('listening');
+    input.placeholderBackup = input.placeholder;
+    input.placeholder = "🎙️ Μίλα τώρα...";
+  };
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript.trim();
+    input.value = transcript;
+    input.dispatchEvent(new Event('input'));
+  };
+
+  recognition.onend = function() {
+    input.classList.remove('listening');
+    if (input.placeholderBackup) {
+      input.placeholder = input.placeholderBackup;
+      delete input.placeholderBackup;
+    }
+  };
+
+  recognition.start();
+}
+
 
 </script>
 

@@ -33,7 +33,7 @@
     {% set week_first_date = week_dates | last %}
     {% set week_last_date = week_dates | first %}
     <div class="card my-2 shadow-sm">
-      <div class="card-header bg-info-subtle d-flex justify-content-between align-items-center"
+      <div class="card-header bg-info-subtle d-flex justify-content-between align-items-center" style="font-size:1em"
            role="button"
            data-bs-toggle="collapse"
            href="#{{ collapse_id }}"
@@ -52,7 +52,7 @@
     {% set _ = shown_weeks.seen.append(current_week) %}
   {% endif %}
 
-  <div class="col-12">
+  <div class="col-12" id="row{{ row['id'] }}">
     <div class="card shadow-sm h-100">
       <div class="card-header bg-light d-flex justify-content-between align-items-center">
         <span>
@@ -100,12 +100,12 @@
 
 <div class="row g-3">
   <div class="col-12" style="padding-top: 20px;">
-    <div class="card shadow-sm h-auto">
+    <div class="card shadow-sm my-4">
       <div class="card-header" style="background-color:#9fd78b !important; font-size:1em !important;">
         <i class="fa fa-bullseye me-2 text-info"></i> Εβδομαδιαίοι Στόχοι (τελευταίες 7 ημέρες)
       </div>
-      <div class="card-body p-0">
-        <table class="table table-sm mb-0 goals-table" id="weekly-goals-table">
+      <div class="card-body">
+        <table class="table table-sm mb-0 goals-table" id="weekly-goals-table" style="font-size: smaller; text-align:center;">
           <thead>
             <tr>
               <th>Κατηγορία</th>
@@ -125,6 +125,7 @@
 {% endblock %}
 
 
+
 {% block modals %}
 <!-- Modal για ελλείπουσες μέρες -->
 <div class="modal fade" id="missingDaysModal" tabindex="-1" aria-labelledby="missingDaysModalLabel" aria-hidden="true">
@@ -141,7 +142,7 @@
           <button class="btn btn-success" id="yesManualBtn"><i class="fa fa-check"></i> Ναι</button>
           <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="fa fa-times"></i> Όχι</button>
         </div>
-        <div id="manualEntryBox" style="display:none;">
+        <div id="manualEntryBox" style="display:none;font-size: 18px; max-width:260px">
           <label>Γράψε τι καλό έφαγες τη(ν) <b id="currentDay"></b></label>
 			<div class="d-flex align-items-center gap-2 mb-2">
 			  <input type="text" id="manualDishTitle" class="form-control" autocomplete="off" placeholder="Αναζήτηση..." style="max-width: 300px;">
@@ -151,6 +152,7 @@
 			<div id="manual-autocomplete" class="autocomplete-list"></div>
           <button class="btn btn-primary" onclick="submitManualDish()">Καταχώρηση</button>
           <button class="btn btn-secondary" type="button" onclick="cancelManualEntry()">Άκυρο</button>
+		  <div id="manualEntryFeedback" class="mt-2"></div>
         </div>
       </div>
     </div>
@@ -173,17 +175,39 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="deleteHistoryModal" tabindex="-1" aria-labelledby="deleteHistoryModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 16px;">
+      <div class="modal-header bg-danger-subtle">
+        <h5 class="modal-title" id="deleteHistoryModalLabel">
+          <i class="fa fa-trash text-danger me-2"></i>Διαγραφή Πιάτου
+        </h5>
+      </div>
+      <div class="modal-body text-center" id="deleteHistoryModalBody" style="font-size:1.09em;">
+        Θέλεις σίγουρα να αφαιρέσεις αυτό το πιάτο από το ιστορικό;
+      </div>
+      <div class="modal-footer d-flex flex-column gap-2">
+        <button type="button" class="btn btn-danger btn-lg w-100" id="confirm-delete-history-btn">Διαγραφή</button>
+        <button type="button" class="btn btn-secondary btn-lg w-100" data-bs-dismiss="modal">Άκυρο</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
 let missingDays = {{ missing_days|tojson }};
+let missingDaysModal = null;
 let manualDayIdx = 0;
 let allRecipes = [];
 
 fetch('/get_recipes_for_autocomplete')
   .then(function(r) { return r.json(); })
   .then(function(data) { allRecipes = data; });
+
 
 function removeTonos(str) {
   if (!str) return "";
@@ -217,7 +241,6 @@ function toggleFavorite(icon, recipe_id) {
     }
   });
 }
-
 
 function updateWeeklyGoalsTable() {
   fetch('/get_weekly_goals_status')
@@ -276,8 +299,9 @@ window.addEventListener('DOMContentLoaded', function() {
       li.textContent = greekDate(d);
       list.appendChild(li);
     });
-    var modal = new bootstrap.Modal(document.getElementById('missingDaysModal'));
-    modal.show();
+	missingDaysModal = new bootstrap.Modal(document.getElementById('missingDaysModal'));
+	missingDaysModal.show();
+
 
     document.getElementById('yesManualBtn').onclick = function() {
       document.getElementById('manualEntryPrompt').style.display = 'none';
@@ -321,12 +345,15 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 function submitManualDish() {
-  let title = document.getElementById('manualDishTitle').value.trim();
-  let day = missingDays[manualDayIdx];
+  var title = document.getElementById('manualDishTitle').value.trim();
+  var day = missingDays[manualDayIdx];
+  var feedbackBox = document.getElementById('manualEntryFeedback');
+
   if (!title) {
-    document.getElementById('manualEntryFeedback').innerHTML = "<span class='text-danger'>Γράψε ένα πιάτο!</span>";
+    feedbackBox.innerHTML = "<span class='text-danger'>Γράψε ένα πιάτο!</span>";
     return;
   }
+
   fetch('/add_manual_recipe', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -336,30 +363,27 @@ function submitManualDish() {
   .then(function(data) {
     manualDayIdx++;
     document.getElementById('manualDishTitle').value = '';
-    document.getElementById('manualEntryFeedback').innerHTML = "<span class='text-success'>Καταχωρήθηκε!</span>";
+    feedbackBox.innerHTML = "<span class='text-success'>Καταχωρήθηκε!</span>";
 
     if (data.id && data.date && data.title) {
-      addDishToTable(data.id, data.date, data.title, data.chef, data.basic_category);
+      addCardToHistory(data.id, data.date, data.title, data.chef, data.basic_category, data.is_favorite, data.recipe_id);
     }
 
-    // ---- Αν έχει προταθεί modal για αγαπημένα ----
+    updateWeeklyGoalsTable();
+
     if (data.recipe_id) {
-      // Κλείσε το missingDaysModal πρώτα
       var modal = bootstrap.Modal.getInstance(document.getElementById('missingDaysModal'));
       if (modal) modal.hide();
 
-      // Άκου το event hidden του missingDaysModal, μετά άνοιξε το favDetailsModal
       document.getElementById('missingDaysModal').addEventListener('hidden.bs.modal', function handler() {
         this.removeEventListener('hidden.bs.modal', handler);
-        showAddFavoriteDialog(data.recipe_id, title); // <-- μόνο αυτό
+        showAddFavoriteDialog(data.recipe_id, title);
       });
     } else if (manualDayIdx < missingDays.length) {
-      // Επανέφερε το modal για την επόμενη μέρα ΑΜΕΣΩΣ (δεν έχει ενδιάμεσο modal)
       showNextMissingDayModal();
     } else {
-      var modal = bootstrap.Modal.getInstance(document.getElementById('missingDaysModal'));
-      if (modal) modal.hide();
-    }
+	if (missingDaysModal) missingDaysModal.hide();
+	}
   });
 }
 
@@ -479,22 +503,13 @@ function cancelManualEntry() {
 }
 
 function deleteHistoryEntry(id) {
-  if (!confirm('Θέλεις σίγουρα να διαγράψεις αυτό το πιάτο από το ιστορικό;')) return;
-  fetch('/delete_history_entry', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ id: id })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    if (data.status === 'ok') {
-      let row = document.getElementById('row' + id);
-      if (row) row.remove();
-	  updateWeeklyGoalsTable();
-    } else {
-      alert('Κάτι πήγε στραβά. Προσπάθησε ξανά!');
-    }
-  });
+  const confirmBtn = document.getElementById('confirm-delete-history-btn');
+  const modal = new bootstrap.Modal(document.getElementById('deleteHistoryModal'));
+  
+  // Βάζουμε προσωρινά το ID στο κουμπί
+  confirmBtn.dataset.entryId = id;
+  
+  modal.show();
 }
 
 function startSpeechForManual() {
@@ -529,6 +544,149 @@ function startSpeechForManual() {
 
   recognition.start();
 }
+
+function getISOWeekNumber(date) {
+  var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  var dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  var weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return weekNum;
+}
+
+function ensureWeekSection(year, week, dateStr) {
+  var collapseId = 'week-' + year + '_' + week;
+  if (document.getElementById(collapseId)) return;
+
+  var d = new Date(dateStr);
+  var day = d.getDay(); // 0 = Κυριακή
+  var diffToMonday = (day === 0 ? -6 : 1 - day);
+  var monday = new Date(d);
+  monday.setDate(d.getDate() + diffToMonday);
+  var sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  function formatDate(dt) {
+    var y = dt.getFullYear();
+    var m = String(dt.getMonth() + 1).padStart(2, '0');
+    var d = String(dt.getDate()).padStart(2, '0');
+    return d + '/' + m + '/' + y;
+  }
+
+  var weekLabel = 'Εβδομάδα ' + week + ' (' + formatDate(monday) + ' – ' + formatDate(sunday) + ')';
+
+  var wrapper = document.createElement('div');
+  wrapper.className = 'card my-2 shadow-sm';
+  wrapper.innerHTML =
+    '<div class="card-header bg-info-subtle d-flex justify-content-between align-items-center" style="font-size:1em"' +
+      ' role="button" data-bs-toggle="collapse" href="#' + collapseId + '" aria-expanded="true" aria-controls="' + collapseId + '">' +
+      '<span><i class="fa fa-calendar-week me-2 text-primary"></i>' + weekLabel + '</span>' +
+      '<span><i class="fa fa-chevron-down small"></i></span>' +
+    '</div>' +
+    '<div class="collapse show" id="' + collapseId + '">' +
+      '<div class="row g-3 mb-3 pt-2 px-2"></div>' +
+    '</div>';
+
+  var goalsSection = document.querySelector('.goals-table');
+  if (goalsSection) {
+    goalsSection.closest('.row').parentNode.insertBefore(wrapper, goalsSection.closest('.row'));
+  } else {
+    document.body.appendChild(wrapper);
+  }
+}
+
+function addCardToHistory(id, date, title, chef, category, is_favorite, recipe_id) {
+
+	console.log('[ADD CARD]');
+	console.log('- date:', date);
+	console.log('- title:', title);
+	console.log('- chef:', chef);
+	console.log('- category:', category);
+
+	var d = new Date(date);
+	console.log('- JS parsed date:', d);
+
+	var year = d.getFullYear();
+	var week = getISOWeekNumber(d);
+	console.log('- computed week:', week);
+	console.log('- computed year:', year);
+
+	var collapseId = 'week-' + year + '_' + week;
+	console.log('- collapseId:', collapseId);
+
+	ensureWeekSection(year, week, date);
+
+
+  ensureWeekSection(year, week, date); // ← Δημιουργεί την εβδομάδα αν δεν υπάρχει
+
+  var container = document.querySelector('#' + collapseId + ' .row.g-3');
+  if (!container) {
+    console.warn('Δεν βρέθηκε container για την εβδομάδα:', collapseId);
+    return;
+  }
+
+  var card = document.createElement('div');
+  card.className = 'col-12';
+  card.id = 'row' + id;
+
+  var favIconClass = is_favorite ? 'fas' : 'far';
+  var favColor = is_favorite ? '#c33' : 'gray';
+
+  var favoriteHTML = '';
+  if (recipe_id) {
+    favoriteHTML =
+      '<a href="javascript:void(0);" class="favorite-btn ms-1 d-inline-block" data-recipeid="' + recipe_id + '">' +
+        '<i class="fa ' + favIconClass + ' fa-heart" onclick="toggleFavorite(this, ' + recipe_id + ')"' +
+        ' style="color: ' + favColor + '; font-size:18px; cursor:pointer; vertical-align:-2px;"></i>' +
+      '</a>';
+  }
+
+  card.innerHTML =
+    '<div class="card shadow-sm h-100">' +
+      '<div class="card-header bg-light d-flex justify-content-between align-items-center">' +
+        '<span>' +
+          '<i class="fa fa-calendar-alt text-primary me-2"></i>' +
+          greekDate(date) +
+        '</span>' +
+        '<button class="btn btn-outline-danger btn-sm" title="Διαγραφή" onclick="deleteHistoryEntry(' + id + ')">' +
+          '<i class="fa fa-trash"></i>' +
+        '</button>' +
+      '</div>' +
+      '<div class="card-body py-3 d-flex flex-column align-items-stretch justify-content-center">' +
+        '<div class="d-flex align-items-center mb-2">' +
+          '<span class="fw-bold" style="font-size:1.14em;">' + title + '</span>' +
+          favoriteHTML +
+        '</div>' +
+        '<div class="small text-muted mb-1">' +
+          '<span class="me-2"><i class="fa fa-user"></i> ' + (chef || '-') + '</span>' +
+          '<span class="me-2"><i class="fa fa-tag"></i> ' + (category || '-') + '</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  container.prepend(card);
+}
+
+document.getElementById('confirm-delete-history-btn').addEventListener('click', function() {
+  const id = this.dataset.entryId;
+  fetch('/delete_history_entry', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ id: id })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.status === 'ok') {
+      let row = document.getElementById('row' + id);
+      if (row) row.remove();
+      updateWeeklyGoalsTable();
+      const modal = bootstrap.Modal.getInstance(document.getElementById('deleteHistoryModal'));
+      if (modal) modal.hide();
+    } else {
+      alert('Κάτι πήγε στραβά. Προσπάθησε ξανά!');
+    }
+  });
+});
 
 
 </script>

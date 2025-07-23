@@ -37,24 +37,6 @@
 </style>
 
 <style>
-.voice-enabled {
-  background-image: url("data:image/svg+xml,%3Csvg fill='gray' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 12a3 3 0 0 0 3-3V4a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z'/%3E%3Cpath d='M5 9.995a5 5 0 0 0 10 0h-1a4 4 0 0 1-8 0H5z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 18px 18px;
-  padding-right: 36px;
-  cursor: text;
-}
-</style>
-
-<style>
-.voice-enabled.listening {
-  background-color: #fff7cc !important; /* απαλό κίτρινο */
-  transition: background-color 0.3s ease;
-}
-</style>
-
-<style>
 
 .menu-onboarding-tip {
   font-family: 'Indie Flower', cursive, Arial, sans-serif;
@@ -237,7 +219,7 @@
         <i class="fa fa-bullseye me-2 text-info"></i> Εβδομαδιαίοι Στόχοι
       </div>
   <div class="card-body">
-    <table class="table table-sm mb-0 goals-table">
+    <table class="table table-sm mb-0 goals-table" style="text-align:center";>
       <thead>
         <tr>
           <th>Κατηγορία</th>
@@ -346,45 +328,13 @@
   </div>
 </div>
 
-<div class="modal fade" id="recipeModal" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header bg-primary" style="border-radius: 1.5rem !important;">
-        <h5 class="modal-title" id="recipeModalLabel">Λεπτομέρειες Συνταγής</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" style="background:#fefefe; max-height:75vh; overflow-y:auto;">
-        <p><strong>Τίτλος:</strong> <span id="modalTitle"></span></p>
-        <p><strong>Σεφ:</strong> <span id="modalChef"></span></p>
-        <p><strong>Χρόνος:</strong>
-          <span id="modalPrepTime"></span>′ προετοιμασία,
-          <span id="modalCookTime"></span>′ μαγείρεμα
-        </p>
-        <p><strong>Μέθοδος:</strong> <span id="modalMethod"></span></p>
-        <p><strong>Κατηγορία:</strong> <span id="modalCategory"></span></p>
-        <p><strong>Tags:</strong> <span id="modalTags"></span></p>
-        <p><strong>Σύνδεσμος:</strong> <a href="#" id="modalUrl" target="_blank">Δες τη συνταγή</a></p>
-
-        <hr>
-        <p><strong>Υλικά:</strong></p>
-        <ul id="modalIngredients" style="padding-left: 20px;"></ul>
-
-        <p class="mt-3"><strong>Οδηγίες:</strong></p>
-        <div id="modalInstructions" style="white-space: pre-wrap; word-break: break-word;"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
 
 {% endblock %}
 
 
 {% block scripts %}
 
-
 <script src="{{ url_for('static', filename='JS/menu_onboarding.js') }}"></script>
-
 
 {% if show_success_modal %}
 <script>
@@ -400,7 +350,6 @@
   });
 </script>
 {% endif %}
-
 
 <script>
 let isAutocompleteClick = false;
@@ -428,8 +377,6 @@ fetch('/get_recipes_for_autocomplete')
     });
   });
 {% endif %}
-
-
 
 // Αφαίρεση τόνων, πεζά
 function removeTonos(str) {
@@ -610,7 +557,6 @@ function showAllergyModal(msg, onContinue, onCancel) {
   };
 }
 
-
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.menu-dropzone').forEach(function(zone){
     Sortable.create(zone, {
@@ -651,7 +597,6 @@ function swapDishes(menuIdFrom, menuIdTo) {
       else location.reload(); // προαιρετικά refresh για σιγουριά
   });
 }
-
 
 function openRecipeModal(card) {
   // Αν η κάρτα έχει την κλάση no-click, μην κάνεις τίποτα

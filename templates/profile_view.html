@@ -62,7 +62,6 @@
 </style>
 
 
-
 <div class="row mb-4">
 
   <div class="col-12 col-md-7">
@@ -1213,7 +1212,7 @@ window.addEventListener("DOMContentLoaded", function () {
       document.getElementById("onboardingTooltip6").style.display = "none";
       localStorage.setItem("onboarding_step6_shown", "1");
       localStorage.setItem("onboarding_done", "1");
-      fetch("/api/onboarding_complete", { method: "POST" });
+      
     });
   }
 });
