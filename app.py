@@ -12,7 +12,7 @@ app.secret_key = "d7gAq2d9bJz@7qK2kLxw!"
 DB = "family_food_app.db"
 
 WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"]
-
+default_minutes = 60
 
 @app.route("/api/onboarding_complete", methods=["POST"])
 def onboarding_complete():
@@ -27,7 +27,6 @@ def onboarding_complete():
 
     session["onboarding_done"] = 1  # για άμεση χρήση στη session
     return "", 204  # No content
-
 
 @app.route("/login/google/callback")
 def google_login_callback():
@@ -58,7 +57,6 @@ def google_login_callback():
     conn.close()
     session["user_id"] = user_id
     return redirect(url_for("welcome"))
-
 
 def get_user():
     user_id = session.get("user_id", 1)  # default = 1 για debug
@@ -238,7 +236,7 @@ def delete_user_recipe():
 @app.route("/favorites/edit/<int:recipe_id>", methods=["GET", "POST"])
 def edit_favorite_recipe(recipe_id):
     user, _ = get_user()
-    user_id = user["id"] if "id" in user else 1
+    user_id = user["id"]
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
 
@@ -319,7 +317,7 @@ def edit_favorite_recipe(recipe_id):
 @app.route("/reset_favorite_recipe", methods=["POST"])
 def reset_favorite_recipe():
     user, _ = get_user()
-    user_id = user["id"] if "id" in user else 1
+    user_id = user["id"]
     data = request.get_json()
     recipe_id = data.get("recipe_id")
     parent_id = data.get("parent_id")
@@ -354,7 +352,7 @@ def delete_recipe(rid):
 @login_required
 def favorites():
     user, _ = get_user()
-    user_id = user["id"] if "id" in user else 1
+    user_id = user["id"]
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     favorites = conn.execute("""
@@ -371,7 +369,7 @@ def favorites():
 @app.route('/toggle_favorite_recipe', methods=['POST'])
 def toggle_favorite_recipe():
     user, _ = get_user()
-    user_id = 1
+    user_id = user["id"]
     data = request.get_json()
     recipe_id = data.get("recipe_id")
     if not recipe_id:
@@ -395,10 +393,9 @@ def toggle_favorite_recipe():
 @app.route("/add_favorite_recipe", methods=["POST"])
 def add_favorite_recipe():
     user, _ = get_user()
-    user_id = user["id"] if "id" in user else 1
+    user_id = user["id"]
     data = request.get_json()
     recipe_id = data.get("recipe_id")
-    print(recipe_id)
     if not recipe_id:
         return jsonify(success=False)
     try:
@@ -413,7 +410,7 @@ def add_favorite_recipe():
 @app.route("/delete_favorite_recipe", methods=["POST"])
 def delete_favorite_recipe():
     user, _ = get_user()
-    user_id = user["id"] if "id" in user else 1
+    user_id = user["id"]
     data = request.get_json()
     recipe_id = data.get("recipe_id")
     if not recipe_id:
@@ -429,7 +426,7 @@ def delete_favorite_recipe():
 @app.route('/delete_all_favorite_recipes', methods=['POST'])
 def delete_all_favorite_recipes():
     user, _ = get_user()
-    user_id = 1  # Ή ό,τι λογική έχεις για user_id
+    user_id = user["id"]
     conn = sqlite3.connect(DB)
     conn.execute("DELETE FROM favorite_recipes WHERE user_id=?", (user_id,))
     conn.commit()
@@ -622,7 +619,6 @@ def get_all_allergens():
                 all_allergs.add(a)
     return sorted(all_allergs)
 
-
 @app.route("/profile")
 @login_required
 def profile():
@@ -781,7 +777,6 @@ def menu():
     user, members = get_user()
     user_id = user["id"]
     week_start = get_current_week_start()
-    edit_mode = request.args.get("edit", "0") == "1"
 
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
@@ -789,117 +784,143 @@ def menu():
     def split_and_strip(s):
         return set(x.strip().lower() for x in (s or '').split(',') if x.strip())
 
-    # Αγαπημένα recipes
+    # Πάρε το αποθηκευμένο μενού (αν υπάρχει)
+    c = conn.execute(
+        "SELECT * FROM weekly_menu WHERE user_id=? AND week_start_date=? ORDER BY day_of_week ASC",
+        (user_id, str(week_start))
+    )
+    saved_menu = c.fetchall()
+
     fav_rows = conn.execute("SELECT recipe_id FROM favorite_recipes WHERE user_id=?", (user_id,)).fetchall()
     fav_ids = set(r["recipe_id"] for r in fav_rows)
-
-    # Δες αν έχει ήδη μενού για την εβδομάδα (saved)
-    c = conn.execute("SELECT * FROM weekly_menu WHERE user_id=? AND week_start_date=? ORDER BY day_of_week ASC", (user_id, str(week_start)))
-    saved_menu = c.fetchall()
     menu_entries = []
     categories = ['κόκκινο κρέας', 'ψάρι', 'όσπρια', 'λαδερά', 'ζυμαρικά', 'πουλερικά', 'σαλάτα', 'delivery']
+    preferred_methods = [m.strip().lower() for m in (user["cooking_method"] or "").split(",") if m.strip()]
+    fav_chef = (user["chef"] or "").strip()
 
-    if len(saved_menu) == 7:
-        preferred_methods = [m.strip().lower() for m in (user["cooking_method"] or "").split(",") if m.strip()]
-        fav_chef = (user["chef"] or "").strip()
-        cooktimes = []
-        for d in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']:
-            val = user[f"cooktime_{d}"] if f"cooktime_{d}" in user.keys() else None
-            try:
-                cooktimes.append(int(val))
-            except:
-                cooktimes.append(120)
-        for entry in saved_menu:
-            recipe = None
-            if entry["recipe_id"]:
-                recipe = conn.execute("SELECT * FROM recipes WHERE id=?", (entry["recipe_id"],)).fetchone()
-            category = ""
-            if recipe:
-                category = (recipe["main_dish_tag"] or "").capitalize() if "main_dish_tag" in recipe.keys() else ""
-                if not category:
-                    for cat in categories:
-                        if cat in (recipe["tags"] or "").lower():
-                            category = cat.capitalize()
-                            break
-            criteria_text = []
-            try:
-                day_idx = int(entry["day_of_week"])
-            except:
-                day_idx = 0
-            if recipe and recipe["total_time"] and abs(int(recipe["total_time"]) - cooktimes[day_idx]) <= 10:
-                criteria_text.append("✓ χρόνος OK")
-            elif recipe and recipe["total_time"]:
-                criteria_text.append("✓ χρόνος σχετικός")
-            if recipe:
-                dish_methods = [m.strip().lower() for m in (recipe["method"] or "").split(",") if m.strip()]
-                if dish_methods and all(dm in preferred_methods for dm in dish_methods):
-                    criteria_text.append("✓ τρόπος")
-            if recipe and fav_chef and fav_chef.lower() in (recipe["chef"] or "").lower():
-                criteria_text.append("✓ σεφ")
-            criteria = ", ".join(criteria_text) if criteria_text else "-"
-            menu_entries.append({
-                "day": WEEKDAYS_GR[entry["day_of_week"]],
-                "title": recipe["title"] if recipe else entry["title"] if "title" in entry.keys() else "Δεν βρέθηκε πιάτο",
-                "chef": recipe["chef"] if recipe else "",
-                "prep_time": recipe["prep_time"] if recipe else "-",
-                "cook_time": recipe["cook_time"] if recipe else "-",
-                "duration": recipe["total_time"] if recipe else "-",
-                "method": recipe["method"] if recipe else "-",
-                "url": recipe["url"] if recipe else "",
-                "criteria": criteria,
-                "ingredients": recipe["ingredients"] if recipe else "-",
-                "instructions": recipe["instructions"] if recipe else "-",
-                "menu_id": entry["id"] if recipe else "-",
-                "tags": recipe["tags"] if recipe else "",
-                "category": category if recipe else "-",
-                "is_favorite": (recipe["id"] in fav_ids) if recipe else False,
-                "recipe_id": recipe["id"] if recipe else None
-            })
-        # ---- Υπολογισμός επίτευξης στόχων (νέο format) ----
-        weekly_goals = conn.execute("SELECT * FROM weekly_goals WHERE user_id=?", (user_id,)).fetchall()
-        goals_achievement = []
-        for g in weekly_goals:
-            cat = g["category"].strip().lower()
-            min_times = g["min_times"]
-            max_times = g["max_times"]
-            count_in_menu = sum(
-                1 for r in menu_entries if r and cat in (r["tags"] or '').lower()
-            )
-            goals_achievement.append({
-                "category": cat,
-                "min_times": min_times,
-                "max_times": max_times,
-                "count": count_in_menu
-            })
-        # Unreachable goals
-        c2 = conn.execute("SELECT * FROM recipes")
-        all_recipes = [dict(r) for r in c2.fetchall()]
-        all_allergies = set()
-        for m in members:
-            if m["allergies"]:
-                all_allergies.update(split_and_strip(m["allergies"]))
-        valid_recipes = []
-        for r in all_recipes:
-            allergens_in_recipe = split_and_strip(r.get("allergens", ""))
-            if not (all_allergies & allergens_in_recipe):
-                valid_recipes.append(r)
-        unreachable_goals = []
-        for g in weekly_goals:
-            cat = g["category"].strip().lower()
-            available = [r for r in valid_recipes if cat in (r["tags"] or '').lower()]
-            if not available:
-                unreachable_goals.append(cat)
-        conn.close()
-        return render_template(
-            "menu.html",
-            menu=menu_entries,
-            edit_mode=edit_mode,
-            goals_achievement=goals_achievement,
-            unreachable_goals=unreachable_goals,
-            menu_1st_day=7
+    cooktimes = []
+    for d in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']:
+        val = user[f"cooktime_{d}"] if f"cooktime_{d}" in user.keys() else None
+        try:
+            cooktimes.append(int(val))
+        except (TypeError, ValueError):
+            cooktimes.append(60)
+
+    for entry in saved_menu:
+        recipe = None
+        if entry["recipe_id"]:
+            recipe = conn.execute("SELECT * FROM recipes WHERE id=?", (entry["recipe_id"],)).fetchone()
+
+        category = ""
+        if recipe:
+            category = (recipe["main_dish_tag"] or "").capitalize()
+            if not category:
+                for cat in categories:
+                    if cat in (recipe["tags"] or "").lower():
+                        category = cat.capitalize()
+                        break
+
+        try:
+            day_idx = int(entry["day_of_week"])
+        except:
+            day_idx = 0
+
+        criteria_text = []
+        if recipe and recipe["total_time"] and abs(int(recipe["total_time"]) - cooktimes[day_idx]) <= 10:
+            criteria_text.append("✓ χρόνος OK")
+        elif recipe and recipe["total_time"]:
+            criteria_text.append("✓ χρόνος σχετικός")
+
+        if recipe:
+            dish_methods = [m.strip().lower() for m in (recipe["method"] or "").split(",") if m.strip()]
+            if dish_methods and all(dm in preferred_methods for dm in dish_methods):
+                criteria_text.append("✓ τρόπος")
+
+        if recipe and fav_chef and fav_chef.lower() in (recipe["chef"] or "").lower():
+            criteria_text.append("✓ σεφ")
+
+        criteria = ", ".join(criteria_text) if criteria_text else "-"
+
+        menu_entries.append({
+            "day": WEEKDAYS_GR[entry["day_of_week"]],
+            "title": recipe["title"] if recipe else entry["title"] if "title" in entry.keys() else "Δεν βρέθηκε πιάτο",
+            "chef": recipe["chef"] if recipe else "",
+            "prep_time": recipe["prep_time"] if recipe else "-",
+            "cook_time": recipe["cook_time"] if recipe else "-",
+            "duration": recipe["total_time"] if recipe else "-",
+            "method": recipe["method"] if recipe else "-",
+            "url": recipe["url"] if recipe else "",
+            "criteria": criteria,
+            "ingredients": recipe["ingredients"] if recipe else "-",
+            "instructions": recipe["instructions"] if recipe else "-",
+            "menu_id": entry["id"] if recipe else "-",
+            "tags": recipe["tags"] if recipe else "",
+            "category": category if recipe else "-",
+            "is_favorite": (recipe["id"] in fav_ids) if recipe else False,
+            "recipe_id": recipe["id"] if recipe else None
+        })
+
+    # Στόχοι & αλλεργίες
+    weekly_goals = conn.execute("SELECT * FROM weekly_goals WHERE user_id=?", (user_id,)).fetchall()
+    goals_achievement = []
+    for g in weekly_goals:
+        cat = g["category"].strip().lower()
+        min_times = g["min_times"]
+        max_times = g["max_times"]
+        count_in_menu = sum(
+            1 for r in menu_entries if r and cat in (r["tags"] or '').lower()
         )
+        goals_achievement.append({
+            "category": cat,
+            "min_times": min_times,
+            "max_times": max_times,
+            "count": count_in_menu
+        })
 
-    # --- Αν ΔΕΝ έχει έτοιμο μενού, ΔΗΜΙΟΥΡΓΙΑ με τον νέο αλγόριθμο min/max ---
+    # Ανέφικτοι στόχοι
+    all_recipes = [dict(r) for r in conn.execute("SELECT * FROM recipes").fetchall()]
+    all_allergies = set()
+    for m in members:
+        if m["allergies"]:
+            all_allergies.update(split_and_strip(m["allergies"]))
+
+    valid_recipes = []
+    for r in all_recipes:
+        allergens_in_recipe = split_and_strip(r.get("allergens", ""))
+        if not (all_allergies & allergens_in_recipe):
+            valid_recipes.append(r)
+
+    unreachable_goals = []
+    for g in weekly_goals:
+        cat = g["category"].strip().lower()
+        available = [r for r in valid_recipes if cat in (r["tags"] or '').lower()]
+        if not available:
+            unreachable_goals.append(cat)
+
+    conn.close()
+
+    show_success_modal = 0
+    show_success_modal = request.args.get("created") == "1"
+    print(show_success_modal)
+    
+    return render_template(
+        "menu.html",
+        menu=menu_entries,
+        goals_achievement=goals_achievement,
+        unreachable_goals=unreachable_goals,
+        menu_1st_day=1,
+        show_success_modal=show_success_modal
+    )
+
+def create_weekly_menu(user, members):
+    user_id = user["id"]
+    week_start = get_current_week_start()
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    def split_and_strip(s):
+        return set(x.strip().lower() for x in (s or '').split(',') if x.strip())
+
     preferred_methods = [m.strip().lower() for m in (user["cooking_method"] or "").split(",") if m.strip()]
     fav_chef = (user["chef"] or "").strip()
     cooktimes = []
@@ -907,9 +928,8 @@ def menu():
         val = user[f"cooktime_{d}"] if f"cooktime_{d}" in user.keys() else None
         try:
             cooktimes.append(int(val))
-        except:
-            cooktimes.append(120)
-
+        except (TypeError, ValueError):
+            cooktimes.append(default_minutes)
     weekly_goals = conn.execute("SELECT * FROM weekly_goals WHERE user_id=?", (user_id,)).fetchall()
     goals = []
     for g in weekly_goals:
@@ -925,6 +945,7 @@ def menu():
     for m in members:
         if m["allergies"]:
             all_allergies.update(split_and_strip(m["allergies"]))
+
     valid_recipes = []
     for r in all_recipes:
         allergens_in_recipe = split_and_strip(r.get("allergens", ""))
@@ -935,10 +956,11 @@ def menu():
     used_titles = set()
     used_tags = set()
     week_menu = [None] * 7
+    categories = ['κόκκινο κρέας', 'ψάρι', 'όσπρια', 'λαδερά', 'ζυμαρικά', 'πουλερικά', 'σαλάτα', 'delivery']
     category_counts = {cat: 0 for cat in categories}
     sorted_days = sorted([(i, cooktimes[i]) for i in range(7)], key=lambda x: x[1])
 
-    # --- 1. Πρώτα ικανοποιούμε το min_times για κάθε στόχο ---
+    # 1. Ικανοποίησε min_times
     for goal in goals:
         cat = goal["category"]
         min_times = goal["min_times"]
@@ -971,7 +993,7 @@ def menu():
                     category_counts[category] += 1
             added += 1
 
-    # --- 2. Συμπλήρωσε τα υπόλοιπα πιάτα χωρίς να ξεπερνάς max_times ---
+    # 2. Συμπλήρωσε τα υπόλοιπα
     for i, _ in sorted_days:
         if week_menu[i] is not None:
             continue
@@ -984,7 +1006,6 @@ def menu():
                 continue
             if r.get("main_dish_tag") and r["main_dish_tag"].lower() in used_tags:
                 continue
-            # ΕΛΕΓΧΟΣ max_times για κάθε στόχο
             skip = False
             for goal in goals:
                 cat = goal["category"]
@@ -1000,8 +1021,6 @@ def menu():
                 diff = abs(int(r["total_time"]) - day_time)
                 if diff > 30:
                     continue
-                elif diff > 20:
-                    score += 0
                 elif diff <= 10:
                     score += 5
                 elif diff <= 20:
@@ -1011,6 +1030,7 @@ def menu():
             if fav_chef and fav_chef.lower() in (r["chef"] or "").lower():
                 score += 1
             candidates.append((score, r))
+
         candidates = sorted(candidates, key=lambda x: -x[0])
         chosen = None
         if candidates and candidates[0][0] > 0:
@@ -1036,7 +1056,7 @@ def menu():
                 if category in (chosen["tags"] or '').lower():
                     category_counts[category] += 1
 
-    # --- Save το νέο μενού στη βάση ---
+    # 3. Save στη βάση
     for i, day in enumerate(WEEKDAYS_GR):
         chosen = week_menu[i]
         if chosen:
@@ -1062,101 +1082,24 @@ def menu():
                 VALUES (?, ?, ?, NULL, ?)
             """, (user_id, str(week_start), i, "Δεν πληρούνται τα βασικά κριτήρια"))
 
-    favorite_recipes = set(row["recipe_id"] for row in conn.execute("SELECT recipe_id FROM favorite_recipes WHERE user_id=?", (user_id,)))
     conn.commit()
     conn.close()
-
-    # --- Παραγωγή μενού για Jinja (final_menu) ---
-    final_menu = []
-    for i, chosen in enumerate(week_menu):
-        if chosen:
-            criteria_text = []
-            if chosen["total_time"] and abs(int(chosen["total_time"]) - cooktimes[i]) <= 10:
-                criteria_text.append("✓ χρόνος OK")
-            elif chosen["total_time"]:
-                criteria_text.append("✓ χρόνος σχετικός")
-            πιατο_methods = [(m.strip().lower()) for m in (chosen["method"] or "").split(",") if m.strip()]
-            if preferred_methods:
-                if all(pm in preferred_methods for pm in πιατο_methods):
-                    criteria_text.append("✓ τρόπος")
-            if fav_chef and fav_chef.lower() in (chosen["chef"] or "").lower():
-                criteria_text.append("✓ σεφ")
-            criteria = ", ".join(criteria_text) if criteria_text else "-"
-            final_menu.append({
-                "day": WEEKDAYS_GR[i],
-                "title": chosen["title"],
-                "chef": chosen["chef"],
-                "duration": chosen["total_time"],
-                "method": chosen["method"],
-                "url": chosen["url"],
-                "criteria": criteria,
-                "tags": chosen.get("tags", ""),
-                "category": (chosen.get("main_dish_tag") or "").capitalize(),
-                "is_favorite": chosen["id"] in favorite_recipes,
-                "recipe_id": chosen["id"],
-            })
-        else:
-            final_menu.append({
-                "day": WEEKDAYS_GR[i],
-                "title": "Δεν βρέθηκε πιάτο",
-                "chef": "",
-                "duration": "-",
-                "method": "-",
-                "url": "",
-                "criteria": "Δεν πληρούνται τα βασικά κριτήρια",
-                "tags": "",
-                "category": "",
-                "is_favorite": False,
-                "recipe_id": None,
-            })
-
-    # --- Υπολογισμός επίτευξης στόχων για το νέο μενού ---
-    goals_achievement = []
-    for goal in goals:
-        cat = goal["category"]
-        min_times = goal["min_times"]
-        max_times = goal["max_times"]
-        count_in_menu = sum(
-            1 for r in final_menu if r and cat in (r["tags"] or '').lower()
-        )
-        goals_achievement.append({
-            "category": cat,
-            "min_times": min_times,
-            "max_times": max_times,
-            "count": count_in_menu
-        })
-
-    # --- Unreachable goals ---
-    unreachable_goals = []
-    for goal in goals:
-        cat = goal["category"]
-        available = [r for r in valid_recipes if cat in (r["tags"] or '').lower()]
-        if not available:
-            unreachable_goals.append(cat)
-
-    print("New weekly menu created!")
-
-    return render_template(
-        "menu.html",
-        menu=final_menu,
-        edit_mode=edit_mode,
-        goals_achievement=goals_achievement,
-        unreachable_goals=unreachable_goals,
-        menu_1st_day=7
-    )
+    print("New weekly MENU created")
 
 @app.route("/generate_menu", methods=["POST"])
 def generate_menu():
     user, members = get_user()
-    user_id = 1
+    user_id = user["id"]
     week_start = get_current_week_start()
+
     conn = sqlite3.connect(DB)
-    # Διαγραφή του εβδομαδιαίου μενού για τον χρήστη/εβδομάδα
     conn.execute("DELETE FROM weekly_menu WHERE user_id=? AND week_start_date=?", (user_id, str(week_start)))
     conn.commit()
     conn.close()
-    # Ανακατεύθυνση στο /menu για να δημιουργηθεί νέο
-    return redirect(url_for("menu"))
+
+    create_weekly_menu(user, members)
+
+    return redirect(url_for("menu", created=1))
 
 @app.route('/swap_menu_entries', methods=['POST'])
 def swap_menu_entries():
@@ -1537,7 +1480,7 @@ def cook_dish():
     recipe_id = str(data.get('recipe_id'))      # Βεβαιώσου ότι είναι string!
     title = data.get('title', '')
     date = data.get('date', datetime.now().strftime('%Y-%m-%d'))
-    user_id = 1  # Για demo
+    user_id = user["id"]
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     c.execute("SELECT id, title, recipe_id FROM cooked_dishes WHERE user_id=? AND date=?", (user_id, date))
@@ -1566,7 +1509,7 @@ def update_cooked_dish():
     title = data.get('title')
     date = data.get('date')
     user, _ = get_user()
-    user_id = 1  # <--- Για demo mode, μέχρι να έχεις login/user system
+    user_id = user["id"]
     try:
         conn = sqlite3.connect(DB)
         cur = conn.cursor()
