@@ -1,6 +1,6 @@
 {
   "name": "Family Food",
-  "short_name": "FoodApp",
+  "short_name": "FamilFood",
   "start_url": "/login",
   "display": "standalone",
   "background_color": "#ffffff",
