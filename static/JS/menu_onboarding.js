@@ -2,13 +2,17 @@
 
 // LocalStorage helpers
 function isMenuOnboardingDone() {
-  return localStorage.getItem('menu_ondording_done') === '1';
+  return localStorage.getItem('menu_onboarding_done') === '1';
 }
 function setMenuOnboardingDone() {
-  localStorage.setItem('menu_ondording_done', '1');
+  localStorage.setItem('menu_onboarding_done', '1');
+  if (localStorage.getItem('onboarding_done') && localStorage.getItem('menu_onboarding_done'))	{
+  console.log ("OK!")
+  fetch("/api/onboarding_complete", { method: "POST" });
+  }
 }
 function resetMenuOnboarding() {
-  localStorage.setItem('menu_ondording_done', '0');
+  localStorage.setItem('menu_onboarding_done', '0');
   localStorage.setItem('menu_onboarding_step', '0');
 }
 function getMenuOnboardingStep() {
