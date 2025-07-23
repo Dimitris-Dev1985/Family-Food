@@ -356,11 +356,11 @@ def favorites():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     favorites = conn.execute("""
-    SELECT r.id, r.title, r.chef, r.total_time, r.created_by, r.parent_id, r.method, r.tags
+    SELECT r.id, r.title, r.chef, r.prep_time, r.cook_time, r.url, r.main_dish_tag, r.total_time, r.created_by, r.parent_id, r.method, r.tags, r.ingredients, r.instructions, r.allergens
     FROM favorite_recipes f
     JOIN recipes r ON r.id = f.recipe_id
     WHERE f.user_id=?
-    ORDER BY r.title COLLATE NOCASE
+    ORDER BY f.rowid ASC
     """, (user_id,)).fetchall()
 
     conn.close()
