@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color" content="#f44336">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   {% block head %}{% endblock %}
 
 <style>
@@ -106,7 +106,8 @@ body {
   .modal-dialog { max-width: 380px !important; margin: 0.5rem auto; position: relative; }
   .modal-content {
     display: flow; border-radius: 2rem; padding: 0.5em 0.5em 0.4em 0.5em;
-    overflow-y: auto; max-height: 90vh; align-items: center;
+    overflow-y: visible; max-height: 90vh; align-items: center; z-index: 1005;
+
   }
   .modal-title { font-size: 1.1rem !important; }
   .modal-body { flex: 1 1 auto; overflow-y: auto; }
@@ -137,14 +138,16 @@ body {
 </style>
 
 <style>
-.goals-table thead {
-  background-color: #e9f2fb;
-  color: #003366;
+.goals-table thead th {
+  background-color: #e9f2fb !important;
+  color: #003366 !important;
 }
 
-.goals-table tbody tr:nth-child(odd) {
-  background-color: #f8fbff;
+
+.goals-table tbody tr:nth-child(odd) td {
+  background-color: #f8fbff !important;
 }
+
 
 .goals-table td {
   vertical-align: middle;
@@ -156,13 +159,57 @@ body {
 }
 
 .goal-check.success {
-  color: #198754; /* Bootstrap πράσινο */
+  color: #198754 !important;
 }
 
 .goal-check.fail {
-  color: #dc3545; /* Bootstrap κόκκινο */
+  color: #dc3545 !important;
 }
 </style>
+
+<style>
+
+#onboardingTooltip6 {
+  position: fixed;
+  bottom: 70px !important;
+  left: 100px !important;
+  background: #fff9db;
+  padding: 10px 14px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  z-index: 1000;
+  max-width: 230px;
+  font-size: 14px;
+  text-align: center;
+  animation: pulse 1s infinite;
+  transform: translate(0, 0);
+}
+#onboardingTooltip6::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 16px;
+  width: 14px;
+  height: 14px;
+  background: #fff9db;
+  transform: rotate(45deg);
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  border-right: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.08);
+  z-index: 0;
+}
+
+/* Παλμός (αναβόσβημα) */
+@keyframes pulse {
+  0%   { transform: scale(1); box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
+  50%  { transform: scale(1.03); box-shadow: 0 0 20px rgba(255, 255, 255, 0.9); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
+}
+
+
+</style>
+
+
 
 
 </head>
@@ -254,6 +301,12 @@ body {
 {% endif %}
 -->
 
+<div id="onboardingTooltip6" class="onboardingTooltip6" style="display:none;">
+  👉 Πάτα ΕΔΩ για να δεις το εβδομαδιαίο πλάνο σου!
+  <div class="arrow-down"></div>
+</div>
+
+
   {% block modals %}{% endblock %} 
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -273,6 +326,10 @@ body {
 	}
 	
   </script>
+
+<script src="{{ url_for('static', filename='JS/tooltip6_global.js') }}"></script>
+
+
 
   {% block scripts %}{% endblock %}
 

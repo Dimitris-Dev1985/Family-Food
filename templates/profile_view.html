@@ -9,36 +9,33 @@
   background: rgba(0,0,0,0.5);
   z-index: 999;
 }
-
 #onboardingTooltip2 {
-  position: fixed;
-  top: 220px;
-  right: 90px;
+  position: absolute; /* fixed ή absolute ανάλογα πού το βάζεις */
   background: #fff9db;
   padding: 10px 10px;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  z-index: 1000;
-  max-width: 200px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1002;
+  max-width: 230px;
   font-size: 14px;
+  text-align: center;
   animation: pulse 1.5s infinite;
-  max-width: 220px;
-  word-wrap: break-word;
-  line-height: 1.4;
+  visibility: hidden;
+  display: none;
 }
 
 #onboardingTooltip2 .arrow-down {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 50px
+  transform: translateX(-50%) rotate(45deg);
   width: 14px;
   height: 14px;
   background: #fff9db;
-  transform: rotate(45deg);
-  position: absolute;
-  bottom: -7px;
-  right: 14px;
-  z-index: -1;
-  box-shadow: 1px 1px 3px rgba(0,0,0,0.08);
-  border-bottom: 1px solid rgba(0,0,0,0.1);
-  border-right: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: 1px solid rgba(0, 0, 0, 0.1);  
 }
 
 @keyframes pulse {
@@ -59,7 +56,7 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   font-size: 13px;
   animation: pulse 1.5s infinite;
-  z-index: 2000;
+  z-index: 1002;
   word-wrap: break-word;
   overflow-wrap: break-word;
   box-sizing: border-box;
@@ -89,20 +86,21 @@
 <div class="row mb-4">
 
   <div class="col-12 col-md-7">
+
 	<div class="card shadow-sm mb-2">
 	  <div class="card-body">
 		<h4 class="card-title mb-3" id="profile-name">
 		  <i class="fa fa-user-circle fa-lg me-2"></i> {{ profile.first_name }} {{ profile.family_name }}
 		</h4>
-		<p><i class="fa fa-map-marker-alt text-muted"></i> <strong>Διεύθυνση:</strong> <span id="profile-address">{{ profile.address }}</span></p>
+		<p><i class="fa fa-map-marker-alt text-muted"></i> <strong>Διεύθυνση:</strong> <span id="profile-address">{{ profile.address or '' }}</span></p>
 		{% if profile.alt_address %}
-		<p><i class="fa fa-home text-muted"></i> <strong>Εναλλακτική:</strong> <span id="profile-alt-address">{{ profile.alt_address }}</span></p>
+		<p><i class="fa fa-home text-muted"></i> <strong>Εναλλακτική:</strong> <span id="profile-alt-address">{{ profile.alt_address or ''}}</span></p>
 		{% endif %}
-		<p><i class="fa fa-star text-warning"></i> <strong>Αγαπημένος Σεφ:</strong> <span id="profile-chef">{{ profile.chef }}</span></p>
+		<p><i class="fa fa-star text-warning"></i> <strong>Αγαπημένος Σεφ:</strong> <span id="profile-chef">{{ profile.chef or ''}}</span></p>
 		<p>
 		  <i class="fa fa-calendar-alt"></i> <strong>Δημιουργία μενού:</strong>
-		  <span id="profile-menu-day">{{ profile.menu_day }}</span>
-		  <span class="ms-2"><i class="fa fa-clock"></i> <span id="profile-menu-hour">{{ profile.menu_hour }}</span></span>
+		  <span id="profile-menu-day">{{ profile.menu_day or ''}}</span>
+		  <span class="ms-2"><i class="fa fa-clock"></i> <span id="profile-menu-hour">{{ profile.menu_hour or ''}}</span></span>
 		</p>
 		 <p>
 		  <i class="fa fa-fire"></i>
@@ -126,6 +124,7 @@
 		</div>
 	  </div>
 	</div>
+
 	<div class="card shadow-sm mb-2">
 	  <div class="card-body">
 		<h5 class="card-title mb-3" style="font-size:1.1em">Διαθέσιμος χρόνος μαγειρέματος</h5>
@@ -148,6 +147,7 @@
 		</div>
 	  </div>
 	</div>	
+
   </div>
 
   <div class="col-12 col-md-5">
@@ -240,14 +240,14 @@
 		</table>
         </div>
         <button class="btn btn-success btn-sm" id="add-goal-btn" onclick="addGoalRow()"><i class="fa fa-plus"></i> Προσθήκη στόχου</button>
-        {% if weekly_goals|length > 0 %}
-        <button class="btn btn-outline-danger btn-sm float-end" onclick="deleteAllGoals()">
-          <i class="fa fa-trash"></i> Διαγραφή όλων
-        </button>
-        {% endif %}
+		<button id="deleteAllBtn" class="btn btn-outline-danger btn-sm float-end" onclick="deleteAllGoals()"
+				style="{{ 'display: none;' if weekly_goals|length == 0 }}">
+		  <i class="fa fa-trash"></i> Διαγραφή όλων
+		</button>
       </div>
     </div>
   </div>
+
 </div>
 
 
@@ -297,7 +297,7 @@
         </div>
         <div class="mb-2">
           <label>Διεύθυνση</label>
-          <input name="address" class="form-control" required value="{{ profile.address }}">
+          <input name="address" class="form-control" value="{{ profile.address or ''}}">
         </div>
         <div class="mb-2">
           <label>Εναλλακτική Διεύθυνση</label>
@@ -332,8 +332,8 @@
           </div>
         </div>
         <div class="mb-2">
-          <label>Προτιμώμενοι τρόποι μαγειρέματος</label>
-          <select id="cooking-methods-select" name="cooking_methods" multiple>
+          <label class="form-label">Προτιμώμενοι τρόποι μαγειρέματος</label>
+          <select id="cooking-methods-select" name="cooking_methods" class="form-control" multiple>
             {% set cooking_options = ['Φούρνος','Κατσαρόλα','Χύτρα','Τηγάνι','Σχάρα','Air-fryer'] %}
             {% for opt in cooking_options %}
               <option value="{{ opt }}" {% if profile.cooking_method and opt in profile.cooking_method.split(',') %}selected{% endif %}>{{ opt }}</option>
@@ -424,14 +424,14 @@
       <div class="modal-body">
         <div id="goalError" class="alert alert-danger fade goalerror-alert"></div>
         <form id="goalForm">
-          <div class="mb-2">
-            <label>Κατηγορία:</label>
-            <select class="form-select" id="goalCategory" required>
-              {% for c in categories %}
-                <option value="{{ c }}">{{ c }}</option>
-              {% endfor %}
-            </select>
-          </div>
+			<div class="mb-2">
+			  <label>Κατηγορία:</label>
+			  <select class="form-select" id="goalCategory" required data-all="{{ categories|join(',') }}">
+				{% for c in categories %}
+				  <option value="{{ c }}">{{ c }}</option>
+				{% endfor %}
+			  </select>
+			</div>
           <div class="mb-2 row">
             <div class="col d-flex justify-content-center flex-column align-items-center">
               <label class="mb-1">Από (min):</label>
@@ -456,6 +456,24 @@
   </div>
 </div>
 
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmModalTitle">Επιβεβαίωση</h5>
+      </div>
+      <div class="modal-body" id="confirmModalBody">
+        Σίγουρσ;
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Άκυρο</button>
+        <button type="button" class="btn btn-danger" id="confirmModalYesBtn">Ναι!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 {% endblock %}
 
 {% block scripts %}
@@ -464,9 +482,12 @@
 <script>
 
 function openGoalModal(mode, id, category, min, max) {
-  var modal = new bootstrap.Modal(document.getElementById('addGoalModal'));
+  const modal = new bootstrap.Modal(document.getElementById('addGoalModal'));
   document.getElementById('goalError').style.display = 'none';
   document.getElementById('goalError').innerText = '';
+
+  const select = document.getElementById('goalCategory');
+
   if (mode === 'edit') {
     document.getElementById('addGoalModalLabel').innerText = 'Επεξεργασία Στόχου';
     document.getElementById('goalCategory').value = category;
@@ -477,7 +498,31 @@ function openGoalModal(mode, id, category, min, max) {
     document.getElementById('addGoalModalLabel').innerText = 'Προσθήκη Στόχου';
     document.getElementById('goalForm').reset();
     document.getElementById('goalCategory').disabled = false;
+
+    // Επαναφέρω ΟΛΕΣ τις επιλογές αρχικά (ώστε να καθαρίσει από προηγούμενα)
+    const allCats = [...select.dataset.all.split(',')];
+    select.innerHTML = '';
+    
+    allCats.forEach(cat => {
+      // Αν η κατηγορία υπάρχει ήδη στον πίνακα, μη τη βάλεις
+      const exists = document.querySelector(`#goals-tbody tr td:first-child`) && 
+                     [...document.querySelectorAll(`#goals-tbody tr td:first-child`)]
+                     .some(td => td.textContent === cat);
+      if (!exists) {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        select.appendChild(opt);
+      }
+    });
+
+    // Αν δεν έμεινε τίποτα να διαλέξεις
+    if (select.options.length === 0) {
+      showGoalError("Έχεις ήδη προσθέσει όλους τους διαθέσιμους στόχους.", 3000);
+      return;
+    }
   }
+
   modal.show();
 
   document.getElementById('goalForm').onsubmit = function(e) {
@@ -485,44 +530,35 @@ function openGoalModal(mode, id, category, min, max) {
     var minVal = parseInt(document.getElementById('goalMinTimes').value);
     var maxVal = parseInt(document.getElementById('goalMaxTimes').value);
     var selectedCat = document.getElementById('goalCategory').value;
+
     if (minVal > maxVal) {
-      showGoalError('Το "Από" δεν μπορεί να είναι μεγαλύτερο από το "Έως".',2000);
+      showGoalError('Το "Από" δεν μπορεί να είναι μεγαλύτερο από το "Έως".', 2000);
       return;
     }
+
     if (mode === 'edit') {
-      // Edit: κάνε fetch στο νέο route σου
       fetch('/edit_weekly_goal', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          id: id,
-          min_times: minVal,
-          max_times: maxVal
-        })
+        body: JSON.stringify({ id: id, min_times: minVal, max_times: maxVal })
       })
-      .then(function(r){return r.json();})
-      .then(function(data){
+      .then(r => r.json())
+      .then(data => {
         if (data.status === 'ok') {
           bootstrap.Modal.getInstance(document.getElementById('addGoalModal')).hide();
-          // Live ενημέρωση στον πίνακα:
           updateGoalInTable(id, minVal, maxVal);
         } else {
           showGoalError(data.msg || 'Σφάλμα!' , 2000);
         }
       });
     } else {
-      // Add (όπως πριν)
       fetch('/add_weekly_goal', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          category: selectedCat,
-          min_times: minVal,
-          max_times: maxVal
-        })
+        body: JSON.stringify({ category: selectedCat, min_times: minVal, max_times: maxVal })
       })
-      .then(function(r){return r.json();})
-      .then(function(data){
+      .then(r => r.json())
+      .then(data => {
         if (data.status === 'ok') {
           bootstrap.Modal.getInstance(document.getElementById('addGoalModal')).hide();
           addGoalToTable(selectedCat, minVal, maxVal, data.id);
@@ -607,41 +643,103 @@ function addGoalToTable(category, min, max, id) {
 
   tr.innerHTML = html;
   tbody.appendChild(tr);
+  // Εμφάνισε το κουμπί "Διαγραφή όλων"
+  document.getElementById('deleteAllBtn')?.style.setProperty('display', 'inline-block');
 }
 
-function deleteGoal(goal_id) {
-  if (!confirm('Να διαγραφεί ο στόχος;')) return;
-  fetch('/delete_weekly_goal', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({id: goal_id})
-  }).then(function(r){return r.json();}).then(function(data) {
-    if (data.status === 'ok') {
-      var row = document.querySelector('tr[data-goalid="' + goal_id + '"]');
-      if (row) row.remove();
-      var tbody = document.getElementById('goals-tbody');
-      if (tbody.children.length === 0) {
-        var tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="3" class="text-muted">Δεν έχεις ορίσει στόχους.</td>';
-        tbody.appendChild(tr);
-      }
-    } else {
-      alert(data.msg || 'Σφάλμα στη διαγραφή.');
-    }
+function confirmAction(message, onConfirm, title = 'Επιβεβαίωση') {
+  document.getElementById('confirmModalTitle').innerText = title;
+  document.getElementById('confirmModalBody').innerText = message;
+
+  const modalEl = document.getElementById('confirmModal');
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  const yesBtn = document.getElementById('confirmModalYesBtn');
+  // Καθαρίζουμε προηγούμενα listeners
+  const newBtn = yesBtn.cloneNode(true);
+  yesBtn.parentNode.replaceChild(newBtn, yesBtn);
+
+  newBtn.addEventListener('click', function() {
+    modal.hide();
+    onConfirm();
   });
 }
 
+function deleteGoal(goal_id) {
+  confirmAction(
+    'Είσαι σίγουρος ότι θέλεις να διαγράψεις αυτόν τον στόχο;',
+    function() {
+      fetch('/delete_weekly_goal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: goal_id })
+      }).then(r => r.json()).then(data => {
+        if (data.status === 'ok') {
+          const row = document.querySelector('tr[data-goalid="' + goal_id + '"]');
+          if (row) {
+            const cat = row.children[0].textContent;
+            row.remove();
+
+            // Προσθήκη πίσω στο select
+            const select = document.getElementById('goalCategory');
+            if (select && ![...select.options].some(opt => opt.value === cat)) {
+              const opt = document.createElement('option');
+              opt.value = cat;
+              opt.textContent = cat;
+              select.appendChild(opt);
+            }
+          }
+
+          const tbody = document.getElementById('goals-tbody');
+          if (tbody.querySelectorAll('tr[data-goalid]').length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="3" class="text-muted">Δεν έχεις ορίσει στόχους.</td>';
+            tbody.appendChild(tr);
+
+            // Απόκρυψε το κουμπί "Διαγραφή όλων"
+            document.getElementById('deleteAllBtn')?.style.setProperty('display', 'none');
+          }
+        } else {
+          alert(data.msg || 'Σφάλμα στη διαγραφή.');
+        }
+      });
+    },
+    'Διαγραφή Στόχου'
+  );
+}
+
 function deleteAllGoals() {
-  if (!confirm('Να διαγραφούν όλοι οι στόχοι;')) return;
-  fetch('/delete_all_weekly_goals', {method: 'POST'})
-    .then(function(r){return r.json();}).then(function(data) {
-      if (data.status === 'ok') {
-        var tbody = document.getElementById('goals-tbody');
-        tbody.innerHTML = '<tr><td colspan="3" class="text-muted">Δεν έχεις ορίσει στόχους.</td></tr>';
-      } else {
-        alert(data.msg || 'Σφάλμα στη διαγραφή.');
-      }
-    });
+  confirmAction(
+    'Θα διαγραφούν όλοι οι στόχοι σου. Θέλεις να συνεχίσεις;',
+    function() {
+      fetch('/delete_all_weekly_goals', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'ok') {
+            const tbody = document.getElementById('goals-tbody');
+            tbody.innerHTML = '<tr><td colspan="3" class="text-muted">Δεν έχεις ορίσει στόχους.</td></tr>';
+
+            // Απόκρυψε το κουμπί "Διαγραφή όλων"
+            document.getElementById('deleteAllBtn')?.style.setProperty('display', 'none');
+
+            // Επαναφορά όλων των κατηγοριών στο dropdown
+            const select = document.getElementById('goalCategory');
+            const allCats = select.dataset.all.split(',');
+            select.innerHTML = '';
+            allCats.forEach(cat => {
+              const opt = document.createElement('option');
+              opt.value = cat;
+              opt.textContent = cat;
+              select.appendChild(opt);
+            });
+          } else {
+            alert(data.msg || 'Σφάλμα στη διαγραφή.');
+          }
+        });
+    },
+    'Διαγραφή Όλων των Στόχων'
+  );
 }
 
 function deleteMember(member_id, btn) {
@@ -993,176 +1091,234 @@ window.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-window.onload = function () {
-  const overlay = document.getElementById("onboardingOverlay2");
-  const editBtn = document.getElementById("edit-profile-button");
-
-  if (!localStorage.getItem("onboarding_done") &&
-      !localStorage.getItem("onboarding_step2_shown") &&
-      overlay && editBtn) {
-
-    document.body.classList.add("onboarding-step-2");
-    overlay.style.display = "block";
-
-    editBtn.addEventListener("click", function () {
-      localStorage.setItem("onboarding_step2_shown", "1");
-      document.body.classList.remove("onboarding-step-2");
-      overlay.style.display = "none";
-    });
-  }
-};
-
-function getNextOnboardingStep() {
-  if (localStorage.getItem("onboarding_done") === "1") return null;
-
-  for (let i = 1; i <= 5; i++) {
-    if (!localStorage.getItem(`onboarding_step${i}_shown`)) {
-      return i;
-    }
-  }
-  return null;
-}
-
-function showTooltipCenteredAbove(step, tooltipId, targetId, nextStep) {
-  const tooltip = document.getElementById(tooltipId);
-  const target = document.getElementById(targetId);
-
-  if (tooltip && target) {
-    tooltip.style.visibility = "hidden";
-    tooltip.style.display = "block";
-
-    const rect = target.getBoundingClientRect();
-    const tipWidth = tooltip.offsetWidth;
-    const tipHeight = tooltip.offsetHeight;
-
-    let left = rect.left + window.scrollX + (rect.width - tipWidth) / 2;
-    let top = rect.top + window.scrollY - tipHeight - 10;
-
-    const padding = 10;
-    const maxX = window.innerWidth - tipWidth - padding;
-    if (left < padding) left = padding;
-    if (left > maxX) left = maxX;
-    if (top < padding) top = rect.bottom + window.scrollY + 10;
-
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top = `${top}px`;
-    tooltip.style.visibility = "visible";
-
-    const handler = () => {
-      tooltip.style.display = "none";
-      localStorage.setItem(`onboarding_step${step}_shown`, "1");
-      if (nextStep) {
-        setTimeout(nextStep, 300);
-      } else {
-        localStorage.setItem("onboarding_done", "1");
-        fetch("/api/onboarding_complete", { method: "POST" });
-      }
-      target.removeEventListener("click", handler);
-    };
-
-    target.addEventListener("click", handler);
-  }
-}
 
 window.addEventListener("DOMContentLoaded", function () {
   const step = getNextOnboardingStep();
-  if (!step || window.location.pathname !== "/profile") return;
+  if (!step) return;
 
   const profileModal = document.getElementById("editProfileModal");
   const cookModal = document.getElementById("editCookTimesModal");
   const memberModal = document.getElementById("memberModal");
+  const goalModal = document.getElementById("addGoalModal");
+  const overlay2 = document.getElementById("onboardingOverlay2");
 
   // STEP 2
-  if (step === 2 && profileModal) {
-    profileModal.addEventListener("hidden.bs.modal", () => {
-      localStorage.setItem("onboarding_step2_shown", "1");
-      showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
-        // STEP 4 εξαρτάται από cookModal
-        if (cookModal && cookModal.classList.contains("show")) {
-          cookModal.addEventListener("hidden.bs.modal", () => {
-            localStorage.setItem("onboarding_step3_shown", "1");
-            showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-              if (memberModal && memberModal.classList.contains("show")) {
-                memberModal.addEventListener("hidden.bs.modal", () => {
-                  localStorage.setItem("onboarding_step4_shown", "1");
-                  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+  if (step === 2) {
+    const editBtn = document.getElementById("edit-profile-button");
+    if (editBtn && overlay2) {
+      document.body.classList.add("onboarding-step-2");
+      overlay2.style.display = "block";
+      showTooltipCenteredAbove(2, "onboardingTooltip2", "edit-profile-button", null);
+
+      editBtn.addEventListener("click", function () {
+        document.body.classList.remove("onboarding-step-2");
+        overlay2.style.display = "none";
+
+        if (profileModal) {
+          profileModal.addEventListener("hidden.bs.modal", () => {
+            showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
+              if (cookModal && cookModal.classList.contains("show")) {
+                cookModal.addEventListener("hidden.bs.modal", () => {
+                  showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+                    if (memberModal && memberModal.classList.contains("show")) {
+                      memberModal.addEventListener("hidden.bs.modal", () => {
+                        showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+                          if (goalModal && goalModal.classList.contains("show")) {
+                            goalModal.addEventListener("hidden.bs.modal", () => {
+                              showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+                            });
+                          } else {
+                            showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+                          }
+                        });
+                      });
+                    } else {
+                      showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+                        if (goalModal && goalModal.classList.contains("show")) {
+                          goalModal.addEventListener("hidden.bs.modal", () => {
+                            showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+                          });
+                        } else {
+                          showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+                        }
+                      });
+                    }
+                  });
                 });
               } else {
-                showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+                showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+                  if (memberModal && memberModal.classList.contains("show")) {
+                    memberModal.addEventListener("hidden.bs.modal", () => {
+                      showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+                        if (goalModal && goalModal.classList.contains("show")) {
+                          goalModal.addEventListener("hidden.bs.modal", () => {
+                            showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+                          });
+                        } else {
+                          showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+                        }
+                      });
+                    });
+                  } else {
+                    showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+                      if (goalModal && goalModal.classList.contains("show")) {
+                        goalModal.addEventListener("hidden.bs.modal", () => {
+                          showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+                        });
+                      } else {
+                        showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+                      }
+                    });
+                  }
+                });
               }
             });
           });
-        } else {
-          showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-            if (memberModal && memberModal.classList.contains("show")) {
-              memberModal.addEventListener("hidden.bs.modal", () => {
-                localStorage.setItem("onboarding_step4_shown", "1");
-                showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-              });
-            } else {
-              showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-            }
+        }
+      });
+    }
+  }
+
+  // STEP 3–6 recovery
+  if (step === 3) {
+    showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
+      showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+        showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+          if (goalModal && goalModal.classList.contains("show")) {
+            goalModal.addEventListener("hidden.bs.modal", () => {
+              showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+            });
+          } else {
+            showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+          }
+        });
+      });
+    });
+  }
+
+  if (step === 4) {
+    showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+      showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+        if (goalModal && goalModal.classList.contains("show")) {
+          goalModal.addEventListener("hidden.bs.modal", () => {
+            showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
           });
+        } else {
+          showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
         }
       });
     });
   }
 
-  // STEP 3
-  if (step === 3) {
-    showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
-      if (cookModal && cookModal.classList.contains("show")) {
-        cookModal.addEventListener("hidden.bs.modal", () => {
-          localStorage.setItem("onboarding_step3_shown", "1");
-          showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-            if (memberModal && memberModal.classList.contains("show")) {
-              memberModal.addEventListener("hidden.bs.modal", () => {
-                localStorage.setItem("onboarding_step4_shown", "1");
-                showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-              });
-            } else {
-              showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-            }
-          });
-        });
-      } else {
-        showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-          if (memberModal && memberModal.classList.contains("show")) {
-            memberModal.addEventListener("hidden.bs.modal", () => {
-              localStorage.setItem("onboarding_step4_shown", "1");
-              showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-            });
-          } else {
-            showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-          }
-        });
-      }
-    });
-  }
-
-  // STEP 4
-  if (step === 4) {
-    showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-      if (memberModal && memberModal.classList.contains("show")) {
-        memberModal.addEventListener("hidden.bs.modal", () => {
-          localStorage.setItem("onboarding_step4_shown", "1");
-          showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-        });
-      } else {
-        showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
-      }
-    });
-  }
-
-  // STEP 5
   if (step === 5) {
-    showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", null);
+    showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+      if (goalModal && goalModal.classList.contains("show")) {
+        goalModal.addEventListener("hidden.bs.modal", () => {
+          showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+        });
+      } else {
+        showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+      }
+    });
+  }
+
+  if (step === 6) {
+    showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
+  }
+
+  // Όταν πατηθεί το κουμπί "Μενού", κρύψε το tooltip6 και ολοκλήρωσε
+  const menuLink = document.querySelector('nav.navbar.fixed-bottom a[href="/menu"]');
+  if (menuLink) {
+    menuLink.addEventListener("click", function () {
+      document.getElementById("onboardingTooltip6").style.display = "none";
+      localStorage.setItem("onboarding_step6_shown", "1");
+      localStorage.setItem("onboarding_done", "1");
+      fetch("/api/onboarding_complete", { method: "POST" });
+    });
   }
 });
 
 
+// Προσθήκη helper για να εμφανίσει ΜΟΝΟ αν δεν έχει ήδη φανεί
+function showStrictTooltip(step, tooltipId, targetId, nextStep) {
+  const tooltip = document.getElementById(tooltipId);
+  if (!tooltip || tooltip.style.display === "block") return;
+
+  showTooltipCenteredAbove(step, tooltipId, targetId, nextStep);
+}
+
+function getNextOnboardingStep() {
+  if (localStorage.getItem("onboarding_done") === "1") return null;
+  for (let i = 1; i <= 6; i++) {
+    if (!localStorage.getItem(`onboarding_step${i}_shown`)) return i;
+  }
+  return null;
+}
+
+function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = null) {
+  if (localStorage.getItem(`onboarding_step${step}_shown`) === "1") return;
+
+  document.querySelectorAll(".onboarding-tooltip").forEach(t => {
+    t.style.display = "none";
+    t.style.visibility = "hidden";
+  });
+
+  const tooltip = document.getElementById(tooltipId);
+  const target = targetId ? document.getElementById(targetId) : null;
+
+  if (tooltip) {
+    tooltip.style.visibility = "hidden";
+    tooltip.style.display = "block";
+
+    let left = 0;
+    let top = 0;
+
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const tipWidth = tooltip.offsetWidth;
+      const tipHeight = tooltip.offsetHeight;
+
+      left = rect.left + window.scrollX + (rect.width - tipWidth) / 2;
+      top = rect.top + window.scrollY - tipHeight - 10;
+
+      const padding = 10;
+      const maxX = window.innerWidth - tipWidth - padding;
+      if (left < padding) left = padding;
+      if (left > maxX) left = maxX;
+      if (top < padding) top = rect.bottom + window.scrollY + 10;
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    } else {
+      tooltip.style.position = "fixed";
+      tooltip.style.bottom = "80px";
+      tooltip.style.left = "50%";
+      tooltip.style.transform = "translateX(-50%)";
+    }
+
+    tooltip.style.visibility = "visible";
+
+    if (target) {
+      const handler = () => {
+        tooltip.style.display = "none";
+        localStorage.setItem(`onboarding_step${step}_shown`, "1");
+
+        if (nextStep) {
+          setTimeout(nextStep, 300);
+        } else if (step === 6) {
+          localStorage.setItem("onboarding_done", "1");
+          fetch("/api/onboarding_complete", { method: "POST" });
+        }
+
+        target.removeEventListener("click", handler);
+      };
+
+      target.addEventListener("click", handler);
+    }
+  }
+}
+
 
 </script>
-
 
 {% endblock %}

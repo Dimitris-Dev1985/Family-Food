@@ -36,7 +36,6 @@
 }
 </style>
 
-
 <style>
 .voice-enabled {
   background-image: url("data:image/svg+xml,%3Csvg fill='gray' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 12a3 3 0 0 0 3-3V4a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z'/%3E%3Cpath d='M5 9.995a5 5 0 0 0 10 0h-1a4 4 0 0 1-8 0H5z'/%3E%3C/svg%3E");
@@ -53,7 +52,64 @@
   background-color: #fff7cc !important; /* απαλό κίτρινο */
   transition: background-color 0.3s ease;
 }
+</style>
 
+<style>
+
+.menu-onboarding-tip {
+  position: absolute;
+  background: #fff9db;
+  padding: 2px 2px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 1000;
+  width: 90vw;
+  max-width: 410px;    
+  min-width: 250px;    
+  font-size: 14px;
+  text-align: center;
+  border: none;
+  animation: pulse 1s infinite;
+  left: 0;
+  top: 0;
+  transition: max-width 0.2s;  
+
+.onboard-arrow-up {
+  border-top: 1px solid #faeab9;
+  border-left: 1px solid #faeab9;
+  width: 22px;
+  height: 22px;
+  background: #fff9db;
+  border-radius: 4px;
+  border: none;
+  transform: rotate(45deg);
+  z-index: -1;
+  position: absolute;
+
+  
+}
+
+.onboard-arrow-down {
+  border-bottom: 1px solid #faeab9;
+  border-right: 1px solid #faeab9;
+  width: 22px;
+  height: 22px;
+  background: #fff9db;
+  border-radius: 4px;
+  border: none;
+  transform: rotate(45deg);
+  z-index: -1;
+  position: absolute;
+}
+
+
+@keyframes pulse {
+  0%   { transform: scale(1); box-shadow: 0 0 10px #fff6c4; }
+  50%  { transform: scale(1.03); box-shadow: 0 0 24px #fffbe6; }
+  100% { transform: scale(1); box-shadow: 0 0 10px #fff6c4; }
+}
 </style>
 
 
@@ -62,21 +118,27 @@
   <h2 class="fw-bold mb-1" style="font-size:2em;">Μενού Εβδομάδας</h2>
 </div>
 
-
-{% if edit_mode %}
-  <button class="btn btn-primary" onclick="saveMenuEdits()">Αποθήκευση αλλαγών</button>
-  <a href="{{ url_for('menu') }}" class="btn btn-secondary">Άκυρο</a>
-{% else %}
 <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 10px;">
 
-  <form method="post" action="{{ url_for('generate_menu') }}" style="display:inline-block;">
-    <button class="btn btn-success" style="font-size: clamp(0.6rem, 3vw, 1.2rem);" onclick="return confirm('Σίγουρα θέλεις να δημιουργηθεί νέο μενού για αυτή την εβδομάδα; ΠΡΟΣΟΧΗ: θα διαγραφεί το προηγούμενο!');">
+
+{% if menu|length == 7 %}
+  <!-- Κουμπί που ανοίγει το modal -->
+  <button class="btn btn-success" id="createMenuBtn" style="font-size: clamp(0.6rem, 3vw, 1.2rem);"
+          data-bs-toggle="modal" data-bs-target="#confirmGenerateModal">
+    Δημιουργία νέου Εβδομαδιαίου Μενού
+  </button>
+{% else %}
+  <!-- Αν δεν υπάρχει μενού, απλό form -->
+  <form method="post" action="{{ url_for('generate_menu') }}" id="createMenuBtn" style="display:inline-block;">
+    <button class="btn btn-success" style="font-size: clamp(0.6rem, 3vw, 1.2rem);">
       Δημιουργία νέου Εβδομαδιαίου Μενού
     </button>
   </form>
+{% endif %}
+
+
 </div>
 
-{% endif %}
 
 {# --- Υπολογισμός νέας σειράς --- #}
 {% set menu_len = menu|length %}
@@ -99,7 +161,7 @@
         <div class="card-body menu-dropzone py-3 d-flex flex-column align-items-stretch justify-content-center" id="dropzone-{{ entry.menu_id }}">
           {% if entry.recipe_id %}
 
-            <div class="recipe-card border rounded px-3 py-2 d-flex flex-row align-items-center"
+            <div class="recipe-card border rounded px-3 py-2 d-flex flex-row align-items-center" 
                  id="recipe-card-{{ entry.menu_id }}"
 				 style="background:#f8f9fa; cursor:pointer;"
                  onclick="openRecipeModal(this)"
@@ -167,16 +229,14 @@
   {% endfor %}
 </div>
 
-
-
 <!-- Card: Επίτευξη στόχων -->
-{% if goals_achievement %}
+{% if goals_achievement and menu|length == 7%}
 <div class="card shadow-sm my-4">
-      <div class="card-header" style="background:#f8fafc;">
+      <div class="card-header" style="background-color:#9fd78b !important">
         <i class="fa fa-bullseye me-2 text-info"></i> Εβδομαδιαίοι Στόχοι
       </div>
   <div class="card-body">
-    <table class="table table-sm mb-0">
+    <table class="table table-sm mb-0 goals-table">
       <thead>
         <tr>
           <th>Κατηγορία</th>
@@ -208,7 +268,7 @@
               {{ g.count }} φορές
             {% endif %}
             {% if g.count >= g.min_times and g.count <= g.max_times %}
-              <span style="color:#198754; font-weight:bold;">✔️</span>
+			  <span style="color:#198754; font-weight:bold;">✔️</span>
             {% else %}
               <span style="color:#dc3545; font-weight:bold;">❌</span>
             {% endif %}
@@ -225,7 +285,46 @@
 {% endblock %}
 
 
+
 {% block modals %}
+
+<div class="modal fade" id="confirmGenerateModal" tabindex="-1" aria-labelledby="confirmGenerateLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-warning">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmGenerateLabel">Επιβεβαίωση Δημιουργίας Μενού</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Κλείσιμο"></button>
+      </div>
+      <div class="modal-body">
+        Θέλεις σίγουρα να δημιουργηθεί νέο μενού για αυτή την εβδομάδα;<br>
+        <strong class="text-danger">Προσοχή:</strong> θα διαγραφεί το υπάρχον!
+      </div>
+      <div class="modal-footer">
+        <form method="post" action="{{ url_for('generate_menu') }}">
+          <button type="submit" class="btn btn-success">Ναι, συνέχισε!</button>
+        </form>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Άκυρο</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="menuCreatedModal" tabindex="-1" aria-labelledby="menuCreatedModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-success">
+      <div class="modal-header">
+        <h5 class="modal-title" id="menuCreatedModalLabel"><i class="fa fa-check-circle text-success me-2"></i> Το μενού δημιουργήθηκε!</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Κλείσιμο"></button>
+      </div>
+      <div class="modal-body">
+        🎯 Δημιουργήθηκε νέο εβδομαδιαίο μενού με βάση τις προτιμήσεις και τους στόχους σου... Μπορείς να το επεξεργαστείς αν θέλεις!
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">ΟΚ</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="modal fade" id="allergyModal" tabindex="-1" aria-labelledby="allergyModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -247,9 +346,9 @@
 </div>
 
 <div class="modal fade" id="recipeModal" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
+      <div class="modal-header bg-primary" style="border-radius: 1.5rem !important;">
         <h5 class="modal-title" id="recipeModalLabel">Λεπτομέρειες Συνταγής</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -282,12 +381,43 @@
 
 {% block scripts %}
 
+
+<script src="{{ url_for('static', filename='JS/menu_onboarding.js') }}"></script>
+
+
+{% if show_success_modal %}
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    // Εμφάνιση modal
+    var modal = new bootstrap.Modal(document.getElementById('menuCreatedModal'));
+    modal.show();
+
+    // Αφαίρεση του ?created=1 από το URL χωρίς reload
+    const url = new URL(window.location);
+    url.searchParams.delete('created');
+    window.history.replaceState({}, document.title, url);
+  });
+</script>
+{% endif %}
+
+
 <script>
 let isAutocompleteClick = false;
 let allRecipes = [];
 fetch('/get_recipes_for_autocomplete')
   .then(r => r.json())
   .then(data => { allRecipes = data; });
+
+{% if show_success_modal %}
+  window.addEventListener('DOMContentLoaded', function () {
+    var modal = new bootstrap.Modal(document.getElementById('menuCreatedModal'));
+    modal.show();
+  });
+{% endif %}
+
+
+
+
 
 // Αφαίρεση τόνων, πεζά
 function removeTonos(str) {
@@ -342,7 +472,6 @@ function hideAutocomplete(input) {
   listDiv.innerHTML = "";
 }
 
-
 function toggleFavorite(icon, recipe_id) {
   fetch('/toggle_favorite_recipe', {
     method: 'POST',
@@ -362,7 +491,6 @@ function toggleFavorite(icon, recipe_id) {
     }
   });
 }
-
 
 function enableEdit(menu_id) {
   // Απενεργοποίησε όλα τα clickable recipe-cards
@@ -418,8 +546,6 @@ function onRecipeBlur(input) {
     disableAllEdit();
   }, 250);
 }
-
-
 
 function saveMenuEditsForOne(menu_id, recipe_title, ignoreAllergy=false, inputEl = null) {
   let updates = [{ menu_id: menu_id, recipe_title: recipe_title }];
@@ -604,4 +730,5 @@ function startSpeechForRecipe(menuid) {
 }
 
 </script>
+
 {% endblock %}
