@@ -3,53 +3,22 @@
 {% block content %}
 
 <style>
-#onboardingBackdrop2 {
+#onboardingBackdrop {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
   z-index: 999;
-}
-#onboardingTooltip2 {
-  position: absolute; /* fixed ή absolute ανάλογα πού το βάζεις */
-  background: #fff9db;
-  padding: 10px 10px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  z-index: 1002;
-  max-width: 230px;
-  font-size: 14px;
-  text-align: center;
-  animation: pulse 1.5s infinite;
-  visibility: hidden;
-  display: none;
-}
-
-#onboardingTooltip2 .arrow-down {
-  content: "";
-  position: absolute;
-  bottom: -7px;
-  left: 50px
-  transform: translateX(-50%) rotate(45deg);
-  width: 14px;
-  height: 14px;
-  background: #fff9db;
-  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.08);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  border-right: 1px solid rgba(0, 0, 0, 0.1);  
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
-  50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(255,255,255,0.9); }
-  100% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
 }
    
 </style>
 
 <style>
 .onboarding-tooltip {
+  font-family: 'Indie Flower', cursive, Arial, sans-serif;
   position: absolute;
-  max-width: 220px;
+  width: 70vw;
+  width: auto;
+  max-width: 300px;
   background: #fff9db;
   padding: 10px 14px;
   border-radius: 10px;
@@ -70,6 +39,17 @@
   position: absolute;
   bottom: -6px;
   left: 20px;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.onboarding-tooltip .arrow-down-right {
+  width: 12px;
+  height: 12px;
+  background: #fff9db;
+  transform: rotate(45deg);
+  position: absolute;
+  bottom: -6px;
+  right: 20px;
   box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
 }
 
@@ -252,17 +232,17 @@
 
 
 <div id="onboardingOverlay2" style="display:none;">
-  <div id="onboardingBackdrop2"></div>
-  <div id="onboardingTooltip2">
+  <div id="onboardingBackdrop"></div>
+  <div id="onboardingTooltip2" class="onboarding-tooltip" style="display:none;">
     👉 Πάτα εδώ!
-    <div class="arrow-down"></div>
+    <div class="arrow-down-right"></div>
   </div>
 </div>
 
 <!-- Tooltip 3 - Χρόνοι μαγειρέματος -->
 <div id="onboardingTooltip3" class="onboarding-tooltip" style="display:none;">
   ⏱️ Πες μου πόσο χρόνο μπορείς να αφιερώσεις κάθε μέρα για μαγείρεμα! Θα το λάβω υπόψιν!
-  <div class="arrow-down"></div>
+  <div class="arrow-down-right"></div>
 </div>
 
 <!-- Tooltip 4 - Μέλη -->
@@ -1281,7 +1261,7 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
       left = rect.left + window.scrollX + (rect.width - tipWidth) / 2;
       top = rect.top + window.scrollY - tipHeight - 10;
 
-      const padding = 10;
+      const padding = 50;
       const maxX = window.innerWidth - tipWidth - padding;
       if (left < padding) left = padding;
       if (left > maxX) left = maxX;

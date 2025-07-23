@@ -57,6 +57,7 @@
 <style>
 
 .menu-onboarding-tip {
+  font-family: 'Indie Flower', cursive, Arial, sans-serif;
   position: absolute;
   background: #fff9db;
   padding: 2px 2px;
@@ -410,12 +411,23 @@ fetch('/get_recipes_for_autocomplete')
 
 {% if show_success_modal %}
   window.addEventListener('DOMContentLoaded', function () {
-    var modal = new bootstrap.Modal(document.getElementById('menuCreatedModal'));
+    const modalEl = document.getElementById('menuCreatedModal');
+    const modal = new bootstrap.Modal(modalEl);
     modal.show();
+
+    // Αφαίρεσε το query param
+    const url = new URL(window.location);
+    url.searchParams.delete('created');
+    window.history.replaceState({}, document.title, url);
+
+    // Καθαρισμός backdrop με το που κλείσει
+    modalEl.addEventListener('hidden.bs.modal', function () {
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';  // σε κάποιες περιπτώσεις χρειάζεται
+    });
   });
 {% endif %}
-
-
 
 
 
