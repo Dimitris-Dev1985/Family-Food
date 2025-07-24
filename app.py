@@ -1584,9 +1584,18 @@ def get_recipe(recipe_id):
         return jsonify({})
     return jsonify({
         "title": r["title"],
+        "chef": r["chef"],
         "ingredients": r["ingredients"],
+        "prep_time": r["prep_time"],
+        "cook_time": r["cook_time"],
+        "method": r["method"],
+        "instructions": r["instructions"],
+        "category": r["main_dish_tag"],
+        "tags": r["tags"],
+        "allergens": r["allergens"],
+        "title": r["title"],
         "url": r["url"],
-        "instructions": r["instructions"] 
+        "parent_id": r["parent_id"] 
     })
 
 @app.template_filter('todate')
