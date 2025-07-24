@@ -1,47 +1,213 @@
 {% extends "base.html" %}
-{% block title %}Σύνδεση{% endblock %}
+{% block title %}Σύνδεση | Family Food{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
-  <div class="card shadow p-4" style="width: 100%; max-width: 400px;">
-    <div class="text-center mb-4">
-      <img src="{{ url_for('static', filename='image.png') }}" alt="Logo" style="max-height: 60px;">
-      <h4 class="mt-3">Family Food</h4>
+
+<style>
+.login-container {
+  max-width: 420px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1.5px 2.5px rgba(80,130,80,0.05);
+  text-align: center;
+}
+.login-logo {
+  width: 85px;
+  height: 85px;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.14);
+}
+.login-title {
+  font-size: 2em;
+  font-weight: 700;
+  color: #218e46;
+  margin-bottom: 8px;
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+  letter-spacing: 0.5px;
+}
+.login-desc {
+  color: #888;
+  font-size: 1.4em;
+  margin-bottom: 25px;
+}
+.login-form label {
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+.login-form input {
+  border-radius: 8px !important;
+  margin-bottom: 16px;
+  font-size: 1em;
+  padding: 9px 11px;
+}
+.btn-login {
+  width: 100%;
+  padding: 10px 0;
+  font-size: 1.1em;
+  font-weight: 600;
+  border-radius: 10px;
+}
+.divider {
+  text-align: center;
+  margin: 20px 0 18px 0;
+  position: relative;
+}
+.divider span {
+  background: #fff;
+  padding: 0 12px;
+  color: #bbb;
+  position: relative;
+  z-index: 1;
+  font-size: 0.97em;
+}
+.divider:before {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  border-top: 1px solid #eee;
+  z-index: 0;
+}
+.social-btn {
+  width: 100%;
+  margin-bottom: 8px;
+  font-weight: 600;
+  border-radius: 8px;
+  font-size: 1.06em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.btn-google {
+  background: #fff;
+  color: #222;
+  border: 1.5px solid #e1e1e1;
+}
+.btn-google img {
+  width: 22px; height: 22px;
+  border-radius: 3px;
+}
+.btn-facebook {
+  background: #1877f2;
+  color: #fff;
+  border: none;
+}
+.btn-debug {
+  background: #fde1ee;
+  color: #c12a6b;
+  border: none;
+  font-size: 0.99em;
+}
+.signup-link {
+  margin-top: 18px;
+  color: #444;
+  font-size: 1.02em;
+}
+.signup-link a {
+  color: #198754;
+  font-weight: 600;
+  text-decoration: none;
+}
+@media (max-width: 520px) {
+  .login-container {
+    padding: 17px 6vw 15px 6vw;
+    margin-top: 16vw;
+  }
+}
+</style>
+
+<style>
+.global-login-alert {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -85%)!important;
+  max-width: 400px;
+  width: 90vw;
+  z-index: 2022;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.10);
+  text-align: center;
+  opacity: 1;
+  transition: opacity 0.5s;
+
+}
+@media (max-width: 460px) {
+  .global-login-alert {
+    max-width: 95vw;
+    width: 96vw;
+    left: 50%;
+    top: 40%;
+    transform: translate(-50%, -60%);
+  }
+}
+</style>
+
+{% block alerts %}{% endblock %}
+
+<!-- Flash Alert (πάνω από το login-container) -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="flash-alert" class="alert alert-{{ messages[0][0] }} alert-dismissible fade show global-login-alert" role="alert">
+      {{ messages[0][1] }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, msg in messages %}
-          <div class="alert alert-{{ category }}">{{ msg }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-    <form method="POST">
-      <input type="hidden" name="action" value="login">
-      <div class="mb-3">
-        <input type="email" class="form-control" name="email" placeholder="Email" required>
-      </div>
-      <div class="mb-3">
-        <input type="password" class="form-control" name="password" placeholder="Κωδικός" required>
-      </div>
-      <button class="btn btn-primary w-100 mb-2">Σύνδεση</button>
-    </form>
+  {% endif %}
+{% endwith %}
 
-    <div class="text-center text-muted mb-2">ή</div>
+<div class="login-container">
+  <img src="{{ url_for('static', filename='image.png') }}" alt="Family Food" class="login-logo">
+  <div class="login-title">Family Food</div>
+  <div class="login-desc">Η κουζίνα της οικογένειάς σου, στην τσέπη σου 🍽️</div>
 
 
-
-
-	
-
-    <!-- Signup link -->
-    <div class="text-center mt-3">
-      <a href="/signup">Δεν έχεις λογαριασμό; Εγγράψου</a>
+  <form class="login-form" method="POST" autocomplete="off">
+    <input type="hidden" name="action" value="login">
+    <div class="text-start">
+      <label for="email">Email</label>
+      <input type="email" class="form-control" id="email" name="email" required placeholder="π.χ. maria@mail.com" autofocus>
     </div>
+    <div class="text-start">
+      <label for="password">Κωδικός</label>
+      <input type="password" class="form-control" id="password" name="password" required placeholder="********">
+    </div>
+    <button type="submit" class="btn btn-success btn-login">Σύνδεση</button>
+  </form>
 
-    <!-- Debug button -->
-    <form method="POST" class="mt-3 text-center">
-      <input type="hidden" name="action" value="debug">
-      <button type="submit" class="btn btn-secondary btn-sm">⚙ Debug Login</button>
-    </form>
+  <div class="divider"><span>ή</span></div>
+
+  <a href="{{ url_for('login') }}" class="btn social-btn btn-google mb-1">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
+    Σύνδεση με Google
+  </a>
+  <button class="btn social-btn btn-facebook mb-1" disabled>
+    <i class="fa fa-facebook"></i> Σύνδεση με Facebook
+  </button>
+  <form method="POST" style="display:inline;">
+    <input type="hidden" name="action" value="debug">
+    <button type="submit" class="btn social-btn btn-debug mt-1">Debug Login</button>
+  </form>
+
+  <div class="signup-link mt-2">
+    Δεν έχεις λογαριασμό; <a href="{{ url_for('signup') }}">Δημιούργησε έναν!</a>
   </div>
 </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+  var alert = document.getElementById('flash-alert');
+  if (alert) {
+    setTimeout(function() {
+      alert.style.opacity = '0';
+      setTimeout(function() { alert.remove(); }, 600); // μετά transition
+    }, 3000);
+  }
+});
+</script>
 {% endblock %}
