@@ -71,11 +71,14 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 .chatbox {
   background: #fffdfa;
   border: 1px solid #ffe6b5;
-  min-height: 95px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 130px);
   padding: 15px 12px;
-  font-size: 1.16rem;
-  line-height: 1.6;
-  max-height: 38vh;
+  font-size: 0.95rem;
+  line-height: 1.5;
   overflow-y: auto;
   box-shadow: 0 2px 12px rgba(254, 148, 65, 0.07);
   border-radius: 15px;
@@ -83,12 +86,21 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 }
 .chat-line {
   margin-bottom: 8px;
+  text-align: justify;
 }
 .chat-assistant { color: #fe9441; font-weight: 700; }
 .chat-user { color: #2078b6; font-weight: 600; }
+
+
 </style>
 
 <style>
+.main-welcome-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 .welcome-hero {
   background: linear-gradient(135deg, #ffeedd 0%, #fff8e1 80%);
   border-radius: 2.5rem;
@@ -176,10 +188,10 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 {% endif %}
 
 
-<div id="chatbox-section" style="display:none; max-width: 620px; margin:0 auto;">
+<div id="chatbox-section" style="display:none; margin:0 auto;">
   <div class="chatbox rounded shadow-sm mb-3" id="chatbox">
     <div class="chat-line">
-      <span class="chat-assistant">👩‍🍳 Family Food:</span> {{ day_name }} σήμερα, τι θα μαγειρέψουμε;
+      <span class="chat-assistant">👩‍🍳 Family Food:</span> {{ day_name }} σήμερα, τι θα φάμε;
     </div>
   </div>
   <div id="ai-chat-controls"></div>
@@ -438,37 +450,42 @@ function nextAIChatStep(userAnswer) {
       addChatLine('assistant', html2);
     }
 	else if (data.step === 3) {
-	  var html3 = `
-		<label>Υλικό προτίμησης:</label>
-		<div class="d-flex align-items-center gap-2">
-		  <input id="ai_ingredient" type="text" placeholder="π.χ. κοτόπουλο" class="form-control d-inline" style="width:150px">
-		  <button onclick="startSpeechRecognition()" class="btn btn-secondary">🎤</button>
-		  <button onclick="submitAIAnswer()" class="btn btn-primary">OK</button>
-		</div>
-	  `;
-	  addChatLine('assistant', html3);
+		var html3 = `
+		  <div class="d-flex align-items-center gap-2">
+			<span class="chat-assistant">👩‍🍳</span>
+			<label class="mb-0 me-2" for="ai_ingredient">Υλικό προτίμησης:</label>
+			<input id="ai_ingredient" type="text" placeholder="π.χ. ψάρι" class="form-control d-inline" style="width:100px">
+			<button onclick="startSpeechRecognition()" class="btn btn-secondary btn-sm">🎤</button>
+			<button onclick="submitAIAnswer()" class="btn btn-primary btn-sm">OK</button>
+		  </div>
+		`;
+		addChatLine('controls', html3);
+
 	}
-    else if (data.step === 0) {
-      var html0 = "";
-      if (data.dishes && data.dishes.length > 0) {
-        for (var i = 0; i < data.dishes.length; i++) {
-          var dish2 = data.dishes[i];
-          html0 += '<button class="btn btn-success me-2 mb-2" ' +
-            'onclick="recordCookedDish(\'' + dish2.id + '\', \'' + escapeHtml(dish2.title) + '\')">' +
-            'Μαγειρεύω ' + escapeHtml(dish2.title) +
-            '</button>';
-        }
-        html0 += '<button class="btn btn-info mb-2" ' +
-          'onclick="addChatLine(\'user\',\'Θα παραγγείλω!\'); addChatLine(\'assistant\',\'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">' +
-          'Θα παραγγείλω' +
-          '</button>';
-        html0 += '<button class="btn btn-secondary ms-2 mb-2" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';
-        addChatLine('assistant', html0);
-      } else {
-        html0 = '<button class="btn btn-secondary" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';
-        addChatLine('assistant', html0);
-      }
-    }
+	if (data.step === 0) {
+	  var html0 = "";
+	  if (data.dishes && data.dishes.length > 0) {
+		html0 += '<div class="d-flex flex-column gap-2 my-2 align-items-center">';
+		for (var i = 0; i < data.dishes.length; i++) {
+		  var dish2 = data.dishes[i];
+		  html0 += '<button class="btn btn-success" style="width:fit-content"' +
+			'onclick="recordCookedDish(\'' + dish2.id + '\', \'' + escapeHtml(dish2.title) + '\')">' +
+			'Μαγειρεύω ' + escapeHtml(dish2.title) +
+			'</button>';
+		}
+		html0 += '<button class="btn btn-secondary" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';	
+		html0 += '<button class="btn btn-info" style="width:fit-content"' +
+		  'onclick="addChatLine(\'user\',\'Θα παραγγείλω!\'); addChatLine(\'assistant\',\'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">' +
+		  'Θα παραγγείλω' +
+		  '</button>';
+		html0 += '</div>';  
+		addChatLine('controls', html0);
+	  } else {
+		html0 = '<div class="d-flex gap-2 my-2"><button class="btn btn-secondary" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button></div>';
+		addChatLine('assistant', html0);
+	  }
+	}
+
     aiChatStep = data.step;
     aiChatFilters = data.filters || {};
   });
@@ -484,7 +501,6 @@ function updateCookedDish(recipe_id, title, date) {
   .then(r => r.json())
   .then(data => {
     if (data.success) {
-      addChatLine('user', 'Ναι, θέλω να το αλλάξω');
       addChatLine('assistant', 'Το πιάτο ενημερώθηκε επιτυχώς! 🍲');
       // Προσθήκη επιπλέον μηνύματος:
       if (cookingDay === "today") {
@@ -572,11 +588,11 @@ function recordCookedDish(recipe_id, title) {
           '<button class="btn btn-danger me-2" onclick="updateCookedDish(\'' + recipe_id + '\', \'' + escapeHtml(title) + '\', \'' + date + '\')">Ναι, θέλω να το αλλάξω</button>' +
           '<button class="btn btn-secondary" onclick="refuseChange(\'' + escapeHtml(data.old_title) + '\')">Όχι, θα παραμείνω στο ' + escapeHtml(data.old_title) + '</button>' +
         '</div>';
-        addChatLine('assistant', html2);
+        addChatLine('controls', html2);
       }
     } else {
       addChatLine('assistant', 'Μαγειρεύω: ' + title);
-      var html3 = '<button class="btn btn-info btn-sm me-2" onclick="showIngredientsFromId(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
+      var html3 = '<button class="btn btn-info btn-sm me-2" onclick="showRecipeUrl(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
       addChatLine('assistant', html3);
       addChatLine('assistant', 'Καλή όρεξη! 😋');
     }
