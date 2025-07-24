@@ -136,6 +136,16 @@ def login():
         # Κανονικό login
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
+
+        # 1. Έλεγξε αν υπάρχει ο χρήστης με το συγκεκριμένο email
+        user_by_email = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+
+        if not user_by_email:
+            conn.close()
+            flash("Δεν υπάρχει χρήστης με αυτό το email.", "danger")
+            return redirect(url_for("login"))
+
+        # 2. Έλεγξε αν το password ταιριάζει
         user = conn.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password)).fetchone()
         conn.close()
         if user:
@@ -143,9 +153,39 @@ def login():
             session["onboarding_done"] = user["onboarding_done"]
             return redirect(url_for("welcome"))
         else:
-            flash("Λανθασμένο email ή κωδικός!", "danger")
+            flash("Λανθασμένος κωδικός!", "danger")
+            return redirect(url_for("login"))
 
     return render_template("login.html")
+
+@app.route('/delete_user_and_data', methods=['POST'])
+def delete_user_and_data():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify(success=False, error="Not logged in"), 401
+
+    conn = sqlite3.connect(DB)
+    try:
+        # Διαγραφή όλων των σχετικών με τον χρήστη δεδομένων:
+        conn.execute("DELETE FROM favorite_recipes WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM weekly_menu WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM weekly_goals WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM cooked_dishes WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM family_members WHERE user_id=?", (user_id,))
+        # Αν θες να διαγράφεις και custom recipes που έχει φτιάξει ο user (created_by)
+        conn.execute("DELETE FROM recipes WHERE created_by=?", (user_id,))
+        # Τέλος, διαγραφή του ίδιου του user
+        conn.execute("DELETE FROM users WHERE id=?", (user_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify(success=False, error=str(e))
+    conn.close()
+    session.clear()
+    print("User succesfully deleted")
+    return jsonify(success=True)
+
 
 @app.route("/logout")
 def logout():
@@ -207,7 +247,9 @@ def welcome():
         today_menu=today_menu,
         today_menu_id=today_menu_id,
         tomorrow_menu=tomorrow_menu,
-        tomorrow_menu_id=tomorrow_menu_id
+        tomorrow_menu_id=tomorrow_menu_id,
+        onboarding_done=1
+        #onboarding_done=user["onboarding_done"]
     )
 
 @app.route('/delete_user_recipe', methods=['POST'])
@@ -565,7 +607,13 @@ def show_ingredients():
 @app.route("/save_missing_ingredients", methods=["POST"])
 def save_missing_ingredients():
     data = request.get_json()
-    session['missing_ingredients'] = data.get('missing', [])
+    prev = session.get('missing_ingredients', [])
+    new_missing = data.get('missing', [])
+    # Πρόσθεσε ό,τι δεν υπάρχει ήδη
+    for item in new_missing:
+        if item not in prev:
+            prev.append(item)
+    session['missing_ingredients'] = prev
     return jsonify({"status":"ok"})
 
 # Βοηθητική συνάρτηση (για καθαρότητα)
