@@ -147,9 +147,9 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
   transform: scale(1.03);
 }
 @media (max-width: 600px) {
-  .welcome-hero { padding: 30px 4vw 24px 4vw; max-width: 98vw; }
+  .welcome-hero { padding: 18px 4vw 18px 4vw; max-width: 98vw; }
   .welcome-hero h1 { font-size: 1.3rem; }
-  .welcome-actions .btn { min-width: 90px; padding: 0.67em 0.7em; margin: 8px 3px; font-size: 1em;}
+  .welcome-actions .btn { min-width: 90px; padding: 0.67em 0.7em; font-size: 1em;}
 }
 </style>
 
@@ -197,10 +197,7 @@ let tomorrowMenu = "{{ tomorrow_menu|safe }}";
 let tomorrowMenuId = "{{ tomorrow_menu_id }}";
 let cookingDay = "today"; // default: σήμερα
 let onboarding_done = "{{ onboarding_done }}";
-let test = "{{ day_name }}";
 
-
-console.log(test);
 
 function showChatbox() {
   // Εμφάνιση του chatbox
@@ -405,6 +402,79 @@ function submitAIAnswer() {
   nextAIChatStep(val);
 }
 
+function nextAIChatStep(userAnswer) {
+  clearChatControls();
+  fetch('/ai_suggest_dish', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      step: aiChatStep,
+      answer: userAnswer,
+      filters: aiChatFilters
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.dishes && data.dishes.length > 0) {
+      var html = "<div class='mb-2'><b>AI:</b> " + data.question + "</div>";
+      html += "<ul>";
+      for (var i = 0; i < data.dishes.length; i++) {
+        var dish = data.dishes[i];
+		html += "<li><b>" + dish.title + "</b> (χρόνος: " + dish.total_time + "′) " +
+		  "<button type='button' class='btn btn-primary btn-sm' " +
+			"onclick=\"showRecipeUrl('" + dish.id + "')\">" + "Δες τη συνταγή</button>";
+
+		html += "</li>";
+      }
+      html += "</ul>";
+      addChatLine('assistant', html);
+    } else {
+      addChatLine('assistant', data.question.replace(/\n/g, "<br>"));
+    }
+
+    if (data.step === 2) {
+      var html2 = '<label>Λεπτά: <input id="ai_time" type="number" min="10" max="180" step="5" value="60" class="form-control d-inline" style="width:100px"></label>' +
+        '<button onclick="submitAIAnswer()" class="btn btn-primary ms-2">OK</button>';
+      addChatLine('assistant', html2);
+    }
+	else if (data.step === 3) {
+	  var html3 = `
+		<label>Υλικό προτίμησης:</label>
+		<div class="d-flex align-items-center gap-2">
+		  <input id="ai_ingredient" type="text" placeholder="π.χ. κοτόπουλο" class="form-control d-inline" style="width:150px">
+		  <button onclick="startSpeechRecognition()" class="btn btn-secondary">🎤</button>
+		  <button onclick="submitAIAnswer()" class="btn btn-primary">OK</button>
+		</div>
+	  `;
+	  addChatLine('assistant', html3);
+	}
+    else if (data.step === 0) {
+      var html0 = "";
+      if (data.dishes && data.dishes.length > 0) {
+        for (var i = 0; i < data.dishes.length; i++) {
+          var dish2 = data.dishes[i];
+          html0 += '<button class="btn btn-success me-2 mb-2" ' +
+            'onclick="recordCookedDish(\'' + dish2.id + '\', \'' + escapeHtml(dish2.title) + '\')">' +
+            'Μαγειρεύω ' + escapeHtml(dish2.title) +
+            '</button>';
+        }
+        html0 += '<button class="btn btn-info mb-2" ' +
+          'onclick="addChatLine(\'user\',\'Θα παραγγείλω!\'); addChatLine(\'assistant\',\'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">' +
+          'Θα παραγγείλω' +
+          '</button>';
+        html0 += '<button class="btn btn-secondary ms-2 mb-2" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';
+        addChatLine('assistant', html0);
+      } else {
+        html0 = '<button class="btn btn-secondary" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';
+        addChatLine('assistant', html0);
+      }
+    }
+    aiChatStep = data.step;
+    aiChatFilters = data.filters || {};
+  });
+}
+
+
 function updateCookedDish(recipe_id, title, date) {
   fetch('/update_cooked_dish', {
     method: 'POST',
@@ -434,19 +504,22 @@ function showRecipeUrl(recipe_id) {
   fetch('/get_recipe/' + recipe_id)
     .then(r => r.json())
     .then(data => {
-      if (data.url && data.url.trim() && data.url.startsWith("http")) {
-        window.open(data.url, '_blank');
-      } else {
-        // Αν δεν υπάρχει url, εμφάνισε modal με τίτλο, υλικά και οδηγίες
-        let html = "<h5>" + (data.title || "Συνταγή") + "</h5>";
-        html += "<strong>Υλικά:</strong><br><div style='white-space: pre-wrap;'>" + (data.ingredients || "-") + "</div><hr>";
-        html += "<strong>Οδηγίες:</strong><br><div style='white-space: pre-wrap;'>" + (data.instructions || "-") + "</div>";
-        document.getElementById('modalRecipeBody').innerHTML = html;
-        var modal = new bootstrap.Modal(document.getElementById('viewRecipeModal'));
-        modal.show();
-      }
+      // Φτιάξε προσωρινό element τύπου card
+      var tempCard = document.createElement('div');
+      tempCard.setAttribute('data-title', data.title || '-');
+      tempCard.setAttribute('data-chef', data.chef || '-');
+      tempCard.setAttribute('data-method', data.method || '-');
+      tempCard.setAttribute('data-category', data.category || '-');
+      tempCard.setAttribute('data-tags', data.tags || '-');
+      tempCard.setAttribute('data-url', data.url || '#');
+      tempCard.setAttribute('data-prep', data.prep_time || '-');
+      tempCard.setAttribute('data-cook', data.cook_time || '-');
+      tempCard.setAttribute('data-ingredients', data.ingredients || '');
+      tempCard.setAttribute('data-instructions', data.instructions || '');
+      openRecipeModal(tempCard);
     });
 }
+
 
 // ---- Λοιπά helpers ---- //
 function refuseChange(old_title) {
@@ -492,19 +565,19 @@ function recordCookedDish(recipe_id, title) {
       if (data.already) {
         addChatLine('assistant', 'Το πιάτο <b>' + title + '</b> είναι ήδη καταχωρημένο για αυτή τη μέρα!');
         var html = '<button class="btn btn-primary btn-sm" onclick="showRecipeUrl(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
-        setChatControls(html);
+        addChatLine('assistant', html);
       } else {
         addChatLine('assistant', 'Υπάρχει ήδη επιλεγμένο πιάτο για αυτή τη μέρα: <b>' + data.old_title + '</b>. Θέλεις να το αλλάξεις;');
         var html2 = '<div id="replaceBtns">' +
           '<button class="btn btn-danger me-2" onclick="updateCookedDish(\'' + recipe_id + '\', \'' + escapeHtml(title) + '\', \'' + date + '\')">Ναι, θέλω να το αλλάξω</button>' +
           '<button class="btn btn-secondary" onclick="refuseChange(\'' + escapeHtml(data.old_title) + '\')">Όχι, θα παραμείνω στο ' + escapeHtml(data.old_title) + '</button>' +
         '</div>';
-        setChatControls(html2);
+        addChatLine('assistant', html2);
       }
     } else {
       addChatLine('assistant', 'Μαγειρεύω: ' + title);
       var html3 = '<button class="btn btn-info btn-sm me-2" onclick="showIngredientsFromId(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
-      setChatControls(html3);
+      addChatLine('assistant', html3);
       addChatLine('assistant', 'Καλή όρεξη! 😋');
     }
   });
