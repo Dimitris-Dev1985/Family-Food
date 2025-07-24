@@ -1,50 +1,104 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-3">Μη διαθέσιμα Υλικά</h2>
-  <table class="table table-striped align-middle">
-    <thead>
-      <tr>
-        <th style="width:50px;">#</th>
-        <th>Υλικό</th>
-        <th style="width:120px;"></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in missing_ingredients %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ item }}</td>
-        <td>
-          <button class="btn btn-danger btn-sm" onclick="deleteMissing('{{ item }}')">
-            <i class="fa fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-      {% endfor %}
-      {% if missing_ingredients|length == 0 %}
-      <tr>
-        <td colspan="3" class="text-muted">Δεν έχεις δηλώσει μη διαθέσιμα υλικά!</td>
-      </tr>
-      {% endif %}
-      <tr>
-        <!-- + κάτω από Α/Α στήλη -->
-        <td>
-          <button class="btn btn-success btn-sm" onclick="addMissingRow()" title="Προσθήκη υλικού">
-            <i class="fa fa-plus"></i>
-          </button>
-        </td>
-        <td></td>
-        <td class="text-end">
-          {% if missing_ingredients|length > 0 %}
-          <button class="btn btn-outline-danger btn-sm" onclick="deleteAllMissing()">
-            <i class="fa fa-trash"></i> Διαγραφή όλων
-          </button>
-          {% endif %}
-        </td>
-      </tr>
-    </tbody>
-  </table>
+<style>
+.ingredient-actions {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+#ingredient-search-row {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+#ingredient-search-input {
+  width: 220px;
+  max-width: 70vw;
+  border-radius: 8px;
+  font-size: 1.08em;
+  display: inline-block;
+  padding-right: 38px;
+}
+.voice-btn {
+  position: relative;
+  background: #f5f7fa;
+  border: none;
+  color: #337ab7;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 1.2em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -38px;
+  z-index: 2;
+  transition: background 0.13s;
+}
+.voice-btn:active {
+  background: #d9ecff;
+}
+@media (max-width: 480px) {
+  #ingredient-search-input { width: 100%; min-width: 0; }
+  #ingredient-search-row { flex-direction: column; gap: 5px; }
+}
+</style>
+
+<div class="container mt-4" style="max-width:480px;">
+  <h2 class="mb-3 text-center"><i class="fa fa-search text-primary me-2"></i>Μη διαθέσιμα Υλικά</h2>
+
+  <div id="ingredient-search-row">
+    <input id="ingredient-search-input"
+           class="form-control"
+           type="text"
+           placeholder="Αναζήτησε ή πρόσθεσε υλικό..."
+           autocomplete="off"
+           oninput="filterIngredients()"
+           onkeydown="if(event.key==='Enter'){addIngredientFromInput();}">
+    <button class="voice-btn" type="button" title="Φωνητική Αναγνώριση" onclick="startIngredientSpeech()">
+      <i class="fa fa-microphone"></i>
+    </button>
+    <button class="btn btn-success btn-sm" type="button" title="Προσθήκη υλικού" onclick="addIngredientFromInput()">
+      <i class="fa fa-plus"></i>
+    </button>
+    {% if missing_ingredients|length > 0 %}
+    <button class="btn btn-outline-danger btn-sm" type="button" onclick="deleteAllMissing()">
+      <i class="fa fa-trash"></i> Διαγραφή όλων
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-striped align-middle shadow-sm rounded" id="ingredients-table">
+      <thead>
+        <tr>
+          <th style="width:38px;">#</th>
+          <th>Υλικό</th>
+          <th style="width:60px;"></th>
+        </tr>
+      </thead>
+      <tbody id="ingredients-tbody">
+        {% for item in missing_ingredients %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td class="ingredient-title">{{ item }}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" title="Διαγραφή" onclick="deleteMissing('{{ item }}')">
+              <i class="fa fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+        {% if missing_ingredients|length == 0 %}
+        <tr>
+          <td colspan="3" class="text-muted text-center">Δεν έχεις δηλώσει μη διαθέσιμα υλικά!</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script>
@@ -58,9 +112,13 @@ function deleteMissing(item) {
     .then(() => location.reload());
 }
 
-function addMissingRow() {
-  let val = prompt("Ποιο υλικό θέλεις να προσθέσεις στη λίστα μη-διαθέσιμων;");
-  if (!val) return;
+function addIngredientFromInput() {
+  var input = document.getElementById('ingredient-search-input');
+  var val = input.value.trim();
+  if (!val) {
+    input.focus();
+    return;
+  }
   fetch('/add_missing_ingredient', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -74,6 +132,50 @@ function deleteAllMissing() {
   fetch('/delete_all_missing_ingredients', {method: 'POST'})
     .then(r => r.json())
     .then(() => location.reload());
+}
+
+function filterIngredients() {
+  var q = document.getElementById('ingredient-search-input').value.trim().toLowerCase();
+  var rows = document.querySelectorAll('#ingredients-tbody tr');
+  rows.forEach(function(row) {
+    var cell = row.querySelector('.ingredient-title');
+    if (!cell) return;
+    var txt = cell.innerText.toLowerCase();
+    row.style.display = (txt.includes(q) || q === "") ? "" : "none";
+  });
+}
+
+// ----------- Voice Recognition -----------
+function startIngredientSpeech() {
+  var input = document.getElementById('ingredient-search-input');
+  if (!('webkitSpeechRecognition' in window)) {
+    alert("Ο browser σου δεν υποστηρίζει φωνητική αναγνώριση.");
+    return;
+  }
+  var recognition = new webkitSpeechRecognition();
+  recognition.lang = 'el-GR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  input.value = '';
+  input.placeholder = "Μιλήστε τώρα...";
+  recognition.onresult = function(event) {
+    var transcript = event.results[0][0].transcript.trim();
+    input.value = transcript;
+    input.placeholder = "Αναζήτησε ή πρόσθεσε υλικό...";
+    filterIngredients();
+  };
+  recognition.onerror = function(event) {
+    input.placeholder = "Αναζήτησε ή πρόσθεσε υλικό...";
+    alert("Σφάλμα μικροφώνου: " + event.error);
+  };
+  recognition.onend = function() {
+    input.placeholder = "Αναζήτησε ή πρόσθεσε υλικό...";
+    if (input.value.trim()) {
+      filterIngredients();
+    }
+  };
+  recognition.start();
+  input.focus();
 }
 </script>
 {% endblock %}

@@ -3,122 +3,180 @@
 {% block content %}
 
 <style>
-.main-welcome-container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 1.5rem 0.7rem 0.7rem 0.7rem;
-}
-.chatbox {
-  background: #fff;
-  border: 1px solid #eee;
-  min-height: 90px;
-  padding: 12px 10px;
-  font-size: 1.12rem;
-  line-height: 1.5;
-  max-height: 40vh;
-  overflow-y: auto;
-  box-shadow: 0 1px 7px rgba(0,0,0,0.07);
-  border-radius: 15px;
-}
-.chat-line {
-  margin-bottom: 7px;
-}
-.chat-assistant { color: #2078b6; font-weight: 600; }
-.chat-user { color: #198754; font-weight: 600; }
-#welcome-main-actions .btn, #choicesRow .btn, #afterMenuBtns .btn {
-  min-width: 170px;
-  margin-bottom: 0.2em;
-  font-size: 1.08em;
-}
-@media (max-width: 480px) {
-  .main-welcome-container { padding: 0.7rem 0.2rem 0.2rem 0.2rem; }
-  .display-5, .display-4 { font-size: 1.35rem; }
-  .chatbox { font-size: 1.01rem; }
-  #welcome-main-actions, #choicesRow, #afterMenuBtns {
-    flex-direction: column !important;
-    gap: 0 !important;
-    align-items: stretch;
-  }
-  #welcome-main-actions .btn, #choicesRow .btn, #afterMenuBtns .btn {
-    width: 100% !important;
-    min-width: 0;
-    margin-bottom: 7px;
-    font-size: 1.09em;
-  }
-}
-</style>
-
-<style>
-#onboardingBackdrop {
+/* Backdrop ΜΟΝΟ στη navbar (fixed-bottom) */
+#onboardingNavBackdrop {
   position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 65px;  /* προσαρμόζεις όσο ψηλή είναι η nav-bar σου */
+  background: rgba(0,0,0,0.47);
   z-index: 999;
+  pointer-events: none; /* έτσι δεν μπλοκάρει τα κουμπιά, αλλά θα το αλλάξουμε παρακάτω για τα nav-link */
 }
+
+/* Tooltip styling */
 #onboardingTooltip {
   font-family: 'Indie Flower', cursive, Arial, sans-serif;
   position: fixed;
   bottom: 80px;
-  right: 12px;
+  right: 18px;
   background: #fff9db;
-  padding: 10px 14px;
+  padding: 12px 15px 13px 15px;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.24);
+  z-index: 1001;
   max-width: 230px;
-  font-size: 14px;
+  font-size: 15px;
   text-align: center;
   animation: pulse 1.5s infinite;
-  transform: translate(0, 0);
-  position: fixed;
 }
-#onboardingTooltip::after {
+#onboardingTooltip .arrow-down {
   content: "";
+  display: block;
   position: absolute;
   bottom: -7px;
   right: 16px;
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   background: #fff9db;
   transform: rotate(45deg);
-  border-bottom: 1px solid rgba(0,0,0,0.1);
-  border-right: 1px solid rgba(0,0,0,0.1);
+  border-bottom: 1px solid rgba(0,0,0,0.09);
+  border-right: 1px solid rgba(0,0,0,0.09);
   box-shadow: 1px 1px 3px rgba(0,0,0,0.08);
   z-index: 0;
 }
 
-/* Παλμός (αναβόσβημα) */
 @keyframes pulse {
   0%   { transform: scale(1); box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
-  50%  { transform: scale(1.03); box-shadow: 0 0 20px rgba(255, 255, 255, 0.9); }
+  50%  { transform: scale(1.04); box-shadow: 0 0 20px rgba(255, 244, 200, 1); }
   100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
 }
 
-/* Κάνε ΟΛΑ τα κουμπιά του bottom nav ανενεργά */
+/* Απενεργοποιεί nav-bar κουμπιά, εκτός από το προφίλ */
 body.onboarding-active nav.navbar.fixed-bottom a.nav-link {
   pointer-events: none;
-  opacity: 0.3;
+  opacity: 0.34;
+  filter: grayscale(0.6);
 }
-
-/* Ενεργοποίησε ΜΟΝΟ το κουμπί Προφίλ */
 body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
   pointer-events: auto;
   opacity: 1;
+  filter: none;
 }
-
-
 </style>
 
+<style>
+/* Κρατάμε το υπάρχον στυλ chatbox, αλλά το κάνουμε πιο “ελαφρύ” */
+.chatbox {
+  background: #fffdfa;
+  border: 1px solid #ffe6b5;
+  min-height: 95px;
+  padding: 15px 12px;
+  font-size: 1.16rem;
+  line-height: 1.6;
+  max-height: 38vh;
+  overflow-y: auto;
+  box-shadow: 0 2px 12px rgba(254, 148, 65, 0.07);
+  border-radius: 15px;
+  font-family: 'Quicksand', Arial, sans-serif;
+}
+.chat-line {
+  margin-bottom: 8px;
+}
+.chat-assistant { color: #fe9441; font-weight: 700; }
+.chat-user { color: #2078b6; font-weight: 600; }
+</style>
 
-<div class="main-welcome-container">
+<style>
+.welcome-hero {
+  background: linear-gradient(135deg, #ffeedd 0%, #fff8e1 80%);
+  border-radius: 2.5rem;
+  box-shadow: 0 8px 40px rgba(222, 174, 120, 0.15);
+  margin: 32px auto 32px auto;
+  max-width: 520px;
+  padding: 48px 26px 36px 26px;
+  position: relative;
+}
+.welcome-hero img {
+  width: 80px;
+  margin-bottom: 18px;
+}
+.welcome-hero h1 {
+  font-family: 'Montserrat', 'Arial', sans-serif;
+  font-weight: 700;
+  font-size: 2.2rem;
+  color: #2078b6;
+}
+.welcome-hero .lead {
+  font-family: 'Quicksand', 'Arial', sans-serif;
+  color: #7d5623;
+  font-size: 1.18rem;
+  font-weight: 400;
+  margin-bottom: 30px;
+}
+.welcome-actions .btn {
+  min-width: 180px;
+  font-size: 1.12em;
+  border-radius: 2rem !important;
+  padding: 0.75em 2em;
+  margin-right: 12px;
+  margin-left: 12px;
+  box-shadow: 0 2px 12px rgba(32,120,182,0.09);
+  transition: transform 0.11s;
+}
+.welcome-actions .btn-primary {
+  background: linear-gradient(90deg, #fe9441 0%, #ffe15f 90%);
+  color: #444;
+  border: none;
+  font-weight: 700;
+}
+.welcome-actions .btn-primary:hover {
+  background: linear-gradient(90deg, #ffc375 0%, #ffe080 90%);
+  transform: scale(1.03);
+}
+.welcome-actions .btn-outline-secondary {
+  border: 2px solid #ffd28c;
+  color: #b1762c;
+  background: #fff9f1;
+  font-weight: 500;
+}
+.welcome-actions .btn-outline-secondary:hover {
+  background: #fff3e0;
+  border-color: #ffd28c;
+  transform: scale(1.03);
+}
+@media (max-width: 600px) {
+  .welcome-hero { padding: 30px 4vw 24px 4vw; max-width: 98vw; }
+  .welcome-hero h1 { font-size: 1.3rem; }
+  .welcome-actions .btn { min-width: 90px; padding: 0.67em 0.7em; margin: 8px 3px; font-size: 1em;}
+}
+</style>
 
-  <h1 class="display-5 text-center mb-3">{{ greeting }}, {{ user_name }}!</h1>
-  <p class="lead text-center mb-3">
-    Έτοιμοι να μαγειρέψουμε κάτι υπέροχο σήμερα; 🍽️
-  </p>
-  <div class="d-flex justify-content-center mb-3" id="welcome-main-actions">
-    <button class="btn btn-outline-secondary btn-sm" onclick="restartChat()">↻ Επαναφορά Chat</button>
+<div class="welcome-hero text-center">
+  <img src="{{ url_for('static', filename='image.png') }}" alt="Family Food" />
+  <h1>👋 Καλωσήρθες, <span style="color:#2078b6;">{{ user_name }}</span>!</h1>
+  <p class="lead" id="welcomeLead">
+	Εδώ, το <b>“Τι θα φάμε σήμερα;”</b> βρίσκει πάντα απάντηση!<br><br>Έτοιμοι να φτιάξουμε υπέροχες οικογενειακές στιγμές; 🍽️</p>
+  <div class="welcome-actions d-flex flex-wrap justify-content-center">
+    <button id="startChatBtn" class="btn btn-primary"
+      onclick="showChatbox()"
+      {% if not onboarding_done %} disabled {% endif %}
+      >Ξεκίνα Chat</button>
   </div>
+</div>
+
+
+{% if not onboarding_done %}
+  <div id="onboardingNavBackdrop"></div>
+  <div id="onboardingTooltip">
+    👉 Συμπλήρωσε το προφίλ σου για να ξεκινήσεις!
+    <div class="arrow-down"></div>
+  </div>
+{% endif %}
+
+
+<div id="chatbox-section" style="display:none; max-width: 620px; margin:0 auto;">
   <div class="chatbox rounded shadow-sm mb-3" id="chatbox">
     <div class="chat-line">
       <span class="chat-assistant">👩‍🍳 Family Food:</span> {{ day_name }} σήμερα, τι θα μαγειρέψουμε;
@@ -127,63 +185,52 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
   <div id="ai-chat-controls"></div>
 </div>
 
-<!-- Onboarding overlay -->
-<div id="onboardingOverlay" style="display:none;">
-  <div id="onboardingBackdrop"></div>
-  <div id="onboardingTooltip">
-    👉 Συμπλήρωσε το προφίλ σου για να ξεκινήσεις!
-    <div class="arrow-down"></div>
-  </div>
-</div>
-
-
-
-
 {% endblock %}
 
-
-{% block modals %}
-<!-- Pop-up modal για υλικά -->
-<div class="modal fade" id="ingredientsModal" tabindex="-1" aria-labelledby="modalRecipeTitle" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalRecipeTitle"></h5>
-      </div>
-      <div class="modal-body" id="modalIngredients">
-        <!-- Τα υλικά ως checkbox θα μπαίνουν εδώ -->
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-success" onclick="saveMissingIngredients()">Αποθήκευση</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Άκυρο</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal εμφάνισης συνταγής -->
-<div class="modal fade" id="viewRecipeModal" tabindex="-1" aria-labelledby="viewRecipeLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="viewRecipeLabel">Συνταγή</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="modalRecipeBody">
-        <!-- Εδώ θα μπαίνουν τα δεδομένα -->
-      </div>
-    </div>
-  </div>
-</div>
-{% endblock %}
 
 {% block scripts %}
+
 <script>
 let todayMenu = "{{ today_menu|safe }}";
 let todayMenuId = "{{ today_menu_id }}";
 let tomorrowMenu = "{{ tomorrow_menu|safe }}";
 let tomorrowMenuId = "{{ tomorrow_menu_id }}";
 let cookingDay = "today"; // default: σήμερα
+let onboarding_done = "{{ onboarding_done }}";
+let test = "{{ day_name }}";
+
+
+console.log(test);
+
+function showChatbox() {
+  // Εμφάνιση του chatbox
+  document.getElementById('chatbox-section').style.display = '';
+  // Εξαφάνιση του lead
+  var lead = document.getElementById('welcomeLead');
+  if (lead) lead.style.display = 'none';
+  // Αλλαγή κουμπιού σε Restart Chat!
+  var btn = document.getElementById('startChatBtn');
+  btn.innerText = 'Restart Chat!';
+  btn.onclick = function() {
+    restartChat();
+    // Μετά το restart, το lead ΔΕΝ επανεμφανίζεται!
+  };
+  btn.disabled = false;
+  // Scroll down (προαιρετικό)
+  setTimeout(() => {
+    document.getElementById('chatbox').scrollTop = document.getElementById('chatbox').scrollHeight;
+    window.scrollTo({top: document.getElementById('chatbox-section').offsetTop - 20, behavior:'smooth'});
+  }, 80);
+  // Εμφανίζει τα κύρια choices αν είναι άδειο το chat
+  if (typeof showMainChoices === "function" && !document.querySelector('#chatbox #choicesRow')) {
+    showMainChoices();
+  }
+}
+
+<!-- JS για να προσθέσει την onboarding-active στο body -->
+{% if not onboarding_done %}
+  document.body.classList.add("onboarding-active");
+{% endif %}
 
 function startSpeechRecognition() {
   if (!('webkitSpeechRecognition' in window)) {
@@ -225,35 +272,6 @@ function startSpeechRecognition() {
   recognition.start();
 }
 
-
-// ---- Αποθήκευση/restore chat ιστορικού και controls ----
-function saveChatHistory() {
-  localStorage.setItem('chatHistory', document.getElementById('chatbox').innerHTML);
-}
-function restoreChatHistory() {
-  let hist = localStorage.getItem('chatHistory');
-  if (hist) {
-    document.getElementById('chatbox').innerHTML = hist;
-    document.getElementById('chatbox').scrollTop = document.getElementById('chatbox').scrollHeight;
-  }
-}
-function clearChatHistory() {
-  localStorage.removeItem('chatHistory');
-  document.getElementById('chatbox').innerHTML = '';
-}
-function setChatControls(html) {
-  document.getElementById('ai-chat-controls').innerHTML = html;
-  localStorage.setItem('chatControls', html);
-}
-function clearChatControls() {
-  document.getElementById('ai-chat-controls').innerHTML = "";
-  localStorage.removeItem('chatControls');
-}
-function restoreChatControls() {
-  let controls = localStorage.getItem('chatControls');
-  if (controls) document.getElementById('ai-chat-controls').innerHTML = controls;
-}
-
 // ---- Προσθήκη γραμμής chat ----
 function addChatLine(who, text) {
   let chatbox = document.getElementById('chatbox');
@@ -289,16 +307,6 @@ function showMainChoices() {
     '<button class="btn btn-outline-warning" onclick="replyAndHideBtns(\'Θέλω να μαγειρέψω για αύριο\', \'\', false, \'tomorrow\')">Θέλω να μαγειρέψω για αύριο</button>' +
     '</div>';
   addChatLine('controls', html);
-}
-
-// Restart chat
-function restartChat() {
-  if (!confirm("Θέλεις να διαγράψεις το ιστορικό συνομιλίας;")) return;
-  clearChatHistory();
-  clearChatControls();
-  document.getElementById('chatbox').innerHTML = '<div class="chat-line"><span class="chat-assistant">👩‍🍳 Family Food:</span> {{ day_name }} σήμερα, τι θα μαγειρέψουμε;</div>';
-  saveChatHistory();
-  showMainChoices();
 }
 
 function showActionsAfterMenu(menuId, menuTitle) {
@@ -351,7 +359,6 @@ function showTodayMenu() {
   if (dishTime) msg += ' (χρόνος: ' + dishTime + '′)';
   msg +=
     '<div class="mt-2 mb-2">' +
-      '<button class="btn btn-info btn-sm me-2" onclick="showIngredientsFromId(' + todayMenuId + ')">Δες τα υλικά</button>' +
       '<button class="btn btn-primary btn-sm" onclick="showRecipeUrl(' + todayMenuId + ')">Δες τη συνταγή</button>' +
     '</div>' +
     '<div class="mb-2 mt-2">Τι θα ήθελες να κάνεις;</div>';
@@ -372,7 +379,6 @@ function showTomorrow() {
   if (dishTime) msg += ' (χρόνος: ' + dishTime + '′)';
   msg +=
     '<div class="mt-2 mb-2">' +
-      '<button class="btn btn-info btn-sm me-2" onclick="showIngredientsFromId(' + tomorrowMenuId + ')">Δες τα υλικά</button>' +
       '<button class="btn btn-primary btn-sm" onclick="showRecipeUrl(' + tomorrowMenuId + ')">Δες τη συνταγή</button>' +
     '</div>' +
     '<div class="mb-2 mt-2">Τι θα ήθελες να κάνεις;</div>';
@@ -397,89 +403,6 @@ function submitAIAnswer() {
   if (aiChatStep === 3) val = document.getElementById('ai_ingredient').value;
   clearChatControls();
   nextAIChatStep(val);
-}
-
-function nextAIChatStep(userAnswer) {
-  clearChatControls();
-  fetch('/ai_suggest_dish', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      step: aiChatStep,
-      answer: userAnswer,
-      filters: aiChatFilters
-    })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    if (data.dishes && data.dishes.length > 0) {
-      var html = "<div class='mb-2'><b>AI:</b> " + data.question + "</div>";
-      html += "<ul>";
-      for (var i = 0; i < data.dishes.length; i++) {
-        var dish = data.dishes[i];
-		html += "<li><b>" + dish.title + "</b> (χρόνος: " + dish.total_time + "′) " +
-		  "<button type='button' class='btn btn-info btn-sm me-2' " +
-			"onclick=\"showIngredients('" + escapeHtml(dish.title) + "', '" + escapeHtml(dish.ingredients) + "')\">" +
-			"Δες τα υλικά</button> ";
-
-		if (dish.link && dish.link.startsWith("http")) {
-		  html += "<button type='button' class='btn btn-primary btn-sm' " +
-			"onclick=\"window.open('" + dish.link + "', '_blank')\">" +
-			"Δες τη συνταγή</button>";
-		} else {
-		  // Εναλλακτικά, αν δεν έχει url, μπορείς να βάλεις ένα disabled κουμπί ή να δείξεις το modal!
-		  html += "<button type='button' class='btn btn-sm btn-outline-primary ms-1' " +
-			"onclick=\"showRecipeUrl('" + dish.id + "')\">" +
-			"Δες τη συνταγή</button>";
-		}
-		html += "</li>";
-      }
-      html += "</ul>";
-      addChatLine('assistant', html);
-    } else {
-      addChatLine('assistant', data.question.replace(/\n/g, "<br>"));
-    }
-
-    if (data.step === 2) {
-      var html2 = '<label>Λεπτά: <input id="ai_time" type="number" min="10" max="180" step="5" value="60" class="form-control d-inline" style="width:100px"></label>' +
-        '<button onclick="submitAIAnswer()" class="btn btn-primary ms-2">OK</button>';
-      setChatControls(html2);
-    }
-	else if (data.step === 3) {
-	  var html3 = `
-		<label>Υλικό προτίμησης:</label>
-		<div class="d-flex align-items-center gap-2">
-		  <input id="ai_ingredient" type="text" placeholder="π.χ. κοτόπουλο" class="form-control d-inline" style="width:150px">
-		  <button onclick="startSpeechRecognition()" class="btn btn-secondary">🎤</button>
-		  <button onclick="submitAIAnswer()" class="btn btn-primary">OK</button>
-		</div>
-	  `;
-	  setChatControls(html3);
-	}
-    else if (data.step === 0) {
-      var html0 = "";
-      if (data.dishes && data.dishes.length > 0) {
-        for (var i = 0; i < data.dishes.length; i++) {
-          var dish2 = data.dishes[i];
-          html0 += '<button class="btn btn-success me-2 mb-2" ' +
-            'onclick="recordCookedDish(\'' + dish2.id + '\', \'' + escapeHtml(dish2.title) + '\')">' +
-            'Μαγειρεύω ' + escapeHtml(dish2.title) +
-            '</button>';
-        }
-        html0 += '<button class="btn btn-info mb-2" ' +
-          'onclick="addChatLine(\'user\',\'Θα παραγγείλω!\'); addChatLine(\'assistant\',\'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">' +
-          'Θα παραγγείλω' +
-          '</button>';
-        html0 += '<button class="btn btn-secondary ms-2 mb-2" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';
-        setChatControls(html0);
-      } else {
-        html0 = '<button class="btn btn-secondary" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';
-        setChatControls(html0);
-      }
-    }
-    aiChatStep = data.step;
-    aiChatFilters = data.filters || {};
-  });
 }
 
 function updateCookedDish(recipe_id, title, date) {
@@ -541,44 +464,6 @@ function showIngredientsFromId(recipe_id) {
     });
 }
 
-// ---- Modal με υλικά ---- //
-let lastIngredients = [];
-
-function showIngredients(title, ingredients) {
-  document.getElementById('modalRecipeTitle').innerText = "Υλικά για " + title;
-  let items = ingredients.split(',').map(function(i) { return i.trim(); });
-  lastIngredients = items;
-  let html = "<ul style='list-style:none;padding:0;'>";
-  for (let idx = 0; idx < items.length; idx++) {
-    let item = items[idx];
-    html += "<li>" +
-              "<input type='checkbox' id='ing" + idx + "' value='" + item + "'>" +
-              "<label for='ing" + idx + "'>" + item + "</label>" +
-            "</li>";
-  }
-  html += "</ul>";
-  document.getElementById('modalIngredients').innerHTML = html;
-  var modal = new bootstrap.Modal(document.getElementById('ingredientsModal'));
-  modal.show();
-}
-
-function saveMissingIngredients() {
-  let missing = [];
-  lastIngredients.forEach((item, idx) => {
-    let cb = document.getElementById('ing'+idx);
-    if (cb && !cb.checked) missing.push(item);
-  });
-  fetch('/save_missing_ingredients', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({missing: missing})
-  }).then(r=>r.json()).then(data=>{
-    var modal = bootstrap.Modal.getInstance(document.getElementById('ingredientsModal'));
-    modal.hide();
-    if(missing.length) alert('Αποθηκεύτηκαν: λείπουν τα υλικά: '+missing.join(', '));
-  });
-}
-
 // ---- ΚΟΥΜΠΙ: Μαγειρεύω ---- //
 function recordCookedDish(recipe_id, title) {
   var date;
@@ -606,8 +491,7 @@ function recordCookedDish(recipe_id, title) {
     if (data.exists) {
       if (data.already) {
         addChatLine('assistant', 'Το πιάτο <b>' + title + '</b> είναι ήδη καταχωρημένο για αυτή τη μέρα!');
-        var html = '<button class="btn btn-info btn-sm me-2" onclick="showIngredientsFromId(\'' + recipe_id + '\')">Δες τα υλικά</button>' +
-                   '<button class="btn btn-primary btn-sm" onclick="showRecipeUrl(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
+        var html = '<button class="btn btn-primary btn-sm" onclick="showRecipeUrl(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
         setChatControls(html);
       } else {
         addChatLine('assistant', 'Υπάρχει ήδη επιλεγμένο πιάτο για αυτή τη μέρα: <b>' + data.old_title + '</b>. Θέλεις να το αλλάξεις;');
@@ -619,7 +503,7 @@ function recordCookedDish(recipe_id, title) {
       }
     } else {
       addChatLine('assistant', 'Μαγειρεύω: ' + title);
-      var html3 = '<button class="btn btn-info btn-sm me-2" onclick="showIngredientsFromId(\'' + recipe_id + '\')">Δες τα υλικά</button>';
+      var html3 = '<button class="btn btn-info btn-sm me-2" onclick="showIngredientsFromId(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
       setChatControls(html3);
       addChatLine('assistant', 'Καλή όρεξη! 😋');
     }
@@ -635,22 +519,6 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;");
 }
 
-// --- Άλλες εκκινήσεις μετά το DOM ---
-window.onload = function() {
-  restoreChatHistory();
-  restoreChatControls();
-};
-
-window.addEventListener('DOMContentLoaded', function() {
-  restoreChatHistory();
-  restoreChatControls();
-  if (!document.getElementById('choicesRow') && !localStorage.getItem('chatHistory')) {
-    showMainChoices();
-  }
-});
-
-
-
 function getNextOnboardingStep() {
   if (localStorage.getItem("onboarding_done") === "1") return null;
 
@@ -662,26 +530,29 @@ function getNextOnboardingStep() {
   return null;
 }
 
-window.addEventListener("DOMContentLoaded", function () {
-  const step = getNextOnboardingStep();
-
-  if (step === 1 && window.location.pathname === "/welcome") {
-    document.body.classList.add("onboarding-active");
-    document.getElementById("onboardingOverlay").style.display = "block";
-
-    const profileLink = document.querySelector('nav.navbar.fixed-bottom a[href="/profile"]');
-    if (profileLink) {
-      profileLink.addEventListener("click", function (e) {
-        e.preventDefault();
-        localStorage.setItem("onboarding_step1_shown", "1");
-        document.body.classList.remove("onboarding-active");
-        document.getElementById("onboardingOverlay").style.display = "none";
-        window.location.href = "/profile";
-      });
-    }
+{% if not onboarding_done %}
+document.addEventListener("DOMContentLoaded", function () {
+  // Βρίσκει το κουμπί "Προφίλ" στη nav-bar
+  var profileLink = document.querySelector('nav.navbar.fixed-bottom a[href="/profile"]');
+  if (profileLink) {
+    profileLink.addEventListener("click", function (e) {
+      // Κρατάει το event μόνο αν το onboarding_done είναι false/0!
+      localStorage.setItem("onboarding_step1_shown", "1");
+      // Δεν χρειάζεται preventDefault αν θέλεις να φύγει αμέσως από τη σελίδα.
+      // Αν θες smooth, κάνε:
+      // e.preventDefault();
+      // window.location.href = profileLink.href;
+    });
   }
 });
+{% endif %}
 
 
 </script>
+
+<script>
+  window.dayName = "{{ day_name }}";
+</script>
+<script src="{{ url_for('static', filename='JS/chat_history.js') }}"></script>
+
 {% endblock %}

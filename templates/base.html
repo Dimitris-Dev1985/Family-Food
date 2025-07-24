@@ -2,6 +2,7 @@
 <html lang="el">
 <head>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Indie+Flower&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400|Quicksand:500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <meta charset="utf-8">
   <title>{% block title %}Food App{% endblock %}</title>
@@ -13,6 +14,8 @@
   <meta name="theme-color" content="#f44336">
   <meta name="mobile-web-app-capable" content="yes">
   {% block head %}{% endblock %}
+
+
 
 <style>
 body {
@@ -55,16 +58,16 @@ body {
 .autocomplete-list {
   background: #fff;
   border: 1px solid #ccc;
-  position: absolute !important;
+  position: relative !important;
   z-index: 1200 !important;
   width: 220px;
   max-height: 200px;
-  overflow-y: auto;
+  overflow: visible!important;
 }
 .autocomplete-option:hover { background: #f0f0f0; }
 
 /* Choices.js dropdown above modals */
-.choices__list--dropdown { z-index: 2055 !important; }
+.choices__list--dropdown { z-index: 2055 !important; overflow: visible!important;}
 
 
 /* Responsive containers and tables */
@@ -107,13 +110,13 @@ body {
   .modal-dialog { max-width: 380px !important; margin: 0.5rem auto; position: relative; }
   .modal-content {
     display: flow; border-radius: 2rem; padding: 0.5em 0.5em 0.4em 0.5em;
-    overflow-y: visible;  overflow: hidden; max-height: 90vh; align-items: center; z-index: 1005;
+    overflow: visible !important;  max-height: 90vh; align-items: center; z-index: 1005;
   }
   
   .modal-header { justify-content: center !important; }
 
   .modal-title { font-size: 1.1rem !important; width: 100%; text-align: center;}
-  .modal-body { flex: 1 1 auto; overflow-y: auto; }
+  .modal-body { flex: 1 1 auto; overflow: visible; }
   .modal-footer {
     position: sticky; bottom: 0; background: inherit; z-index: 2;
     box-shadow: 0 -2px 8px -4px #0002;
@@ -128,15 +131,9 @@ body {
 <style>
 /* Offcanvas styling */
 .offcanvas {
-  width: 300px !important; max-width: 94vw !important; min-width: 200px !important; border-radius: 16px 0 0 16px !important;
+  width: fit-content!important; max-width: 94vw ; min-width: 200px; border-radius: 16px; height:fit-content; margin-top:10px;
 }
-@media (max-width: 600px) {
-  .offcanvas {
-    width: 50vw !important; max-width: 50vw !important; min-width: 0 !important;
-    border-radius: 10px !important; max-height: 100vw !important;
-    left: auto !important; right: auto !important; margin-top: 15px; margin-bottom: 15px;
-  }
-}
+
 
 /* Για fading alert */
 .goalerror-alert.fade { transition: opacity 1s linear; }
@@ -229,23 +226,13 @@ body {
 </style>
 
 
-
-
 </head>
 
 
-
 <body>
+
+
   <div class="container{% if request.endpoint == 'welcome' %} main-welcome-container{% endif %}">
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="alert alert-warning mt-2 mb-2">
-          {% for message in messages %}
-            <div>{{ message }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
     {% block content %}{% endblock %}
   </div>
 
@@ -257,7 +244,7 @@ body {
         <h5 class="modal-title" id="recipeModalLabel">Λεπτομέρειες Συνταγής</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" style="background:#fefefe; max-height:75vh; overflow-y:auto;">
+      <div class="modal-body" style="background:#fefefe; max-height:75vh;">
         <p><strong>Τίτλος:</strong> <span id="modalTitle"></span></p>
         <p><strong>Σεφ:</strong> <span id="modalChef"></span></p>
         <p><strong>Χρόνος:</strong>
@@ -271,8 +258,9 @@ body {
 
         <hr>
         <p><strong>Υλικά:</strong></p>
-        <ul id="modalIngredients" style="padding-left: 20px;"></ul>
-
+        <form id="modalIngredientsForm">
+		  <ul id="modalIngredients" style="padding-left: 20px; list-style: none;"></ul>
+		</form>
         <p class="mt-3"><strong>Οδηγίες:</strong></p>
         <div id="modalInstructions" style="white-space: pre-wrap; word-break: break-word;"></div>
       </div>
@@ -297,12 +285,16 @@ body {
     <ul class="list-group">
       <li class="list-group-item"><a href="/welcome" class="text-decoration-none">🏠 Αρχική</a></li>
       <li class="list-group-item"><a href="/menu" class="text-decoration-none">📅 Εβδομαδιαίο Μενού</a></li>
+	  <li class="list-group-item"><a href="/ingredients" class="text-decoration-none">Υλικά</a></li>
       <li class="list-group-item"><a href="/history" class="text-decoration-none">📜 Ιστορικό</a></li>
       <li class="list-group-item"><a href="/favorites" class="text-decoration-none">⭐ Αγαπημένα</a></li>
       <li class="list-group-item"><a href="/profile" class="text-decoration-none">👤 Προφίλ</a></li>
       <li class="list-group-item">
         <a href="/logout" class="text-danger text-decoration-none" onclick="return confirmLogout();">🚪 Έξοδος</a>
       </li>
+	  <li class="list-group-item">
+		  <a href="#" class="text-danger text-decoration-none" onclick="showDeleteUserModal(); return false;">🗑️ Διαγραφή Χρήστη</a>
+		</li>
     </ul>
   </div>
 </div>
@@ -357,8 +349,30 @@ body {
   <div class="arrow-down"></div>
 </div>
 
+  <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 14px;">
+      <div class="modal-header bg-danger-subtle">
+        <h5 class="modal-title" id="deleteUserModalLabel">
+          <i class="fa fa-user-times text-danger me-2"></i> Οριστική Διαγραφή Λογαριασμού
+        </h5>
+      </div>
+      <div class="modal-body text-center" style="font-size:1.1em;">
+        <p>Θέλεις σίγουρα να <b>διαγράψεις οριστικά τον λογαριασμό σου</b> και όλα τα δεδομένα σου;</p>
+        <p class="text-danger">Αυτή η ενέργεια δεν μπορεί να αναιρεθεί!</p>
+      </div>
+      <div class="modal-footer d-flex flex-column gap-2">
+        <button type="button" class="btn btn-danger btn-lg w-100" id="delete-user-confirm-btn">Ναι, διαγραφή</button>
+        <button type="button" class="btn btn-secondary btn-lg w-100" data-bs-dismiss="modal">Άκυρο</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-  {% block modals %}{% endblock %} 
+
+  {% block modals %}
+
+  {% endblock %} 
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
@@ -380,6 +394,176 @@ body {
 
 <script src="{{ url_for('static', filename='JS/tooltip6_global.js') }}"></script>
 
+<script>
+function showDeleteUserModal() {
+  var modal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+  modal.show();
+
+  document.getElementById('delete-user-confirm-btn').onclick = function() {
+    fetch('/delete_user_and_data', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'}
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = '/login';
+      } else {
+        alert('Σφάλμα: ' + (data.error || 'Δεν ολοκληρώθηκε η διαγραφή.'));
+      }
+    });
+  };
+}
+
+let lastIngredients = [];
+
+function openRecipeModal(card) {
+  if (card.classList.contains('no-click')) return;
+
+  const modal = new bootstrap.Modal(document.getElementById('recipeModal'));
+  document.getElementById('modalTitle').innerText = card.getAttribute('data-title') || '-';
+  document.getElementById('modalChef').innerText = card.getAttribute('data-chef') || '-';
+  document.getElementById('modalMethod').innerText = card.getAttribute('data-method') || '-';
+  document.getElementById('modalCategory').innerText = card.getAttribute('data-category') || '-';
+  document.getElementById('modalTags').innerText = card.getAttribute('data-tags') || '-';
+  document.getElementById('modalUrl').href = card.getAttribute('data-url') || '#';
+  document.getElementById('modalPrepTime').innerText = card.getAttribute('data-prep') || '-';
+  document.getElementById('modalCookTime').innerText = card.getAttribute('data-cook') || '-';
+
+  // Υλικά με checkbox
+  const ingStr = card.getAttribute('data-ingredients') || '';
+  lastIngredients = [];
+  var ingredients = ingStr.split(',');
+  var ingList = document.getElementById('modalIngredients');
+  ingList.innerHTML = '';
+  for (var idx = 0; idx < ingredients.length; idx++) {
+    var item = ingredients[idx].trim();
+    if (!item) continue;
+    lastIngredients.push(item);
+    var li = document.createElement('li');
+    li.style.marginBottom = "2px";
+
+    var checkbox = document.createElement('input');
+    checkbox.type = "checkbox";
+    checkbox.id = "ing" + idx;
+    checkbox.checked = true;
+
+    var label = document.createElement('label');
+    label.htmlFor = "ing" + idx;
+    label.style.marginLeft = "6px";
+    label.style.cursor = "pointer";
+    label.appendChild(document.createTextNode(item));
+
+    li.appendChild(checkbox);
+    li.appendChild(label);
+    ingList.appendChild(li);
+  }
+
+  // Οδηγίες
+  var instructions = card.getAttribute('data-instructions') || '';
+  document.getElementById('modalInstructions').innerText = instructions.trim();
+
+  // Listener για κλείσιμο modal
+  var modalEl = document.getElementById('recipeModal');
+  modalEl.removeEventListener('hidden.bs.modal', handleIngredientsClose);
+  modalEl.addEventListener('hidden.bs.modal', handleIngredientsClose);
+
+  modal.show();
+}
+
+function handleIngredientsClose() {
+  if (!lastIngredients.length) return;
+  var missing = [];
+  for (var idx = 0; idx < lastIngredients.length; idx++) {
+    var cb = document.getElementById('ing' + idx);
+    if (cb && !cb.checked) missing.push(lastIngredients[idx]);
+  }
+  fetch('/save_missing_ingredients', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({missing: missing})
+  }).then(function(r){return r.json();}).then(function(data){
+    if(missing.length) {
+      showAlert('Αποθηκεύτηκε! Για σήμερα σου λείπουν τα υλικά: ' + missing.join(', '),'success',3000,'center');
+    }
+  });
+}
+
+
+document.addEventListener('click', function(e) {
+  const input = e.target.closest('.voice-enabled');
+  if (!input) return;
+
+  // Έλεγχος αν το click ήταν πάνω στο 🎤 (τελευταία 36px δεξιά)
+  const clickX = e.clientX - input.getBoundingClientRect().left;
+  const inputWidth = input.offsetWidth;
+  if (clickX >= inputWidth - 36) {
+    const menuid = input.dataset.menuid;
+    startSpeechForRecipe(menuid);
+  }
+});
+
+
+
+/**
+ * Εμφανίζει Bootstrap alert (σαν banner) οπουδήποτε στη σελίδα, για 3''.
+ *
+ * @param {string} message - Το μήνυμα που θες να δείξεις.
+ * @param {string} [type='warning'] - Το είδος του alert (success, danger, info, warning).
+ * @param {number} [duration=3000] - Πόσα ms να μείνει ορατό το alert.
+ * @param {string} [position='top'] - Που να εμφανίζεται ('top', 'center').
+ */
+function showAlert(message, type, duration, position) {
+  type = type || 'warning';
+  duration = duration || 3000;
+  position = position || 'top';
+
+  // Αφαίρεσε τυχόν άλλα alerts για να μη σωρεύονται.
+  var existing = document.querySelectorAll('.custom-js-alert');
+  for (var i = 0; i < existing.length; i++) {
+    existing[i].parentNode.removeChild(existing[i]);
+  }
+
+  var alertDiv = document.createElement('div');
+  alertDiv.className = 'alert alert-' + type + ' alert-dismissible fade show custom-js-alert';
+  alertDiv.role = 'alert';
+  alertDiv.style.position = 'fixed';
+  alertDiv.style.zIndex = 3000;
+  alertDiv.style.left = '50%';
+  alertDiv.style.maxWidth = '400px';
+  alertDiv.style.width = '90vw';
+  alertDiv.style.boxShadow = '0 4px 24px rgba(0,0,0,0.15)';
+  alertDiv.style.textAlign = 'center';
+  alertDiv.style.opacity = '1';
+
+  if (position === 'top') {
+    alertDiv.style.top = '32px';
+    alertDiv.style.transform = 'translateX(-50%)';
+  } else if (position === 'center') {
+    alertDiv.style.top = '50%';
+    alertDiv.style.transform = 'translate(-50%, -60%)';
+  }
+
+  alertDiv.innerHTML =
+    message +
+    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+
+  document.body.appendChild(alertDiv);
+
+  setTimeout(function() {
+    alertDiv.style.opacity = '0';
+    setTimeout(function() {
+      if (alertDiv.parentNode) {
+        alertDiv.parentNode.removeChild(alertDiv);
+      }
+    }, 600);
+  }, duration);
+}
+
+
+
+
+</script>
 
 
   {% block scripts %}{% endblock %}
