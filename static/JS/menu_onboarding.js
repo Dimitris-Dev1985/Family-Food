@@ -4,20 +4,25 @@
 function isMenuOnboardingDone() {
   return localStorage.getItem('menu_onboarding_done') === '1';
 }
+
 function setMenuOnboardingDone() {
   localStorage.setItem('menu_onboarding_done', '1');
-  if (localStorage.getItem('onboarding_done') && localStorage.getItem('menu_onboarding_done'))	{
-  console.log ("OK!")
-  fetch("/api/onboarding_complete", { method: "POST" });
+  document.body.classList.remove('menu-onboarding-active'); // ✅ remove class
+
+  if (localStorage.getItem('onboarding_done') && localStorage.getItem('menu_onboarding_done')) {
+    fetch("/api/onboarding_complete", { method: "POST" });
   }
 }
+
 function resetMenuOnboarding() {
   localStorage.setItem('menu_onboarding_done', '0');
   localStorage.setItem('menu_onboarding_step', '0');
 }
+
 function getMenuOnboardingStep() {
   return Number(localStorage.getItem('menu_onboarding_step') || '0');
 }
+
 function setMenuOnboardingStep(step) {
   localStorage.setItem('menu_onboarding_step', String(step));
 }
@@ -67,8 +72,8 @@ const menuTooltips = [
   },
   {
     selector: '.btn-outline-primary',
-    placement: 'bottom',
-    arrow: 'up',
+    placement: 'top',
+    arrow: 'down',
 	html: `
         Πάτα το edit για να επιλεξεις το πιάτο της αρεσκείας σου για αυτή τη μέρα!
 		  <button class="btn btn-primary btn-sm" id="close-menu-tooltip5" style="display: inline-block; margin-left: 8px; padding: 2px 2px;">
@@ -147,7 +152,6 @@ function showMenuTooltip(idx) {
 
 }
 
-
 function removeMenuTooltips() {
   document.querySelectorAll('.menu-onboarding-tip').forEach(e=>e.remove());
 }
@@ -156,10 +160,36 @@ function removeMenuTooltips() {
 
 // 1. Εμφανίζει το tooltip1 στο load (αν δεν έχει ολοκληρωθεί)
 window.addEventListener('DOMContentLoaded', function() {
-  if (!isMenuOnboardingDone() && getMenuOnboardingStep() === 0) {
-    showMenuTooltip(0);
+  if (!isMenuOnboardingDone()) {
+    document.body.classList.add('menu-onboarding-active');
+
+    const step = getMenuOnboardingStep();
+
+    if (step === 0) {
+      showMenuTooltip(0);
+    }
+
+    else if (step === 1) {
+      const modalEl = document.getElementById('menuCreatedModal');
+      if (modalEl && !modalEl.classList.contains('show')) {
+        // Αν έχει ήδη κλείσει το modal, συνέχισε κατευθείαν
+        showMenuTooltip(1);
+      }
+      // Διαφορετικά, το showTooltip(1) θα ενεργοποιηθεί μόλις κλείσει (μέσω override)
+    }
+
+    else if (step >= 2 && step <= 5) {
+      // Αν step==5 και ΔΕΝ υπάρχουν στόχοι → τερματίζουμε
+      if (step === 5 && !(window.hasWeeklyGoals === true || window.hasWeeklyGoals === 'true')) {
+        setMenuOnboardingDone();
+      } else {
+        showMenuTooltip(step);
+      }
+    }
   }
 });
+
+
 
 // 2. Tooltip1 εξαφανίζεται με click στο "Δημιουργία νέου Εβδομαδιαίου Μενού"
 document.addEventListener('click', function(e) {
@@ -189,6 +219,52 @@ document.addEventListener('click', function(e) {
   };
 })();
 
+document.addEventListener('click', function(e) {
+  if (!isMenuOnboardingDone()) {
+    const step = getMenuOnboardingStep();
+
+    // Tooltip2
+    if (step === 1 && e.target && e.target.id === 'close-menu-tooltip2') {
+      removeMenuTooltips();
+      setMenuOnboardingStep(2);
+      showMenuTooltip(2);
+    }
+
+    // Tooltip3
+    else if (step === 2 && e.target && e.target.id === 'close-menu-tooltip3') {
+      removeMenuTooltips();
+      setMenuOnboardingStep(3);
+      showMenuTooltip(3);
+    }
+
+    // Tooltip4
+    else if (step === 3 && e.target && e.target.id === 'close-menu-tooltip4') {
+      removeMenuTooltips();
+      setMenuOnboardingStep(4);
+      showMenuTooltip(4);
+    }
+
+    // Tooltip5 → Tooltip6 ή τέλος
+    else if (step === 4 && e.target && e.target.id === 'close-menu-tooltip5') {
+      removeMenuTooltips();
+      setMenuOnboardingStep(5);
+
+      // ➤ Εμφάνισε το Tooltip6 μόνο αν υπάρχουν στόχοι
+      if (window.hasWeeklyGoals === true || window.hasWeeklyGoals === 'true') {
+        showMenuTooltip(5); // Tooltip6
+      } else {
+        setMenuOnboardingDone(); // ➤ Τέλος onboarding
+      }
+    }
+
+    // Tooltip6 - τέλος!
+    else if (step === 5 && e.target && e.target.id === 'close-menu-tooltip6') {
+      removeMenuTooltips();
+      setMenuOnboardingDone();
+    }
+  }
+});
+
 // Tooltip2-6: κάθε Κατάλαβα πάει στο επόμενο tooltip
 document.addEventListener('click', function(e) {
   if (!isMenuOnboardingDone()) {
@@ -211,16 +287,19 @@ document.addEventListener('click', function(e) {
       setMenuOnboardingStep(4);
       showMenuTooltip(4);
     }
-    // Tooltip5
-    if (step === 4 && e.target && e.target.id === 'close-menu-tooltip5') {
-      removeMenuTooltips();
-      setMenuOnboardingStep(5);
-      showMenuTooltip(5);
-    }
-    // Tooltip6 - τέλος!
-    if (step === 5 && e.target && e.target.id === 'close-menu-tooltip6') {
-      removeMenuTooltips();
-      setMenuOnboardingDone();
-    }
+	// Tooltip5 → Tooltip6 ή τέλος
+	if (step === 4 && e.target && e.target.id === 'close-menu-tooltip5') {
+	  removeMenuTooltips();
+	  setMenuOnboardingStep(5);
+
+	  // ➤ Εμφάνισε μόνο αν υπάρχουν στόχοι
+	  if (window.hasWeeklyGoals === true || window.hasWeeklyGoals === 'true') {
+		showMenuTooltip(5); // Tooltip6
+	  } else {
+		removeMenuTooltips();
+		setMenuOnboardingDone(); // ➤ Αν όχι, τελειώνει εδώ!
+	  }
+	}
+
   }
 });
