@@ -136,6 +136,16 @@ def login():
         # Κανονικό login
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
+
+        # 1. Έλεγξε αν υπάρχει ο χρήστης με το συγκεκριμένο email
+        user_by_email = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+
+        if not user_by_email:
+            conn.close()
+            flash("Δεν υπάρχει χρήστης με αυτό το email.", "danger")
+            return redirect(url_for("login"))
+
+        # 2. Έλεγξε αν το password ταιριάζει
         user = conn.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password)).fetchone()
         conn.close()
         if user:
@@ -143,9 +153,38 @@ def login():
             session["onboarding_done"] = user["onboarding_done"]
             return redirect(url_for("welcome"))
         else:
-            flash("Λανθασμένο email ή κωδικός!", "danger")
+            flash("Λανθασμένος κωδικός!", "danger")
+            return redirect(url_for("login"))
 
     return render_template("login.html")
+
+@app.route('/delete_user_and_data', methods=['POST'])
+def delete_user_and_data():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify(success=False, error="Not logged in"), 401
+
+    conn = sqlite3.connect(DB)
+    try:
+        # Διαγραφή όλων των σχετικών με τον χρήστη δεδομένων:
+        conn.execute("DELETE FROM favorite_recipes WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM weekly_menu WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM weekly_goals WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM cooked_dishes WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM family_members WHERE user_id=?", (user_id,))
+        # Αν θες να διαγράφεις και custom recipes που έχει φτιάξει ο user (created_by)
+        conn.execute("DELETE FROM recipes WHERE created_by=?", (user_id,))
+        # Τέλος, διαγραφή του ίδιου του user
+        conn.execute("DELETE FROM users WHERE id=?", (user_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify(success=False, error=str(e))
+    conn.close()
+    session.clear()
+    print("User succesfully deleted")
+    return jsonify(success=True)
 
 @app.route("/logout")
 def logout():
@@ -158,8 +197,7 @@ def install():
 
 @app.route("/welcome")
 @login_required
-def welcome():
-        
+def welcome():     
     user, _ = get_user()
     hour = datetime.now().hour
     greeting = "Καλημέρα" if hour < 12 else "Καλησπέρα"
@@ -207,7 +245,8 @@ def welcome():
         today_menu=today_menu,
         today_menu_id=today_menu_id,
         tomorrow_menu=tomorrow_menu,
-        tomorrow_menu_id=tomorrow_menu_id
+        tomorrow_menu_id=tomorrow_menu_id,
+        onboarding_done=user["onboarding_done"]
     )
 
 @app.route('/delete_user_recipe', methods=['POST'])
@@ -565,7 +604,13 @@ def show_ingredients():
 @app.route("/save_missing_ingredients", methods=["POST"])
 def save_missing_ingredients():
     data = request.get_json()
-    session['missing_ingredients'] = data.get('missing', [])
+    prev = session.get('missing_ingredients', [])
+    new_missing = data.get('missing', [])
+    # Πρόσθεσε ό,τι δεν υπάρχει ήδη
+    for item in new_missing:
+        if item not in prev:
+            prev.append(item)
+    session['missing_ingredients'] = prev
     return jsonify({"status":"ok"})
 
 # Βοηθητική συνάρτηση (για καθαρότητα)
@@ -661,27 +706,77 @@ def profile():
         weekly_goals=goals,
         categories=categories,
         comparisons=comparisons,
-        all_allergs=get_all_allergens(),    # multi-select για αλλεργίες
-        chef_options=chef_options   # dropdown για chef
+        all_allergs=get_all_allergens(),    
+        chef_options=chef_options,
     )
+
+
+@app.route("/profile_completion_percent")
+@login_required
+def profile_completion_percent():
+    user, members = get_user()
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    goals = conn.execute("SELECT * FROM weekly_goals WHERE user_id=?", (user["id"],)).fetchall()
+    conn.close()
+
+    filled = 0
+    total = 7  
+
+    if user["first_name"]: filled += 1
+    if user["chef"]: filled += 1
+    if user["menu_day"] and user["menu_hour"]: filled += 1
+    if user["cooking_method"]: filled += 1
+    if len(members) > 0: filled += 1
+    if len(goals) > 0: filled += 1
+
+    # ✅ Νέος έλεγχος: τουλάχιστον ένας χρόνος μαγειρέματος
+    cooktime_days = ['mon','tue','wed','thu','fri','sat','sun']
+    if any(user[f'cooktime_{d}'] not in (None, 0, '', '0') for d in cooktime_days):
+        filled += 1
+
+
+    percent = int((filled / total) * 100)
+    print(percent)
+    return jsonify({"completion": percent})
+
 
 @app.route("/edit_profile_info", methods=["POST"])
 def edit_profile_info():
     user, _ = get_user()
     data = request.get_json()
+
+    # Κανονικοποίηση τιμών
+    first_name = data.get("first_name", "").strip()
+    family_name = data.get("family_name", "").strip()
+    address = data.get("address", "").strip()
+    alt_address = data.get("alt_address", "").strip()
+
+    chef = data.get("chef")
+    if chef in ("", None, "-- Επιλέξτε --"): chef = None
+
+    menu_day = data.get("menu_day")
+    if menu_day in ("", None, "-- Μέρα --"): menu_day = None
+
+    menu_hour = data.get("menu_hour")
+    if menu_hour in ("", None, "-- Ώρα --"): menu_hour = None
+
+    cooking_method = data.get("cooking_method", "").strip()
+
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
     cur.execute("""
         UPDATE users SET first_name=?, family_name=?, address=?, alt_address=?, chef=?, menu_day=?, menu_hour=?, cooking_method=?
         WHERE id=?
     """, (
-        data.get("first_name", ""), data.get("family_name", ""), data.get("address", ""), data.get("alt_address", ""),
-        data.get("chef", ""), data.get("menu_day", ""), data.get("menu_hour", ""), data.get("cooking_method", ""),
+        first_name, family_name, address, alt_address,
+        chef, menu_day, menu_hour, cooking_method,
         user["id"]
     ))
     conn.commit()
     conn.close()
-    return jsonify({"status":"ok"})
+    return jsonify({"status": "ok"})
+
 
 @app.route('/add_family_member', methods=['POST'])
 def add_family_member():
@@ -1407,7 +1502,6 @@ def cooked_history():
 
     return render_template('history.html', history=history, missing_days=missing_days)
 
-
 @app.route('/delete_history_entry', methods=['POST'])
 def delete_history_entry():
     user, _ = get_user()
@@ -1536,9 +1630,18 @@ def get_recipe(recipe_id):
         return jsonify({})
     return jsonify({
         "title": r["title"],
+        "chef": r["chef"],
         "ingredients": r["ingredients"],
+        "prep_time": r["prep_time"],
+        "cook_time": r["cook_time"],
+        "method": r["method"],
+        "instructions": r["instructions"],
+        "category": r["main_dish_tag"],
+        "tags": r["tags"],
+        "allergens": r["allergens"],
+        "title": r["title"],
         "url": r["url"],
-        "instructions": r["instructions"] 
+        "parent_id": r["parent_id"] 
     })
 
 @app.template_filter('todate')
