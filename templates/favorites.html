@@ -5,7 +5,7 @@
   <h2 class="fw-bold mb-1" style="font-size:2em;">Αγαπημένες Συνταγές</h2>
 </div>
 
-<div class="container mt-4">
+<div class="container" style="max-width:95vh; padding-bottom:0!important;">
    <div class="row g-3">
 	{% for rec in favorites %}
 	  <div class="col-12">
@@ -67,32 +67,35 @@
           Δεν έχεις προσθέσει αγαπημένες συνταγές!
         </div>
       </div>
-    {% endif %}
+    {% endif %}	
+  </div>
+</div>
+
+<div class="row g-2 mb-3" style="margin-top:1rem">
+  <div class="col-12 d-flex gap-2">
+	{% if favorites|length > 0 %}
+	<button class="btn btn-outline-danger btn-sm ms-auto" onclick="deleteAllFavorites()">
+	  <i class="fa fa-trash"></i> Διαγραφή όλων
+	</button>
+	{% endif %}
+  </div>
+</div>
 
 
-    <div class="col-12">
-      <div class="card h-100 shadow-sm">
-		<div class="card-body d-flex gap-2 align-items-center" style="padding-top: 10px!important;padding-bottom: 10px !important;">
-		  <button class="btn btn-success btn-sm" onclick="showAddFavorite()" title="Προσθήκη αγαπημένης">
-			<i class="fa fa-plus"></i> Προσθήκη
-		  </button>
-		  <div id="add-favorite-cell" style="flex:1;"></div>
-		</div>
+<div class="col-12">
+  <div class="card h-100 shadow-sm">
+    <div class="card-body" style="padding-top: 10px !important; padding-bottom: 10px !important;">
+      <div class="d-flex align-items-start flex-wrap gap-2">
 
+        <!-- Κουμπί Προσθήκης -->
+        <button class="btn btn-success btn-sm" onclick="showAddFavorite()">
+          <i class="fa fa-plus"></i> Προσθήκη
+        </button>
+
+        <!-- Το input εμφανίζεται μόνο όταν πατήσουμε το κουμπί -->
+        <div id="add-favorite-cell" style="width: 240px;"></div>
       </div>
     </div>
-	
-	<div class="row g-2 mb-3">
-	  <div class="col-12 d-flex gap-2">
-		{% if favorites|length > 0 %}
-		<button class="btn btn-outline-danger btn-sm ms-auto" onclick="deleteAllFavorites()">
-		  <i class="fa fa-trash"></i> Διαγραφή όλων
-		</button>
-		{% endif %}
-	  </div>
-	</div>
-
-	
   </div>
 </div>
 
@@ -101,8 +104,6 @@
 
 
 {% block modals %}
-
-
 
 <div class="modal fade" id="deleteFavoriteModal" tabindex="-1" aria-labelledby="deleteFavoriteModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -264,17 +265,16 @@ function showDeleteRecipeModal() {
 // Live search για προσθήκη
 function showAddFavorite() {
   let cell = document.getElementById("add-favorite-cell");
-  cell.innerHTML = `
-    <div class="position-relative">
-      <input type="text"
-             id="fav-input"
-             class="form-control voice-enabled"
-             placeholder="Αναζήτηση πιάτου.. ή πάτα 🎤"
-             autocomplete="off"
-             style="display:inline-block; width:240px;">
-      <div id="fav-autocomplete" class="autocomplete-list"></div>
-    </div>
-  `;
+  cell.innerHTML =
+    '<div class="position-relative">' +
+      '<input type="text"' +
+        ' id="fav-input"' +
+        ' class="form-control voice-enabled"' +
+        ' placeholder="Αναζήτηση πιάτου.. ή πάτα 🎤"' +
+        ' autocomplete="off"' +
+        ' style="display:inline-block; width:240px;">' +
+      '<div id="fav-autocomplete" class="autocomplete-list"></div>' +
+    '</div>';
 
   let input = document.getElementById("fav-input");
   let listDiv = document.getElementById("fav-autocomplete");
@@ -304,7 +304,7 @@ function showAddFavorite() {
       removeTonos(r.tags || "").includes(val) ||
       removeTonos(r.ingredients || "").includes(val) ||
       removeTonos(r.main_dish_tag || "").includes(val)
-    ).slice(0,10);
+    ).slice(0,20);
     listDiv.innerHTML = "";
     found.forEach(r => {
       let opt = document.createElement("div");
@@ -317,7 +317,7 @@ function showAddFavorite() {
       listDiv.appendChild(opt);
     });
   });
-}
+  }
 
 // Χρήσιμο και για remove τόνων (το ίδιο με menu)
 function removeTonos(str) {
@@ -339,40 +339,6 @@ function addFavorite(recipeId) {
       alert("Σφάλμα ή ήδη προστέθηκε!");
     }
   });
-}
-
-function openRecipeModal(card) {
-  // Αν η κάρτα έχει την κλάση no-click, μην κάνεις τίποτα
-  if (card.classList.contains('no-click')) {
-    console.log("Modal μπλοκαρισμένο: είμαστε σε edit mode");
-    return;
-  }
-
-  const menuId = card.getAttribute('data-menuid');
-  const modal = new bootstrap.Modal(document.getElementById('recipeModal'));
-  document.getElementById('modalTitle').innerText = card.getAttribute('data-title') || '-';
-  document.getElementById('modalChef').innerText = card.getAttribute('data-chef') || '-';
-  document.getElementById('modalMethod').innerText = card.getAttribute('data-method') || '-';
-  document.getElementById('modalCategory').innerText = card.getAttribute('data-category') || '-';
-  document.getElementById('modalTags').innerText = card.getAttribute('data-tags') || '-';
-  document.getElementById('modalUrl').href = card.getAttribute('data-url') || '#';
-  document.getElementById('modalPrepTime').innerText = card.getAttribute('data-prep') || '-';
-  document.getElementById('modalCookTime').innerText = card.getAttribute('data-cook') || '-';
-
-  const ingStr = card.getAttribute('data-ingredients') || '';
-  const ingredients = ingStr.split(',').map(i => i.trim()).filter(Boolean);
-  const ingList = document.getElementById('modalIngredients');
-  ingList.innerHTML = '';
-  ingredients.forEach(i => {
-    const li = document.createElement('li');
-    li.innerText = i;
-    ingList.appendChild(li);
-  });
-
-  const instructions = card.getAttribute('data-instructions') || '';
-  document.getElementById('modalInstructions').innerText = instructions.trim();
-
-  modal.show();
 }
 
 document.addEventListener('click', function(e) {

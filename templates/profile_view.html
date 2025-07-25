@@ -3,84 +3,95 @@
 {% block content %}
 
 <style>
-#onboardingBackdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 999;
+body {
+  font-family: 'Inter', sans-serif;
+  background: #eef4fb;
 }
-   
-</style>
-
-<style>
-.onboarding-tooltip {
-  font-family: 'Indie Flower', cursive, Arial, sans-serif;
-  position: absolute;
-  width: 70vw;
-  width: auto;
-  max-width: 300px;
-  background: #fff9db;
-  padding: 10px 14px;
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+}
+.card {
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  background-color: #fff;
+  margin-bottom: 1.2rem;
+}
+.card-section-title {
+  background: #00c6ff;
+  background: linear-gradient(to right, #00c6ff, #0072ff);
+  color: white;
+  font-weight: 600;
+  font-size: 1em;
+  padding: 8px 16px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+.card-body {
+  padding: 1rem 1.2rem;
+}
+#profile-completion-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: #d6d6d6;
+  overflow: hidden;
+  margin: 0.5rem 0 1rem;
+}
+#profile-completion-fill {
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(to right, #9be15d, #00e3ae);
+  transition: width 0.8s ease;
+}
+.badge {
+  font-size: 0.8em;
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  font-size: 13px;
-  animation: pulse 1.5s infinite;
-  z-index: 1002;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  box-sizing: border-box;
+  padding: 4px 10px;
+  background-color: #ffecb3;
+  color: #444;
 }
-
-.onboarding-tooltip .arrow-down {
-  width: 12px;
-  height: 12px;
-  background: #fff9db;
-  transform: rotate(45deg);
-  position: absolute;
-  bottom: -6px;
-  left: 20px;
-  box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
-}
-
-.onboarding-tooltip .arrow-down-right {
-  width: 12px;
-  height: 12px;
-  background: #fff9db;
-  transform: rotate(45deg);
-  position: absolute;
-  bottom: -6px;
-  right: 20px;
-  box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
-}
-
-
-@keyframes pulse {
-  0% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
-  50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(255,255,255,0.9); }
-  100% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+.table {
+  background: #fcfcfc;
+  border-radius: 12px;
 }
 </style>
 
+<div class="container py-3">
+  <h4 class="fw-bold text-center mb-2">👤 Το Προφίλ μου</h4>
+  <div id="profile-completion-bar">
+    <div id="profile-completion-fill"></div>
+  </div>
 
-<div class="row mb-41" style="--bs-gutter-x:0">
-
-  <div class="col-12 col-md-7">
-
-	<div class="card shadow-sm mb-2">
+  <div class="card">
+	  <div class="card-section-title">Στοιχεία Χρήστη</div>
 	  <div class="card-body">
-		<h4 class="card-title mb-3" id="profile-name">
-		  <i class="fa fa-user-circle fa-lg me-2"></i> {{ profile.first_name }} {{ profile.family_name }}
-		</h4>
-		<p><i class="fa fa-map-marker-alt text-muted"></i> <strong>Διεύθυνση:</strong> <span id="profile-address">{{ profile.address or '' }}</span></p>
+	   	<p id="profile-name"><i class="fa fa-user-circle fa-lg"></i> {{ profile.first_name or ''}} {{ profile.family_name or ''}}</p>	
+		<p><i class="fa fa-map-marker-alt text-muted"></i> <strong>Διεύθυνση:</strong> <span id="profile-address">{{ profile.address or '-' }}</span></p>
 		{% if profile.alt_address %}
-		<p><i class="fa fa-home text-muted"></i> <strong>Εναλλακτική:</strong> <span id="profile-alt-address">{{ profile.alt_address or ''}}</span></p>
+		<p><i class="fa fa-home text-muted"></i> <strong>Εναλλακτική:</strong> <span id="profile-alt-address">{{ profile.alt_address or '-'}}</span></p>
 		{% endif %}
-		<p><i class="fa fa-star text-warning"></i> <strong>Αγαπημένος Σεφ:</strong> <span id="profile-chef">{{ profile.chef or ''}}</span></p>
-		<p>
-		  <i class="fa fa-calendar-alt"></i> <strong>Δημιουργία μενού:</strong>
-		  <span id="profile-menu-day">{{ profile.menu_day or ''}}</span>
-		  <span class="ms-2"><i class="fa fa-clock"></i> <span id="profile-menu-hour">{{ profile.menu_hour or ''}}</span></span>
+		<p><i class="fa fa-star text-warning"></i><strong>&nbsp;Αγαπημένος Chef:</strong>
+		  {% if profile.chef %}
+			<span id="profile-chef">{{ profile.chef or '-'}}</span>
+		  {% else %}
+			<span id="profile-chef" class="text-muted">-</span>
+		  {% endif %}
 		</p>
+		<p><i class="fa fa-calendar-alt"></i><strong>&nbsp;Δημιουργία μενού:</strong>&nbsp;
+		  {% if profile.menu_day %}
+			<span id="profile-menu-day">{{ profile.menu_day or ''}}</span>
+		  {% else %}
+			<span id="profile-menu-day" class="text-muted"></span>
+		  {% endif %}
+		  &nbsp;
+		  {% if profile.menu_hour %}
+			<i class="fa fa-clock"></i>&nbsp;<span id="profile-menu-hour">{{ profile.menu_hour or ''}}</span>
+		  {% else %}
+			<span id="profile-menu-hour" class="text-muted"></span>
+		  {% endif %}
+		</p>
+		
 		 <p>
 		  <i class="fa fa-fire"></i>
 		  <strong>Προτιμώμενος τρόπος μαγειρέματος:</strong>
@@ -94,46 +105,37 @@
 			  {% endif %}
 			</span>
 		</p>
-
-
-		<div class="text-end mt-2">
-		  <button class="btn btn-outline-primary btn-sm active" onclick="editProfileInfo()" id="edit-profile-button" style="z-index:1002!important; position:sticky">
+	  
+	  	<div class="text-end mt-2">
+		  <button class="btn btn-outline-primary btn-sm" onclick="editProfileInfo()" id="edit-profile-button" style="z-index:1002!important; position:sticky">
 			<i class="fa fa-pen"></i> Επεξεργασία προφίλ
 		  </button>
 		</div>
+	  
 	  </div>
-	</div>
+  </div>
 
-	<div class="card shadow-sm mb-2">
-	  <div class="card-body">
-		<h5 class="card-title mb-3" style="font-size:1.1em">Διαθέσιμος χρόνος μαγειρέματος</h5>
-
-		<table class="table table-sm w-100 mb-0 text-center" style="font-size:0.9em">
-		  <tr>
-			{% for d, gr in [('mon','Δ'),('tue','Τ'),('wed','Τ'),('thu','Π'),('fri','Π'),('sat','Σ'),('sun','Κ')] %}
-			  <td><strong>{{ gr }}</strong><br>
-				  <span id="cooktime-{{d}}-display">{{ profile['cooktime_' ~ d] or '-' }} λ. </span>
-			  </td>
-			{% endfor %}
-		  </tr>
-		</table>
-
-
+  <div class="card">
+    <div class="card-section-title">Διαθέσιμος Χρόνος Μαγειρέματος</div>
+    <div class="card-body">
+      <table class="table table-sm w-100 mb-2 text-center" style="font-size:0.85em">
+        <tr>
+          {% for d, gr in [('mon','Δ'),('tue','Τ'),('wed','Τ'),('thu','Π'),('fri','Π'),('sat','Σ'),('sun','Κ')] %}
+            <td><strong>{{ gr }}</strong><br><span id="cooktime-{{d}}-display">{{ profile['cooktime_' ~ d] or '-' }} λ.</span></td>
+          {% endfor %}
+        </tr>
+      </table>
 		<div class="text-end mt-2">
 		  <button class="btn btn-outline-primary btn-sm" id="edit-cook-times" onclick="editCookingTimes()">
 			<i class="fa fa-pen"></i> Επεξεργασία
 		  </button>
 		</div>
-	  </div>
-	</div>	
-
+    </div>
   </div>
 
-  <div class="col-12 col-md-5">
-	<div class="card shadow-sm mb-2">
-	  <div class="card-body">
-		<h5 class="card-title mb-3" style="font-size:1.1em">Μέλη Οικογένειας</h5>
-		<div class="table-responsive">
+  <div class="card">
+    <div class="card-section-title">Μέλη Οικογένειας</div>
+    <div class="card-body">
 		  <table class="table table-striped align-middle table-sm mb-2 text-center" style="font-size:0.8em">
 			<tbody id="members-list">
 			  {% for m in members %}
@@ -167,95 +169,54 @@
 			  {% endfor %}
 			</tbody>
 		  </table>
-		</div>
-		<button class="btn btn-success btn-sm mt-2" id="add-member" onclick="openAddMemberModal()">
-		  <i class="fa fa-plus"></i> Προσθήκη μέλους
-		</button>
-	  </div>
-	</div>
-    <div class="card shadow-sm mb-2">
-      <div class="card-body">
-        <h5 class="card-title mb-3" style="font-size:1.1em">Στόχοι Εβδομάδας</h5>
-        <div class="table-responsive">
-		<table class="table table-striped align-middle table-sm mb-2 text-center" style="font-size:0.8em">
-		  <thead>
-			<tr>
-			  <th>Κατηγορία</th>
-			  <th>Τύπος</th>
-			  <th></th>
-			</tr>
-		  </thead>
-		  <tbody id="goals-tbody">
-			{% for row in weekly_goals %}
-			<tr data-goalid="{{ row['id'] }}">
-			  <td>{{ row['category'] }}</td>
-			  <td>
-				{% if row['min_times'] != row['max_times'] %}
-				  Από {{ row['min_times'] }} έως {{ row['max_times'] }} φορές  
-				{% else %}
-					{% if row['min_times'] == 1 %}
-						Ακριβώς 1 φορά
-					{% else %}
-						Ακριβώς {{ row['min_times'] }} φορές
-					{% endif %}
-				{% endif %}
-			  </td>
-				<td>
-				  <button class="btn btn-outline-primary btn-sm" style="margin-bottom: 1px !important;" onclick="editGoal({{ row['id'] }}, '{{ row['category'] }}', {{ row['min_times'] }}, {{ row['max_times'] }})">
-					<i class="fa fa-pen"></i>
-				  </button>
-				  <button class="btn btn-outline-danger btn-sm" style="margin-bottom: 1px !important;" onclick="deleteGoal({{ row['id'] }})">
-					<i class="fa fa-trash"></i>
-				  </button>
-				</td>
-			</tr>
-			{% endfor %}
-			{% if weekly_goals|length == 0 %}
-			<tr>
-			  <td colspan="3" class="text-muted">Δεν έχεις ορίσει στόχους.</td>
-			</tr>
-			{% endif %}
-		  </tbody>
-		</table>
-        </div>
-        <button class="btn btn-success btn-sm" id="add-goal-btn" onclick="addGoalRow()"><i class="fa fa-plus"></i> Προσθήκη στόχου</button>
-		<button id="deleteAllBtn" class="btn btn-outline-danger btn-sm float-end" onclick="deleteAllGoals()"
-				style="{{ 'display: none;' if weekly_goals|length == 0 }}">
-		  <i class="fa fa-trash"></i> Διαγραφή όλων
-		</button>
+      <div class="text-left">
+        <button class="btn btn-success btn-sm" id="add-member" onclick="openAddMemberModal()">
+          <i class="fa fa-plus"></i> Προσθήκη μέλους
+        </button>
       </div>
     </div>
   </div>
 
-</div>
-
-
-<div id="onboardingOverlay2" style="display:none;">
-  <div id="onboardingBackdrop"></div>
-  <div id="onboardingTooltip2" class="onboarding-tooltip" style="display:none;">
-    👉 Πάτα εδώ!
-    <div class="arrow-down-right"></div>
+  <div class="card">
+    <div class="card-section-title">Στόχοι Εβδομάδας</div>
+    <div class="card-body">
+      <table class="table table-sm mb-2 text-center" style="font-size:0.85em">
+        <thead>
+          <tr><th>Κατηγορία</th><th>Τύπος</th><th></th></tr>
+        </thead>
+        <tbody id="goals-tbody">
+          {% for row in weekly_goals %}
+          <tr data-goalid="{{ row['id'] }}">
+            <td>{{ row['category'] }}</td>
+            <td>
+              {% if row['min_times'] != row['max_times'] %}
+                Από {{ row['min_times'] }} έως {{ row['max_times'] }} φορές
+              {% else %}
+                Ακριβώς {{ row['min_times'] }} φορά{{ 'ς' if row['min_times'] > 1 else '' }}
+              {% endif %}
+            </td>
+            <td>
+              <button class="btn btn-outline-primary btn-sm" onclick="editGoal({{ row['id'] }}, '{{ row['category'] }}', {{ row['min_times'] }}, {{ row['max_times'] }})"><i class="fa fa-pen"></i></button>
+              <button class="btn btn-outline-danger btn-sm" onclick="deleteGoal({{ row['id'] }})"><i class="fa fa-trash"></i></button>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if weekly_goals|length == 0 %}
+          <tr><td colspan="3" class="text-muted">Δεν έχεις ορίσει στόχους.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+      <div class="d-flex justify-content-between">
+        <button class="btn btn-success btn-sm" id="add-goal-btn" onclick="addGoalRow()"><i class="fa fa-plus"></i> Προσθήκη στόχου</button>
+        {% if weekly_goals|length > 0 %}
+        <button id="deleteAllBtn" class="btn btn-outline-danger btn-sm" onclick="deleteAllGoals()">
+          <i class="fa fa-trash"></i> Διαγραφή όλων
+        </button>
+        {% endif %}
+      </div>
+    </div>
   </div>
 </div>
-
-<!-- Tooltip 3 - Χρόνοι μαγειρέματος -->
-<div id="onboardingTooltip3" class="onboarding-tooltip" style="display:none;">
-  ⏱️ Πες μου πόσο χρόνο μπορείς να αφιερώσεις κάθε μέρα για μαγείρεμα! Θα το λάβω υπόψιν!
-  <div class="arrow-down-right"></div>
-</div>
-
-<!-- Tooltip 4 - Μέλη -->
-<div id="onboardingTooltip4" class="onboarding-tooltip" style="display:none;">
-  👨‍👩‍👧 Πρόσθεσε τα μέλη της οικογένειάς σου! Είναι σημαντικά!
-  <div class="arrow-down"></div>
-</div>
-
-<!-- Tooltip 5 - Στόχοι -->
-<div id="onboardingTooltip5" class="onboarding-tooltip" style="display:none;">
-  🎯 Εδώ μπορείς να προσθέσεις τους διατροφικούς σου στόχους! Θα με βοηθήσει να σου προτείνω πιάτα!
-  <div class="arrow-down"></div>
-</div>
-
 
 {% endblock %}
 
@@ -268,11 +229,11 @@
       <div class="modal-body">
         <div class="mb-2">
           <label>Όνομα</label>
-          <input name="first_name" class="form-control" required value="{{ profile.first_name }}">
+          <input name="first_name" class="form-control" required value="{{ profile.first_name or '' }}">
         </div>
         <div class="mb-2">
           <label>Επώνυμο</label>
-          <input name="family_name" class="form-control" value="{{ profile.family_name }}">
+          <input name="family_name" class="form-control" value="{{ profile.family_name or '' }}">
         </div>
         <div class="mb-2">
           <label>Διεύθυνση</label>
@@ -283,8 +244,9 @@
           <input name="alt_address" class="form-control" value="{{ profile.alt_address or '' }}">
         </div>
         <div class="mb-2">
-          <label>Αγαπημένος Σεφ</label>
+          <label>Αγαπημένος Σεφ</label>	  
           <select name="chef" id="profile-chef-select" class="form-select" >
+		  <option disabled selected hidden>-- Επιλέξτε --</option>
             {% for chef in chef_options %}
               <option value="{{ chef }}" {% if chef == profile.chef %}selected{% endif %}>{{ chef }}</option>
             {% endfor %}
@@ -292,17 +254,17 @@
         </div>
         <div class="row">
 		<label>Δημιουργία εβδομαδιαίου μενού</label>
-          <div class="col mb-2">
-            
-            <select name="menu_day" id="profile-menu-day-select" class="form-select" required>
+          <div class="col mb-2">         
+            <select name="menu_day" id="profile-menu-day-select" class="form-select">
+			<option disabled selected hidden>-- Μέρα --</option>
               {% for day in ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο','Κυριακή'] %}
                 <option value="{{ day }}" {% if profile.menu_day == day %}selected{% endif %}>{{ day }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="col mb-2">
-            
-            <select name="menu_hour" id="profile-menu-hour-select" class="form-select" required>
+          <div class="col mb-2">          
+            <select name="menu_hour" id="profile-menu-hour-select" class="form-select">
+			<option disabled selected hidden>-- Ώρα --</option>
               {% for h in range(7,24) %}
                 <option value="{{ "%02d:00"|format(h) }}" {% if profile.menu_hour == "%02d:00"|format(h) %}selected{% endif %}>{{ "%02d:00"|format(h) }}</option>
                 <option value="{{ "%02d:30"|format(h) }}" {% if profile.menu_hour == "%02d:30"|format(h) %}selected{% endif %}>{{ "%02d:30"|format(h) }}</option>
@@ -452,13 +414,55 @@
   </div>
 </div>
 
+<div class="modal fade" id="profileCompleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center">
+      <div class="modal-body py-4">
+        <h4 class="mb-2">🎉 Συγχαρητήρια!</h4>
+        <p>Ολοκλήρωσες το προφίλ σου.<br>Πάμε τώρα στη κουζίνα!</p>
+        <button class="btn btn-success mt-3" data-bs-dismiss="modal">Πάμε!</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
 
+
+
 {% block scripts %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
 
 <script>
+
+function updateProfileCompletionBar() {
+  fetch("/profile_completion_percent")
+    .then(res => res.json())
+    .then(data => {
+      const val = data.completion || 0;
+      const bar = document.getElementById("profile-completion-fill");
+      if (bar) {
+        bar.style.width = val + "%";
+      }
+	const splashShown = localStorage.getItem("profileSplashShown") === "true";
+      // Αν φτάσει 100% και δεν έχει ξαναγίνει splash
+      if (val >= 100 && !splashShown) {
+        
+        // 🎉 Confetti
+        confetti({
+          particleCount: 150,
+          spread: 120,
+          origin: { y: 0.6 },
+          scalar: 1.1
+        });
+
+        // 🪩 Splash modal
+        const modal = new bootstrap.Modal(document.getElementById("profileCompleteModal"));
+        modal.show();
+		// ✅ Θυμάται ότι εμφανίστηκε
+        localStorage.setItem("profileSplashShown", "true");
+      }
+    });
+}
 
 function openGoalModal(mode, id, category, min, max) {
   const modal = new bootstrap.Modal(document.getElementById('addGoalModal'));
@@ -526,6 +530,7 @@ function openGoalModal(mode, id, category, min, max) {
         if (data.status === 'ok') {
           bootstrap.Modal.getInstance(document.getElementById('addGoalModal')).hide();
           updateGoalInTable(id, minVal, maxVal);
+		  updateProfileCompletionBar(); // ✅ live ενημέρωση
         } else {
           showGoalError(data.msg || 'Σφάλμα!' , 2000);
         }
@@ -541,6 +546,7 @@ function openGoalModal(mode, id, category, min, max) {
         if (data.status === 'ok') {
           bootstrap.Modal.getInstance(document.getElementById('addGoalModal')).hide();
           addGoalToTable(selectedCat, minVal, maxVal, data.id);
+		  updateProfileCompletionBar(); // ✅ live ενημέρωση
         } else {
           showGoalError(data.msg || 'Σφάλμα!', 2000);
         }
@@ -655,6 +661,7 @@ function deleteGoal(goal_id) {
         body: JSON.stringify({ id: goal_id })
       }).then(r => r.json()).then(data => {
         if (data.status === 'ok') {
+		updateProfileCompletionBar(); // ✅ live ενημέρωση
           const row = document.querySelector('tr[data-goalid="' + goal_id + '"]');
           if (row) {
             const cat = row.children[0].textContent;
@@ -696,6 +703,7 @@ function deleteAllGoals() {
         .then(r => r.json())
         .then(data => {
           if (data.status === 'ok') {
+		    updateProfileCompletionBar(); // ✅ live ενημέρωση
             const tbody = document.getElementById('goals-tbody');
             tbody.innerHTML = '<tr><td colspan="3" class="text-muted">Δεν έχεις ορίσει στόχους.</td></tr>';
 
@@ -731,6 +739,8 @@ function deleteMember(member_id, btn) {
   .then(function(r) { return r.json(); })
   .then(function(res) {
     if (res.status === 'ok') {
+	  // ✅ Ενημέρωση completion bar
+      updateProfileCompletionBar();
       // Βρες το <tr> του μέλους και αφαίρεσέ το
       var row = btn.closest('tr[data-memberid]');
       if (row) row.remove();
@@ -847,6 +857,8 @@ document.getElementById('member-form').onsubmit = function(e) {
   .then(function(r) { return r.json(); })
   .then(function(res) {
     if (res.status === 'ok') {
+	  // ✅ Ενημέρωση completion bar
+      updateProfileCompletionBar();
       // EDIT υπάρχον μέλος
       if (data.member_id) {
         var row = document.querySelector('tr[data-memberid="' + data.member_id + '"]');
@@ -927,17 +939,23 @@ document.getElementById('cook-times-form').onsubmit = function(e) {
   days.forEach(function(d) {
     data['cooktime_' + d] = document.getElementById('cooktime-' + d + '-input').value;
   });
+
   fetch('/edit_cooking_times', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(data)
-  }).then(function(r){return r.json();}).then(function(res){
+  }).then(function(r){ return r.json(); }).then(function(res){
     if(res.status === 'ok') {
       days.forEach(function(d) {
         document.getElementById('cooktime-' + d + '-display').textContent = 
           (data['cooktime_' + d] || '-') + ' λ.';
       });
+
+      // Κλείσιμο modal
       bootstrap.Modal.getInstance(document.getElementById('editCookTimesModal')).hide();
+
+      // ✅ Ενημέρωση completion bar
+      updateProfileCompletionBar();
     }
   });
 };
@@ -1002,13 +1020,21 @@ document.getElementById('profile-info-form').onsubmit = function(e) {
 
       // Σεφ
       let chefEl = document.getElementById('profile-chef');
-      if (chefEl) chefEl.textContent = data.chef;
+      if (chefEl) {
+		  chefEl.textContent = (data.chef && data.chef !== '-- Επιλέξτε --') ? data.chef : '-';
+		}
 
       // Ημέρα και ώρα μενού
-      let dayEl = document.getElementById('profile-menu-day');
-      let hourEl = document.getElementById('profile-menu-hour');
-      if (dayEl) dayEl.textContent = data.menu_day;
-      if (hourEl) hourEl.textContent = data.menu_hour;
+		let dayEl = document.getElementById('profile-menu-day');
+		let hourEl = document.getElementById('profile-menu-hour');
+
+		if (dayEl) {
+		  dayEl.textContent = (data.menu_day && data.menu_day !== '-- Μέρα --') ? data.menu_day : '';
+		}
+
+		if (hourEl) {
+		  hourEl.textContent = (data.menu_hour && data.menu_hour !== '-- Ώρα --') ? data.menu_hour : '';
+		}
 
       // Μέθοδοι μαγειρέματος ως badges
       var cookingDiv = document.getElementById('profile-cooking-method');
@@ -1049,6 +1075,7 @@ document.getElementById('profile-info-form').onsubmit = function(e) {
     } else {
       console.error('Profile update failed:', res);
     }
+	updateProfileCompletionBar();
   });
 };
 
@@ -1069,7 +1096,6 @@ window.addEventListener('DOMContentLoaded', function() {
     window.choicesAllergies.hideDropdown();
   });
 });
-
 
 window.addEventListener("DOMContentLoaded", function () {
   const step = getNextOnboardingStep();
@@ -1217,6 +1243,7 @@ window.addEventListener("DOMContentLoaded", function () {
   }
 });
 
+window.addEventListener("DOMContentLoaded", updateProfileCompletionBar);
 
 // Προσθήκη helper για να εμφανίσει ΜΟΝΟ αν δεν έχει ήδη φανεί
 function showStrictTooltip(step, tooltipId, targetId, nextStep) {
@@ -1296,7 +1323,6 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
     }
   }
 }
-
 
 </script>
 
