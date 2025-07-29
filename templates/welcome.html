@@ -21,7 +21,7 @@
   position: fixed;
   bottom: 80px;
   right: 18px;
-  background: #fff9db;
+  background: #fff3cd;
   padding: 12px 15px 13px 15px;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.24);
@@ -39,7 +39,7 @@
   right: 16px;
   width: 15px;
   height: 15px;
-  background: #fff9db;
+  background: #fff3cd;
   transform: rotate(45deg);
   border-bottom: 1px solid rgba(0,0,0,0.09);
   border-right: 1px solid rgba(0,0,0,0.09);
@@ -139,6 +139,7 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 }
 .welcome-actions .btn-primary {
   background: linear-gradient(90deg, #fe9441 0%, #ffe15f 90%);
+  position: sticky;
   color: #444;
   border: none;
   font-weight: 700;
@@ -167,7 +168,7 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 
 <div class="welcome-hero text-center">
   <img src="{{ url_for('static', filename='image.png') }}" alt="Family Food" />
-  <h1>👋 Καλωσήρθες, <span style="color:#2078b6;">{{ user_name }}</span>!</h1>
+  <h1>👋 Καλωσήρθες, <span style="color:#2078b6;">{{ user_name or ''}}</span>!</h1>
   <p class="lead" id="welcomeLead">
 	Εδώ, το <b>“Τι θα φάμε σήμερα;”</b> βρίσκει πάντα απάντηση!<br><br>Έτοιμοι να φτιάξουμε υπέροχες οικογενειακές στιγμές; 🍽️</p>
   <div class="welcome-actions d-flex flex-wrap justify-content-center">
@@ -609,7 +610,7 @@ function escapeHtml(text) {
 }
 
 function getNextOnboardingStep() {
-  if (localStorage.getItem("onboarding_done") === "1") return null;
+  if (localStorage.getItem("profile_onboarding_done") === "1") return null;
 
   for (let i = 1; i <= 5; i++) {
     if (!localStorage.getItem(`onboarding_step${i}_shown`)) {
@@ -619,13 +620,13 @@ function getNextOnboardingStep() {
   return null;
 }
 
-{% if not onboarding_done %}
+{% if not profile_onboarding_done %}
 document.addEventListener("DOMContentLoaded", function () {
   // Βρίσκει το κουμπί "Προφίλ" στη nav-bar
   var profileLink = document.querySelector('nav.navbar.fixed-bottom a[href="/profile"]');
   if (profileLink) {
     profileLink.addEventListener("click", function (e) {
-      // Κρατάει το event μόνο αν το onboarding_done είναι false/0!
+      // Κρατάει το event μόνο αν το profile_onboarding_done είναι false/0!
       localStorage.setItem("onboarding_step1_shown", "1");
       // Δεν χρειάζεται preventDefault αν θέλεις να φύγει αμέσως από τη σελίδα.
       // Αν θες smooth, κάνε:

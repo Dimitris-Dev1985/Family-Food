@@ -38,7 +38,7 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  background: #fff9db;
+  background: #fff3cd;
   border: 1px solid #ccc;
   max-height: 90vh;
   overflow-y: auto;
@@ -92,7 +92,7 @@ body {
 
 
 /* Responsive containers and tables */
-.container, .main-welcome-container { padding-bottom: 70px; padding-top: 1rem; }
+.container, .main-welcome-container { padding-bottom: 70px; }
 @media (max-width: 600px) {
   .container, .main-welcome-container {
     padding-left: 0.2rem; padding-right: 0.2rem; padding-bottom: 85px !important;
@@ -191,39 +191,6 @@ body {
 </style>
 
 <style>
-
-#onboardingTooltip6 {
-  position: fixed;
-  bottom: 70px !important;
-  left: 100px !important;
-  background: #fff9db;
-  padding: 10px 14px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  z-index: 1000;
-  max-width: 230px;
-  font-size: 14px;
-  text-align: center;
-  animation: pulse 1s infinite;
-  transform: translate(0, 0);
-}
-#onboardingTooltip6::after {
-  content: "";
-  position: absolute;
-  bottom: -7px;
-  left: 16px;
-  width: 14px;
-  height: 14px;
-  background: #fff9db;
-  transform: rotate(45deg);
-  border-bottom: 1px solid rgba(0,0,0,0.1);
-  border-right: 1px solid rgba(0,0,0,0.1);
-  box-shadow: 1px 1px 3px rgba(0,0,0,0.08);
-  z-index: 0;
-}
-</style>
-
-<style>
 .voice-enabled {
   background-image: url("data:image/svg+xml,%3Csvg fill='gray' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 12a3 3 0 0 0 3-3V4a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z'/%3E%3Cpath d='M5 9.995a5 5 0 0 0 10 0h-1a4 4 0 0 1-8 0H5z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -243,7 +210,7 @@ body {
 .recipeModaltip{
   font-family: 'Indie Flower', cursive, Arial, sans-serif;
   position: absolute;
-  background: #fff9db;
+  background: #fff3cd;
   padding: 2px 2px;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -268,7 +235,7 @@ body {
   border-left: 1px solid #faeab9;
   width: 22px;
   height: 22px;
-  background: #fff9db;
+  background: #fff3cd;
   border-radius: 4px;
   border: none;
   transform: rotate(45deg);
@@ -362,7 +329,7 @@ body {
 			</a>
 		  </div>
 		  <div class="col">
-			<a href="/menu" class="nav-link py-2{% if request.endpoint=='menu' %} active{% endif %}">
+			<a href="/menu" id = "menu-btn" class="nav-link py-2{% if request.endpoint=='menu' %} active{% endif %}">
 			  <i class="fa fa-calendar-week fa-lg"></i><div style="font-size:12px;">Μενού</div>
 			</a>
 		  </div>
@@ -394,10 +361,7 @@ body {
 {% endif %}
 -->
 
-<div id="onboardingTooltip6" class="onboardingTooltip6" style="display:none;">
-  👉 Πάτα ΕΔΩ για να δεις το εβδομαδιαίο πλάνο σου!
-  <div class="arrow-down"></div>
-</div>
+
 
   <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -427,7 +391,7 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="{{ url_for('static', filename='JS/tooltip6_global.js') }}"></script>
+
 
 <script>
 

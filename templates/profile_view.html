@@ -2,6 +2,82 @@
 {% block title %}Προφίλ{% endblock %}
 {% block content %}
 
+
+
+<style>
+#onboardingBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1020;
+}
+  
+.onboarding-highlight {
+  box-shadow: 0 0 0 4px #ffe28a;
+  border-radius: 6px;
+}
+</style>
+
+<style>
+
+#onboardingTooltip6::after {
+  width: 12px;
+  height: 12px;
+  background: #fff3cd;
+  transform: rotate(45deg);
+  position: absolute;
+  bottom: -6px;
+  left: 20px;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.onboarding-tooltip {
+  font-family: 'Indie Flower', cursive, Arial, sans-serif;
+  position: absolute;
+  width: 70vw;
+  width: auto;
+  max-width: 300px;
+  background: #fff3cd;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  font-size: 13px;
+  animation: pulse 1.5s infinite;
+  z-index: 1050;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+}
+
+.onboarding-tooltip .arrow-down {
+  width: 12px;
+  height: 12px;
+  background: #fff3cd;
+  transform: rotate(45deg);
+  position: absolute;
+  bottom: -6px;
+  left: 20px;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.onboarding-tooltip .arrow-down-right {
+  width: 12px;
+  height: 12px;
+  background: #fff3cd;
+  transform: rotate(45deg);
+  position: absolute;
+  bottom: -6px;
+  right: 20px;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+  50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(255,255,255,0.9); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+}
+</style>
+
 <style>
 body {
   font-family: 'Inter', sans-serif;
@@ -39,7 +115,7 @@ body {
   margin: 0.5rem 0 1rem;
 }
 #profile-completion-fill {
-  width: 60%;
+  width: 0%;
   height: 100%;
   background: linear-gradient(to right, #9be15d, #00e3ae);
   transition: width 0.8s ease;
@@ -57,11 +133,16 @@ body {
 }
 </style>
 
+
+
 <div class="container py-3">
-  <h4 class="fw-bold text-center mb-2">👤 Το Προφίλ μου</h4>
-  <div id="profile-completion-bar">
-    <div id="profile-completion-fill"></div>
-  </div>
+
+  <div class="sticky-top bg-white pt-3 pb-2 shadow-sm" style="z-index: 1021; background-color:rgb(250 255 236)!important; border-radius: 16px;margin-bottom:1.2rem;">
+	  <h4 class="fw-bold text-center mb-2">👤 Το Προφίλ μου</h4>
+	  <div id="profile-completion-bar" class="mx-3">
+		<div id="profile-completion-fill"></div>
+	  </div>
+	</div>
 
   <div class="card">
 	  <div class="card-section-title">Στοιχεία Χρήστη</div>
@@ -90,8 +171,7 @@ body {
 		  {% else %}
 			<span id="profile-menu-hour" class="text-muted"></span>
 		  {% endif %}
-		</p>
-		
+		</p>		
 		 <p>
 		  <i class="fa fa-fire"></i>
 		  <strong>Προτιμώμενος τρόπος μαγειρέματος:</strong>
@@ -107,7 +187,7 @@ body {
 		</p>
 	  
 	  	<div class="text-end mt-2">
-		  <button class="btn btn-outline-primary btn-sm" onclick="editProfileInfo()" id="edit-profile-button" style="z-index:1002!important; position:sticky">
+		  <button class="btn btn-outline-primary btn-sm" onclick="editProfileInfo()" id="edit-profile-button" style="background-color: white!important;">
 			<i class="fa fa-pen"></i> Επεξεργασία προφίλ
 		  </button>
 		</div>
@@ -126,7 +206,7 @@ body {
         </tr>
       </table>
 		<div class="text-end mt-2">
-		  <button class="btn btn-outline-primary btn-sm" id="edit-cook-times" onclick="editCookingTimes()">
+		  <button class="btn btn-outline-primary btn-sm" id="edit-cook-times" onclick="editCookingTimes()" style="position:sticky; background-color: white!important;">
 			<i class="fa fa-pen"></i> Επεξεργασία
 		  </button>
 		</div>
@@ -217,6 +297,40 @@ body {
     </div>
   </div>
 </div>
+
+
+
+<!-- BACKDROP: εμφανίζεται σε όλα τα βήματα -->
+<div id="onboardingBackdrop" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0;background:rgba(0, 0, 0, 0.5); z-index:1020;"></div>
+
+<div id="onboardingTooltip2" class="onboarding-tooltip" style="display:none;">
+    👉 Πάτα εδώ!
+    <div class="arrow-down-right"></div>
+</div>
+
+<!-- Tooltip 3 - Χρόνοι μαγειρέματος -->
+<div id="onboardingTooltip3" class="onboarding-tooltip" style="display:none;">
+  ⏱️ Πες μου πόσο χρόνο μπορείς να αφιερώσεις κάθε μέρα για μαγείρεμα! Θα το λάβω υπόψιν!
+  <div class="arrow-down-right"></div>
+</div>
+
+<!-- Tooltip 4 - Μέλη -->
+<div id="onboardingTooltip4" class="onboarding-tooltip" style="display:none;">
+  👨‍👩‍👧 Πρόσθεσε τα μέλη της οικογένειάς σου! Είναι σημαντικά!
+  <div class="arrow-down"></div>
+</div>
+
+<!-- Tooltip 5 - Στόχοι -->
+<div id="onboardingTooltip5" class="onboarding-tooltip" style="display:none;">
+  🎯 Εδώ μπορείς να προσθέσεις τους διατροφικούς σου στόχους! Θα με βοηθήσει να σου προτείνω πιάτα!
+  <div class="arrow-down"></div>
+</div>
+
+<div id="onboardingTooltip6" class="onboarding-tooltip" style="display:none;">
+  👉 Πάτα ΕΔΩ για να δεις το εβδομαδιαίο πλάνο σου!
+  <div class="arrow-down"></div>
+</div>
+
 
 {% endblock %}
 
@@ -419,7 +533,7 @@ body {
     <div class="modal-content text-center">
       <div class="modal-body py-4">
         <h4 class="mb-2">🎉 Συγχαρητήρια!</h4>
-        <p>Ολοκλήρωσες το προφίλ σου.<br>Πάμε τώρα στη κουζίνα!</p>
+        <p>Ολοκλήρωσες το προφίλ σου.<br>Φύγαμε για τη κουζίνα;</p>
         <button class="btn btn-success mt-3" data-bs-dismiss="modal">Πάμε!</button>
       </div>
     </div>
@@ -463,6 +577,27 @@ function updateProfileCompletionBar() {
       }
     });
 }
+
+window.addEventListener("DOMContentLoaded", updateProfileCompletionBar);
+
+window.addEventListener("DOMContentLoaded", function () {
+  const done = localStorage.getItem("profile_onboarding_done") === "1";
+  if (done) return;
+
+  // Επιτρέπονται μόνο: /menu και /profile
+  const allowedPaths = ["/menu"];
+
+  document.querySelectorAll("nav.navbar.fixed-bottom a").forEach(link => {
+    const href = link.getAttribute("href");
+    const isAllowed = allowedPaths.includes(href);
+
+    if (!isAllowed) {
+      link.classList.add("nav-disabled");
+      link.style.pointerEvents = "none";
+      link.style.opacity = "0.4";
+    }
+  });
+});
 
 function openGoalModal(mode, id, category, min, max) {
   const modal = new bootstrap.Modal(document.getElementById('addGoalModal'));
@@ -1097,154 +1232,6 @@ window.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-window.addEventListener("DOMContentLoaded", function () {
-  const step = getNextOnboardingStep();
-  if (!step) return;
-
-  const profileModal = document.getElementById("editProfileModal");
-  const cookModal = document.getElementById("editCookTimesModal");
-  const memberModal = document.getElementById("memberModal");
-  const goalModal = document.getElementById("addGoalModal");
-  const overlay2 = document.getElementById("onboardingOverlay2");
-
-  // STEP 2
-  if (step === 2) {
-    const editBtn = document.getElementById("edit-profile-button");
-    if (editBtn && overlay2) {
-      document.body.classList.add("onboarding-step-2");
-      overlay2.style.display = "block";
-      showTooltipCenteredAbove(2, "onboardingTooltip2", "edit-profile-button", null);
-
-      editBtn.addEventListener("click", function () {
-        document.body.classList.remove("onboarding-step-2");
-        overlay2.style.display = "none";
-
-        if (profileModal) {
-          profileModal.addEventListener("hidden.bs.modal", () => {
-            showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
-              if (cookModal && cookModal.classList.contains("show")) {
-                cookModal.addEventListener("hidden.bs.modal", () => {
-                  showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-                    if (memberModal && memberModal.classList.contains("show")) {
-                      memberModal.addEventListener("hidden.bs.modal", () => {
-                        showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
-                          if (goalModal && goalModal.classList.contains("show")) {
-                            goalModal.addEventListener("hidden.bs.modal", () => {
-                              showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-                            });
-                          } else {
-                            showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-                          }
-                        });
-                      });
-                    } else {
-                      showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
-                        if (goalModal && goalModal.classList.contains("show")) {
-                          goalModal.addEventListener("hidden.bs.modal", () => {
-                            showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-                          });
-                        } else {
-                          showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-                        }
-                      });
-                    }
-                  });
-                });
-              } else {
-                showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-                  if (memberModal && memberModal.classList.contains("show")) {
-                    memberModal.addEventListener("hidden.bs.modal", () => {
-                      showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
-                        if (goalModal && goalModal.classList.contains("show")) {
-                          goalModal.addEventListener("hidden.bs.modal", () => {
-                            showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-                          });
-                        } else {
-                          showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-                        }
-                      });
-                    });
-                  } else {
-                    showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
-                      if (goalModal && goalModal.classList.contains("show")) {
-                        goalModal.addEventListener("hidden.bs.modal", () => {
-                          showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-                        });
-                      } else {
-                        showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-                      }
-                    });
-                  }
-                });
-              }
-            });
-          });
-        }
-      });
-    }
-  }
-
-  // STEP 3–6 recovery
-  if (step === 3) {
-    showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
-      showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-        showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
-          if (goalModal && goalModal.classList.contains("show")) {
-            goalModal.addEventListener("hidden.bs.modal", () => {
-              showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-            });
-          } else {
-            showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-          }
-        });
-      });
-    });
-  }
-
-  if (step === 4) {
-    showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
-      showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
-        if (goalModal && goalModal.classList.contains("show")) {
-          goalModal.addEventListener("hidden.bs.modal", () => {
-            showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-          });
-        } else {
-          showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-        }
-      });
-    });
-  }
-
-  if (step === 5) {
-    showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
-      if (goalModal && goalModal.classList.contains("show")) {
-        goalModal.addEventListener("hidden.bs.modal", () => {
-          showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-        });
-      } else {
-        showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-      }
-    });
-  }
-
-  if (step === 6) {
-    showTooltipCenteredAbove(6, "onboardingTooltip6", null, null);
-  }
-
-  // Όταν πατηθεί το κουμπί "Μενού", κρύψε το tooltip6 και ολοκλήρωσε
-  const menuLink = document.querySelector('nav.navbar.fixed-bottom a[href="/menu"]');
-  if (menuLink) {
-    menuLink.addEventListener("click", function () {
-      document.getElementById("onboardingTooltip6").style.display = "none";
-      localStorage.setItem("onboarding_step6_shown", "1");
-      localStorage.setItem("onboarding_done", "1");
-      
-    });
-  }
-});
-
-window.addEventListener("DOMContentLoaded", updateProfileCompletionBar);
-
 // Προσθήκη helper για να εμφανίσει ΜΟΝΟ αν δεν έχει ήδη φανεί
 function showStrictTooltip(step, tooltipId, targetId, nextStep) {
   const tooltip = document.getElementById(tooltipId);
@@ -1254,16 +1241,18 @@ function showStrictTooltip(step, tooltipId, targetId, nextStep) {
 }
 
 function getNextOnboardingStep() {
-  if (localStorage.getItem("onboarding_done") === "1") return null;
+  
+  if (localStorage.getItem("profile_onboarding_done") === "1") return null;
   for (let i = 1; i <= 6; i++) {
-    if (!localStorage.getItem(`onboarding_step${i}_shown`)) return i;
+    if (!localStorage.getItem(`onboarding_step${i}_shown`)) return i;	
   }
   return null;
 }
 
 function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = null) {
   if (localStorage.getItem(`onboarding_step${step}_shown`) === "1") return;
-
+  console.log(step);
+  // Κρύβει όλα τα tooltips
   document.querySelectorAll(".onboarding-tooltip").forEach(t => {
     t.style.display = "none";
     t.style.visibility = "hidden";
@@ -1272,57 +1261,238 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
   const tooltip = document.getElementById(tooltipId);
   const target = targetId ? document.getElementById(targetId) : null;
 
-  if (tooltip) {
-    tooltip.style.visibility = "hidden";
-    tooltip.style.display = "block";
+  if (!tooltip) return;
 
-    let left = 0;
-    let top = 0;
+  tooltip.style.visibility = "hidden";
+  tooltip.style.display = "block";
 
-    if (target) {
-      const rect = target.getBoundingClientRect();
-      const tipWidth = tooltip.offsetWidth;
-      const tipHeight = tooltip.offsetHeight;
+  // 🎯 Ειδική περίπτωση: step 6 → σταθερό κάτω tooltip
+  if (step === 6) {
+    tooltip.style.position = "fixed";
+	tooltip.style.width = "50vw";
+    tooltip.style.bottom = "80px";
+    tooltip.style.left = "90px";
+    tooltip.style.top = ""; // 💡 ακυρώνει το top
+  }
+  else if (target) {
+    // Υπολόγισε θέση πάνω από το στοιχείο
+    const rect = target.getBoundingClientRect();
+    const tipWidth = tooltip.offsetWidth;
+    const tipHeight = tooltip.offsetHeight;
 
-      left = rect.left + window.scrollX + (rect.width - tipWidth) / 2;
-      top = rect.top + window.scrollY - tipHeight - 10;
+    let left = rect.left + window.scrollX + (rect.width - tipWidth) / 2;
+    let top = rect.top + window.scrollY - tipHeight - 10;
 
-      const padding = 50;
-      const maxX = window.innerWidth - tipWidth - padding;
-      if (left < padding) left = padding;
-      if (left > maxX) left = maxX;
-      if (top < padding) top = rect.bottom + window.scrollY + 10;
+    const padding = 50;
+    const maxX = window.innerWidth - tipWidth - padding;
+    if (left < padding) left = padding;
+    if (left > maxX) left = maxX;
+    if (top < padding) top = rect.bottom + window.scrollY + 10;
 
-      tooltip.style.left = `${left}px`;
-      tooltip.style.top = `${top}px`;
-    } else {
-      tooltip.style.position = "fixed";
-      tooltip.style.bottom = "80px";
-      tooltip.style.left = "50%";
-      tooltip.style.transform = "translateX(-50%)";
-    }
+    tooltip.style.position = "absolute";
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.bottom = ""; // clear in case
+  }
 
-    tooltip.style.visibility = "visible";
+  tooltip.style.visibility = "visible";
 
-    if (target) {
-      const handler = () => {
-        tooltip.style.display = "none";
-        localStorage.setItem(`onboarding_step${step}_shown`, "1");
+  // Τονισμός του στοιχείου
+  if (target) {
+    target.classList.add("onboarding-highlight");
+    target.style.zIndex = "2001";
+    target.style.position = "relative";
 
-        if (nextStep) {
-          setTimeout(nextStep, 300);
-        } else if (step === 6) {
-          localStorage.setItem("onboarding_done", "1");
-          fetch("/api/onboarding_complete", { method: "POST" });
-        }
+    const handler = () => {
+      tooltip.style.display = "none";
+      localStorage.setItem(`onboarding_step${step}_shown`, "1");
 
-        target.removeEventListener("click", handler);
-      };
+      target.classList.remove("onboarding-highlight");
+      target.style.zIndex = "";
+      target.style.position = "";
 
-      target.addEventListener("click", handler);
-    }
+      if (nextStep) {
+        setTimeout(nextStep, 300);
+      } else if (step === 6) {
+        localStorage.setItem("profile_onboarding_done", "1");
+        fetch("/api/onboarding_complete", { method: "POST" });
+      }
+
+      target.removeEventListener("click", handler);
+    };
+
+    target.addEventListener("click", handler);
   }
 }
+
+window.addEventListener("DOMContentLoaded", function () {
+
+  const step = getNextOnboardingStep();
+  const profileModal = document.getElementById("editProfileModal");
+  const cookModal = document.getElementById("editCookTimesModal");
+  const memberModal = document.getElementById("memberModal");
+  const goalModal = document.getElementById("addGoalModal");
+  const backdrop = document.getElementById("onboardingBackdrop");
+  const menuLink = document.querySelector('nav.navbar.fixed-bottom a[href="/menu"]');
+  console.log(step);
+
+  if (!step) return;
+
+	  // STEP 2
+	if (step === 2) {
+	  const editBtn = document.getElementById("edit-profile-button");
+	  
+	  if (editBtn) {
+		if (backdrop) backdrop.style.display = "block";
+		document.body.classList.add("onboarding-step-2");
+
+		showTooltipCenteredAbove(2, "onboardingTooltip2", "edit-profile-button", null);
+
+		editBtn.addEventListener("click", function () {
+		  document.body.classList.remove("onboarding-step-2");
+		  document.getElementById("onboardingTooltip2").style.display = "none";
+
+		  if (profileModal) {
+			profileModal.addEventListener("hidden.bs.modal", () => {
+			  // STEP 3
+			  showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
+
+				const waitAndShowStep4 = () => {
+				  // STEP 4
+				  showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+
+					const waitAndShowStep5 = () => {
+					  // STEP 5
+					  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+
+						const waitAndShowStep6 = () => {
+						  // STEP 6
+						  backdrop.style.display = "none";
+						  showTooltipCenteredAbove(6, "onboardingTooltip6", "menu-btn", null);
+						  console.log("ok");
+						};
+
+						if (goalModal && goalModal.classList.contains("show")) {
+						  goalModal.addEventListener("hidden.bs.modal", waitAndShowStep6, { once: true });
+						} else {
+						  waitAndShowStep6();
+						}
+					  });
+					};
+
+					if (memberModal && memberModal.classList.contains("show")) {
+					  memberModal.addEventListener("hidden.bs.modal", waitAndShowStep5, { once: true });
+					} else {
+					  waitAndShowStep5();
+					}
+
+				  });
+				};
+
+				if (cookModal && cookModal.classList.contains("show")) {
+				  cookModal.addEventListener("hidden.bs.modal", waitAndShowStep4, { once: true });
+				} else {
+				  waitAndShowStep4();
+				}
+			  });
+			}, { once: true });
+		  }
+		}, { once: true });
+	  }
+	}
+
+
+	  // STEP 3–6 recovery
+	if (step === 3) {
+	  backdrop.style.display = "block";
+
+	  showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
+		const waitAndShowStep4 = () => {
+		  showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+			showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+			  if (goalModal && goalModal.classList.contains("show")) {
+				goalModal.addEventListener("hidden.bs.modal", () => {
+				  backdrop.style.display = "none";
+				  showTooltipCenteredAbove(6, "onboardingTooltip6", "menu-btn", null);
+				}, { once: true });
+			  } else {
+				backdrop.style.display = "none";
+				showTooltipCenteredAbove(6, "onboardingTooltip6", "menu-btn", null);
+			  }
+			});
+		  });
+		};
+
+		if (cookModal && cookModal.classList.contains("show")) {
+		  cookModal.addEventListener("hidden.bs.modal", waitAndShowStep4, { once: true });
+		} else {
+		  waitAndShowStep4();
+		}
+	  });
+	}
+
+
+	if (step === 4) {
+	  backdrop.style.display = "block";
+
+	  const waitAndShowStep5 = () => {
+		showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+		  if (goalModal && goalModal.classList.contains("show")) {
+			goalModal.addEventListener("hidden.bs.modal", () => {
+			  backdrop.style.display = "none";
+			  showTooltipCenteredAbove(6, "onboardingTooltip6", "menu-btn", null);
+			}, { once: true });
+		  } else {
+			backdrop.style.display = "none";
+			showTooltipCenteredAbove(6, "onboardingTooltip6", "menu-btn", null);
+		  }
+		});
+	  };
+
+	  showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
+		if (memberModal && memberModal.classList.contains("show")) {
+		  memberModal.addEventListener("hidden.bs.modal", waitAndShowStep5, { once: true });
+		} else {
+		  waitAndShowStep5();
+		}
+	  });
+	}
+
+	if (step === 5) {
+	  backdrop.style.display = "block";
+
+	  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
+		if (goalModal && goalModal.classList.contains("show")) {
+		  goalModal.addEventListener("hidden.bs.modal", () => {
+			backdrop.style.display = "none";
+			showTooltipCenteredAbove(6, "onboardingTooltip6", "menu-btn", null);
+		  }, { once: true });
+		} else {
+		  backdrop.style.display = "none";
+		  showTooltipCenteredAbove(6, "onboardingTooltip6", "menu-btn", null);
+		}
+	  });
+	}
+
+
+  if (step === 6) {
+    backdrop.style.display = "none";
+	document.getElementById("onboardingTooltip6").style.display = "none";
+	document.getElementById("onboardingTooltip6").visibility = "hidden";
+	console.log("OKK");
+    showTooltipCenteredAbove(6, "onboardingTooltip6", "menu-btn", null);
+  }
+
+  // Όταν πατηθεί το κουμπί "Μενού", κρύψε tooltip6 και backdrop και τελείωσε
+  
+  if (menuLink) {
+    menuLink.addEventListener("click", function () {
+      document.getElementById("onboardingTooltip6").style.display = "none";
+      localStorage.setItem("onboarding_step6_shown", "1");
+      localStorage.setItem("profile_onboarding_done", "1");
+    });
+  }
+});
 
 </script>
 

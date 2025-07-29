@@ -43,13 +43,12 @@ body.menu-onboarding-active nav.navbar a.nav-link {
 }
 </style>
 
-
 <style>
 
 .menu-onboarding-tip {
   font-family: 'Indie Flower', cursive, Arial, sans-serif;
   position: absolute;
-  background: #fff9db;
+  background: #fff3cd;
   padding: 2px 2px;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -72,7 +71,7 @@ body.menu-onboarding-active nav.navbar a.nav-link {
   border-left: 1px solid #faeab9;
   width: 22px;
   height: 22px;
-  background: #fff9db;
+  background: #fff3cd;
   border-radius: 4px;
   border: none;
   transform: rotate(45deg);
@@ -85,7 +84,7 @@ body.menu-onboarding-active nav.navbar a.nav-link {
   border-right: 1px solid #faeab9;
   width: 22px;
   height: 22px;
-  background: #fff9db;
+  background: #fff3cd;
   border-radius: 4px;
   border: none;
   transform: rotate(45deg);
@@ -268,7 +267,7 @@ body.menu-onboarding-active nav.navbar a.nav-link {
 
 
 
-{% block modals %}{% endblock %}
+{% block modals %}
 
 <div class="modal fade" id="confirmGenerateModal" tabindex="-1" aria-labelledby="confirmGenerateLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -327,9 +326,10 @@ body.menu-onboarding-active nav.navbar a.nav-link {
   </div>
 </div>
 
+{% endblock %}
 
 
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+{% block scripts %}
 
 <script src="{{ url_for('static', filename='JS/menu_onboarding.js') }}"></script>
 
@@ -636,4 +636,4 @@ function startSpeechForRecipe(menuid) {
 
 </script>
 
-{% block scripts %}{% endblock %}
+{% endblock %}
