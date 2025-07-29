@@ -102,10 +102,10 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 }
 
 .welcome-hero {
-  background: linear-gradient(135deg, #ffeedd 0%, #fff8e1 80%);
+  background: linear-gradient(135deg, #ffeedd 0%, #cdffd8 80%);
   border-radius: 2.5rem;
   box-shadow: 0 8px 40px rgba(222, 174, 120, 0.15);
-  margin: 32px auto 32px auto;
+  margin: 10px auto 32px auto;
   max-width: 520px;
   padding: 48px 26px 36px 26px;
   position: relative;
@@ -239,7 +239,11 @@ function showChatbox() {
 
 <!-- JS για να προσθέσει την onboarding-active στο body -->
 {% if not onboarding_done %}
-  document.body.classList.add("onboarding-active");
+	document.body.classList.add("onboarding-active");
+
+// 💣 Καθάρισε όλο το localStorage
+    localStorage.clear();
+
 {% endif %}
 
 function startSpeechRecognition() {
