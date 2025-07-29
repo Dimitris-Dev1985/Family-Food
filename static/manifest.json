@@ -1,7 +1,7 @@
 {
   "name": "Family Food",
   "short_name": "FamilyFood",
-  "start_url": "/install",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#4CAF50",
   "background_color": "#ffffff",
