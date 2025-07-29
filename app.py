@@ -58,8 +58,10 @@ def google_login_callback():
     session["user_id"] = user_id
     return redirect(url_for("welcome"))
 
-def get_user():
-    user_id = session.get("user_id", 1)  # default = 1 για debug
+def get_user():    
+    user_id = session.get("user_id")
+    if not user_id:
+        user_id = 1  # fallback μόνο για debug
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
@@ -115,8 +117,13 @@ def login_required(f):
         return f(*args, **kwargs)
     return wrapped
 
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "GET":
+        session.clear()
+        return render_template("login.html")
+
     if request.method == "POST":
         action = request.form.get("action")
         conn = sqlite3.connect(DB)
@@ -156,7 +163,6 @@ def login():
             flash("Λανθασμένος κωδικός!", "danger")
             return redirect(url_for("login"))
 
-    return render_template("login.html")
 
 @app.route('/delete_user_and_data', methods=['POST'])
 def delete_user_and_data():
@@ -710,7 +716,6 @@ def profile():
         chef_options=chef_options,
     )
 
-
 @app.route("/profile_completion_percent")
 @login_required
 def profile_completion_percent():
@@ -739,7 +744,6 @@ def profile_completion_percent():
     percent = int((filled / total) * 100)
     print(percent)
     return jsonify({"completion": percent})
-
 
 @app.route("/edit_profile_info", methods=["POST"])
 def edit_profile_info():
@@ -776,7 +780,6 @@ def edit_profile_info():
     conn.commit()
     conn.close()
     return jsonify({"status": "ok"})
-
 
 @app.route('/add_family_member', methods=['POST'])
 def add_family_member():
