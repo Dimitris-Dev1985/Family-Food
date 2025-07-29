@@ -69,7 +69,7 @@ def get_user():
 
 @app.route("/")
 def home():
-    return redirect("/login")
+    return redirect("/welcome")
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
