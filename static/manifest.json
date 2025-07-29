@@ -1,10 +1,11 @@
 {
   "name": "Family Food",
-  "short_name": "FamilFood",
-  "start_url": "/login",
+  "short_name": "FamilyFood",
+  "start_url": "/install",
   "display": "standalone",
+  "theme_color": "#4CAF50",
   "background_color": "#ffffff",
-  "theme_color": "#f44336",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/static/icon-192.png",
