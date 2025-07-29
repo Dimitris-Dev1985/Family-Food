@@ -387,7 +387,7 @@ body {
           </div>
         </div>
         <div class="mb-2">
-          <label class="form-label">Προτιμώμενοι τρόποι μαγειρέματος</label>
+          <label>Προτιμώμενοι τρόποι μαγειρέματος</label>
           <select id="cooking-methods-select" name="cooking_methods" class="form-control" multiple>
             {% set cooking_options = ['Φούρνος','Κατσαρόλα','Χύτρα','Τηγάνι','Σχάρα','Air-fryer'] %}
             {% for opt in cooking_options %}
@@ -1103,7 +1103,8 @@ function editProfileInfo() {
 window.addEventListener('DOMContentLoaded', function() {
   window.choicesCooking = new Choices('#cooking-methods-select', {
     removeItemButton: true,
-    placeholderValue: 'Επίλεξε τρόπο... Μπορείς να επιλέξεις παραπάνω από έναν!',
+	searchEnabled: false,
+    placeholderValue: 'Επίλεξε τρόπο... Μπορείς να επιλέξεις όσους θες!',
     searchPlaceholderValue: 'Αναζήτηση...',
     noResultsText: 'Δεν βρέθηκαν επιλογές',
     itemSelectText: 'Επιλογή',
