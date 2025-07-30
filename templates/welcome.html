@@ -213,9 +213,12 @@ let onboarding_done = "{{ onboarding_done }}";
 let aiChatFilters = {};
 
 {% if not onboarding_done %}
-	document.body.classList.add("onboarding-active");
-    localStorage.clear();
-	aiChatFilters = {}; 
+	if (!localStorage.getItem('profile_onboarding_done')) {
+		console.log("profile done");
+		document.body.classList.add("onboarding-active");
+		localStorage.clear();
+		aiChatFilters = {};
+		}	
 {% endif %}
 
 function startSpeechRecognition() {

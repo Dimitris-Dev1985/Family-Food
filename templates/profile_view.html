@@ -1252,7 +1252,6 @@ function getNextOnboardingStep() {
 
 function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = null) {
   if (localStorage.getItem(`onboarding_step${step}_shown`) === "1") return;
-  console.log(step);
   // Κρύβει όλα τα tooltips
   document.querySelectorAll(".onboarding-tooltip").forEach(t => {
     t.style.display = "none";
@@ -1316,9 +1315,7 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
         setTimeout(nextStep, 300);
       } else if (step === 6) {
         localStorage.setItem("profile_onboarding_done", "1");
-        fetch("/api/onboarding_complete", { method: "POST" });
       }
-
       target.removeEventListener("click", handler);
     };
 
@@ -1335,7 +1332,6 @@ window.addEventListener("DOMContentLoaded", function () {
   const goalModal = document.getElementById("addGoalModal");
   const backdrop = document.getElementById("onboardingBackdrop");
   const menuLink = document.querySelector('nav.navbar.fixed-bottom a[href="/menu"]');
-  console.log(step);
 
   if (!step) return;
 
@@ -1370,7 +1366,6 @@ window.addEventListener("DOMContentLoaded", function () {
 						  // STEP 6
 						  backdrop.style.display = "none";
 						  showTooltipCenteredAbove(6, "onboardingTooltip6", "menu-btn", null);
-						  console.log("ok");
 						};
 
 						if (goalModal && goalModal.classList.contains("show")) {
@@ -1480,7 +1475,6 @@ window.addEventListener("DOMContentLoaded", function () {
     backdrop.style.display = "none";
 	document.getElementById("onboardingTooltip6").style.display = "none";
 	document.getElementById("onboardingTooltip6").visibility = "hidden";
-	console.log("OKK");
     showTooltipCenteredAbove(6, "onboardingTooltip6", "menu-btn", null);
   }
 
