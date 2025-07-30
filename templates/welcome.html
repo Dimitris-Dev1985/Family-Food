@@ -85,7 +85,6 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
   font-family: 'Quicksand', Arial, sans-serif;
 }
 .chat-line {
-  margin-bottom: 8px;
   text-align: justify;
 }
 .chat-assistant { color: #fe9441; font-weight: 700; }
@@ -102,7 +101,7 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 }
 
 .welcome-hero {
-  background: linear-gradient(135deg, #ffeedd 0%, #cdffd8 80%);
+  background: linear-gradient(135deg, #ffffff  0%, #cdffd8 80%);
   border-radius: 2.5rem;
   box-shadow: 0 8px 40px rgba(222, 174, 120, 0.15);
   margin: 10px auto 32px auto;
@@ -200,6 +199,14 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 
 {% endblock %}
 
+<script>
+<!-- JS για να προσθέσει την onboarding-active στο body -->
+{% if not onboarding_done %}
+	document.body.classList.add("onboarding-active");
+    localStorage.clear();
+	aiChatFilters = {}; 
+{% endif %}
+</script>
 
 {% block scripts %}
 
@@ -210,41 +217,7 @@ let tomorrowMenu = "{{ tomorrow_menu|safe }}";
 let tomorrowMenuId = "{{ tomorrow_menu_id }}";
 let cookingDay = "today"; // default: σήμερα
 let onboarding_done = "{{ onboarding_done }}";
-
-
-function showChatbox() {
-  // Εμφάνιση του chatbox
-  document.getElementById('chatbox-section').style.display = '';
-  // Εξαφάνιση του lead
-  var lead = document.getElementById('welcomeLead');
-  if (lead) lead.style.display = 'none';
-  // Αλλαγή κουμπιού σε Restart Chat!
-  var btn = document.getElementById('startChatBtn');
-  btn.innerText = 'Restart Chat!';
-  btn.onclick = function() {
-    restartChat();
-    // Μετά το restart, το lead ΔΕΝ επανεμφανίζεται!
-  };
-  btn.disabled = false;
-  // Scroll down (προαιρετικό)
-  setTimeout(() => {
-    document.getElementById('chatbox').scrollTop = document.getElementById('chatbox').scrollHeight;
-    window.scrollTo({top: document.getElementById('chatbox-section').offsetTop - 20, behavior:'smooth'});
-  }, 80);
-  // Εμφανίζει τα κύρια choices αν είναι άδειο το chat
-  if (typeof showMainChoices === "function" && !document.querySelector('#chatbox #choicesRow')) {
-    showMainChoices();
-  }
-}
-
-<!-- JS για να προσθέσει την onboarding-active στο body -->
-{% if not onboarding_done %}
-	document.body.classList.add("onboarding-active");
-
-// 💣 Καθάρισε όλο το localStorage
-    localStorage.clear();
-
-{% endif %}
+let aiChatFilters = {};
 
 function startSpeechRecognition() {
   if (!('webkitSpeechRecognition' in window)) {
@@ -286,36 +259,10 @@ function startSpeechRecognition() {
   recognition.start();
 }
 
-// ---- Προσθήκη γραμμής chat ----
-function addChatLine(who, text) {
-  let chatbox = document.getElementById('chatbox');
-  let whoClass = '';
-  if (who === 'assistant') {
-    whoClass = 'chat-assistant';
-  } else if (who === 'user') {
-    whoClass = 'chat-user';
-  }
-  let line = '';
-  if (who === 'controls') {
-    line = text;
-  } else {
-    let icon = '';
-    if (who === 'assistant') {
-      icon = "👩‍🍳";
-    } else if (who === 'user') {
-      icon = "🙋‍♂️";
-    }
-    line = '<div class="chat-line"><span class="' + whoClass + '">' + icon + '</span> ' + text + '</div>';
-  }
-  chatbox.insertAdjacentHTML('beforeend', line);
-  chatbox.scrollTop = chatbox.scrollHeight;
-  saveChatHistory();
-}
-
 // ----------- Main κουμπιά ----------- //
 function showMainChoices() {
   if (document.querySelector('#chatbox #choicesRow')) return;
-  let html = '<div class="d-flex justify-content-center gap-2 my-3" id="choicesRow">' +
+  let html = '<div class="d-flex justify-content-center gap-2" id="choicesRow" style="margin-top:10px">' +
     '<button class="btn btn-outline-primary" onclick="replyAndHideBtns(\'Ό,τι έχει το πρόγραμμα\', \'\', false, \'program\')">📋 Ό,τι έχει το πρόγραμμα</button>' +
     '<button class="btn btn-outline-success" onclick="replyAndHideBtns(\'Δώσε καμιά ιδέα!\', \'\', false, \'ai\')">💡 Δώσε καμιά ιδέα!</button>' +
     '<button class="btn btn-outline-warning" onclick="replyAndHideBtns(\'Θέλω να μαγειρέψω για αύριο\', \'\', false, \'tomorrow\')">Θέλω να μαγειρέψω για αύριο</button>' +
@@ -324,7 +271,7 @@ function showMainChoices() {
 }
 
 function showActionsAfterMenu(menuId, menuTitle) {
-  let html = '<div class="d-flex justify-content-center gap-2 my-3" id="afterMenuBtns">' +
+  let html = '<div class="d-flex justify-content-center gap-2" id="afterMenuBtns">' +
     '<button class="btn btn-success" onclick="replyAndHideBtns(\'Το μαγειρεύω\', \'\', false, \'cook_' + menuId + '_' + escapeHtml(menuTitle) + '\')">Το μαγειρεύω</button>' +
     '<button class="btn btn-info" onclick="replyAndHideBtns(\'Το παραγγέλνω!\', \'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">Το παραγγέλνω</button>' +
     '<button class="btn btn-secondary" onclick="replyAndHideBtns(\'Δείξε μου κάτι άλλο\', \'\', true)">Δείξε μου κάτι άλλο</button>' +
@@ -402,25 +349,40 @@ function showTomorrow() {
 
 // ----------- AI CHAT ----------- //
 let aiChatStep = 1;
-let aiChatFilters = {};
 
 function startAIChat() {
   aiChatStep = 1;
-  aiChatFilters = {};
   addChatLine('assistant', 'Πάμε να βρούμε την τέλεια συνταγή!');
   nextAIChatStep('');
 }
 
 function submitAIAnswer() {
   let val = '';
-  if (aiChatStep === 2) val = document.getElementById('ai_time').value;
-  if (aiChatStep === 3) val = document.getElementById('ai_ingredient').value;
+  let inputs;
+
+  if (aiChatStep === 2) {
+    inputs = document.querySelectorAll('#chatbox #ai_time');
+    val = inputs.length ? inputs[inputs.length - 1].value : '';
+  }
+
+  if (aiChatStep === 3) {
+    inputs = document.querySelectorAll('#chatbox #ai_ingredient');
+    val = inputs.length ? inputs[inputs.length - 1].value : '';
+  }
+
   clearChatControls();
   nextAIChatStep(val);
 }
 
 function nextAIChatStep(userAnswer) {
+  // 🔒 Απενεργοποίησε τα κουμπιά με .ai-ok-btn στο chat
+  document.querySelectorAll('#chatbox .ai-ok-btn').forEach(btn => {
+    btn.disabled = true;
+    btn.classList.add('disabled');
+  });
+
   clearChatControls();
+
   fetch('/ai_suggest_dish', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -433,69 +395,76 @@ function nextAIChatStep(userAnswer) {
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.dishes && data.dishes.length > 0) {
-      var html = "<div class='mb-2'><b>AI:</b> " + data.question + "</div>";
+      var html = "<div class='mb-2'>" + "👩‍🍳 " + data.question + "</div>";
       html += "<ul>";
       for (var i = 0; i < data.dishes.length; i++) {
         var dish = data.dishes[i];
-		html += "<li><b>" + dish.title + "</b> (χρόνος: " + dish.total_time + "′) " +
-		  "<button type='button' class='btn btn-primary btn-sm' " +
-			"onclick=\"showRecipeUrl('" + dish.id + "')\">" + "Δες τη συνταγή</button>";
-
-		html += "</li>";
+		let heart = dish.favorite ? " ❤️" : "";
+        html += "<li><b>" + dish.title + "</b>" + heart + " (χρόνος: " + dish.total_time + "′) " +
+          "<button type='button' class='btn btn-primary btn-sm' " +
+          "onclick=\"showRecipeUrl('" + dish.id + "')\">" + "Δες τη συνταγή</button>";
+        html += "</li>";
       }
       html += "</ul>";
-      addChatLine('assistant', html);
+      addChatLine('consoles', html);
     } else {
       addChatLine('assistant', data.question.replace(/\n/g, "<br>"));
     }
 
-    if (data.step === 2) {
-      var html2 = '<label>Λεπτά: <input id="ai_time" type="number" min="10" max="180" step="5" value="60" class="form-control d-inline" style="width:100px"></label>' +
-        '<button onclick="submitAIAnswer()" class="btn btn-primary ms-2">OK</button>';
-      addChatLine('assistant', html2);
-    }
-	else if (data.step === 3) {
-		var html3 = `
-		  <div class="d-flex align-items-center gap-2">
-			<span class="chat-assistant">👩‍🍳</span>
-			<label class="mb-0 me-2" for="ai_ingredient">Υλικό προτίμησης:</label>
-			<input id="ai_ingredient" type="text" placeholder="π.χ. ψάρι" class="form-control d-inline" style="width:100px">
-			<button onclick="startSpeechRecognition()" class="btn btn-secondary btn-sm">🎤</button>
-			<button onclick="submitAIAnswer()" class="btn btn-primary btn-sm">OK</button>
-		  </div>
-		`;
-		addChatLine('controls', html3);
+	if (data.step === 2) {
+	  var html2 = `
+		<div class="d-flex align-items-center gap-2">
+		  <span class="chat-assistant">🙋‍♂️</span>
+		  <label class="mb-0 me-2">Λεπτά:</label>
+		  <input id="ai_time" type="number" min="10" max="180" step="5" value="60"
+				 class="form-control d-inline ai-ok-btn" style="width:100px">
+		  <button onclick="submitAIAnswer()" class="btn btn-primary ms-2 ai-ok-btn">OK</button>
+		</div>
+	  `;
+	  addChatLine('controls', html2);
+	} else if (data.step === 3) {
+	  var html3 = `
+		<div class="d-flex align-items-center gap-2">
+		  <span class="chat-assistant">🙋‍♂️</span>
+		  <label class="mb-0 me-2" for="ai_ingredient">Υλικό προτίμησης:</label>
+		  <input id="ai_ingredient" type="text" value="" placeholder="π.χ. ψάρι"
+				 class="form-control d-inline ai-ok-btn" style="width:100px">
+		  <button onclick="startSpeechRecognition()" class="btn btn-secondary btn-sm ai-ok-btn">🎤</button>
+		  <button onclick="submitAIAnswer()" class="btn btn-primary btn-sm ai-ok-btn">OK</button>
+		</div>
+	  `;
+	  addChatLine('controls', html3);
+	}
 
-	}
-	if (data.step === 0) {
-	  var html0 = "";
-	  if (data.dishes && data.dishes.length > 0) {
-		html0 += '<div class="d-flex flex-column gap-2 my-2 align-items-center">';
-		for (var i = 0; i < data.dishes.length; i++) {
-		  var dish2 = data.dishes[i];
-		  html0 += '<button class="btn btn-success" style="width:fit-content"' +
-			'onclick="recordCookedDish(\'' + dish2.id + '\', \'' + escapeHtml(dish2.title) + '\')">' +
-			'Μαγειρεύω ' + escapeHtml(dish2.title) +
-			'</button>';
-		}
-		html0 += '<button class="btn btn-secondary" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';	
-		html0 += '<button class="btn btn-info" style="width:fit-content"' +
-		  'onclick="addChatLine(\'user\',\'Θα παραγγείλω!\'); addChatLine(\'assistant\',\'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">' +
-		  'Θα παραγγείλω' +
-		  '</button>';
-		html0 += '</div>';  
-		addChatLine('controls', html0);
-	  } else {
-		html0 = '<div class="d-flex gap-2 my-2"><button class="btn btn-secondary" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button></div>';
-		addChatLine('assistant', html0);
-	  }
-	}
+
+    if (data.step === 0) {
+      var html0 = "";
+      if (data.dishes && data.dishes.length > 0) {
+        html0 += '<div class="d-flex flex-column gap-2 my-2 align-items-center">';
+        for (var i = 0; i < data.dishes.length; i++) {
+          var dish2 = data.dishes[i];
+          html0 += '<button class="btn btn-success" style="width:fit-content"' +
+            'onclick="recordCookedDish(\'' + dish2.id + '\', \'' + escapeHtml(dish2.title) + '\')">' +
+            'Μαγειρεύω ' + escapeHtml(dish2.title) +
+            '</button>';
+        }
+        html0 += '<button class="btn btn-secondary ai-ok-btn" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';  
+        html0 += '<button class="btn btn-info ai-ok-btn" style="width:fit-content"' +
+          'onclick="addChatLine(\'user\',\'Θα παραγγείλω!\'); addChatLine(\'assistant\',\'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">' +
+          'Θα παραγγείλω' +
+          '</button>';
+        html0 += '</div>';  
+        addChatLine('controls', html0);
+      } else {
+        html0 = '<div class="d-flex gap-2 my-2"><button class="btn btn-secondary ai-ok-btn" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button></div>';
+        addChatLine('controls', html0);
+      }
+    }
 
     aiChatStep = data.step;
     aiChatFilters = data.filters || {};
   });
 }
-
 
 function updateCookedDish(recipe_id, title, date) {
   fetch('/update_cooked_dish', {
@@ -540,7 +509,6 @@ function showRecipeUrl(recipe_id) {
       openRecipeModal(tempCard);
     });
 }
-
 
 // ---- Λοιπά helpers ---- //
 function refuseChange(old_title) {
@@ -590,13 +558,13 @@ function recordCookedDish(recipe_id, title) {
       } else {
         addChatLine('assistant', 'Υπάρχει ήδη επιλεγμένο πιάτο για αυτή τη μέρα: <b>' + data.old_title + '</b>. Θέλεις να το αλλάξεις;');
         var html2 = '<div id="replaceBtns">' +
-          '<button class="btn btn-danger me-2" onclick="updateCookedDish(\'' + recipe_id + '\', \'' + escapeHtml(title) + '\', \'' + date + '\')">Ναι, θέλω να το αλλάξω</button>' +
-          '<button class="btn btn-secondary" onclick="refuseChange(\'' + escapeHtml(data.old_title) + '\')">Όχι, θα παραμείνω στο ' + escapeHtml(data.old_title) + '</button>' +
+          '<button class="btn btn-danger me-2 ai-ok-btn" onclick="updateCookedDish(\'' + recipe_id + '\', \'' + escapeHtml(title) + '\', \'' + date + '\')">Ναι, θέλω να το αλλάξω</button>' +
+          '<button class="btn btn-secondary ai-ok-btn" onclick="refuseChange(\'' + escapeHtml(data.old_title) + '\')">Όχι, θα παραμείνω στο ' + escapeHtml(data.old_title) + '</button>' +
         '</div>';
         addChatLine('controls', html2);
       }
     } else {
-      addChatLine('assistant', 'Μαγειρεύω: ' + title);
+      addChatLine('user', 'Μαγειρεύω: ' + title);
       var html3 = '<button class="btn btn-info btn-sm me-2" onclick="showRecipeUrl(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
       addChatLine('assistant', html3);
       addChatLine('assistant', 'Καλή όρεξη! 😋');
@@ -640,7 +608,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 {% endif %}
-
 
 </script>
 

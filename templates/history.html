@@ -52,38 +52,69 @@
     {% set _ = shown_weeks.seen.append(current_week) %}
   {% endif %}
 
-  <div class="col-12" id="row{{ row['id'] }}">
-    <div class="card shadow-sm h-100">
-      <div class="card-header bg-light d-flex justify-content-between align-items-center">
-        <span>
-          <i class="fa fa-calendar-alt text-primary me-2"></i>
-          {{ greek_date(row['date']) }}
+
+<div class="col-12" id="row{{ row['id'] }}">
+  <div class="card shadow-sm h-100">
+    <div class="card-header d-flex justify-content-between align-items-center no-click" style="background-color: mintcream;">
+      <span>
+        <i class="fa fa-calendar-alt text-primary me-2"></i>
+        {{ greek_date(row['date']) }}
+      </span>
+      <button class="btn btn-outline-danger btn-sm" title="Διαγραφή" onclick="deleteHistoryEntry({{ row['id'] }})">
+        <i class="fa fa-trash"></i>
+      </button>
+    </div>
+
+    {% if row.recipe_id %}
+    <div class="card-body py-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between"
+         style="background-color: beige; cursor: pointer;"
+         onclick="openRecipeModal(this)"
+		 data-title="{{ row.title }}"
+		 data-chef="{{ row.chef or '' }}"
+		 data-method="{{ row.method or '' }}"
+		 data-category="{{ row.main_dish_tag or '' }}"
+		 data-tags="{{ row.tags or '' }}"
+		 data-url="{{ row.url or '' }}"
+		 data-prep="{{ row.prep_time or '' }}"
+		 data-cook="{{ row.cook_time or '' }}"
+		 data-ingredients="{{ row.ingredients or '' }}"
+		 data-instructions="{{ row.instructions or '' }}"
+         data-recipeid="{{ row.recipe_id }}">
+    {% else %}
+    <div class="card-body py-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between"
+         style="background-color: beige;">
+    {% endif %}
+
+      <div class="d-flex align-items-center mb-2">
+        <span class="fw-bold" style="font-size:1.14em;">
+          {{ row['title'] }}
         </span>
-        <button class="btn btn-outline-danger btn-sm" title="Διαγραφή" onclick="deleteHistoryEntry({{ row['id'] }})">
-          <i class="fa fa-trash"></i>
-        </button>
+        {% if row.recipe_id %}
+          <a href="javascript:void(0);" class="favorite-btn ms-1 d-inline-block" data-recipeid="{{ row.recipe_id }}">
+            <i class="fa{{ 's' if row.get('is_favorite', False) else 'r' }} fa-heart"
+               onclick="event.stopPropagation(); toggleFavorite(this, {{ row.recipe_id }})"
+               style="color: {{ 'gray' if not row.is_favorite else '#c33' }}; font-size:18px; cursor:pointer; vertical-align:-5px;">
+            </i>
+          </a>
+        {% endif %}
       </div>
-      <div class="card-body py-3 d-flex flex-column align-items-stretch justify-content-center">
-        <div class="d-flex align-items-center mb-2">
-          <span class="fw-bold" style="font-size:1.14em;">
-            {{ row['title'] }}
-          </span>
-          {% if row.recipe_id %}
-            <a href="javascript:void(0);" class="favorite-btn ms-1 d-inline-block" data-recipeid="{{ row.recipe_id }}">
-               <i class="fa{{ 's' if row.is_favorite else 'r' }} fa-heart"
-				 onclick="toggleFavorite(this, {{ row.recipe_id }})"
-                 style="color: {{ 'gray' if not row.is_favorite else '#c33' }}; font-size:18px; cursor:pointer; vertical-align:-2px;"></i>
-            </a>
-			
-          {% endif %}
-        </div>
-        <div class="small text-muted mb-1">
-          <span class="me-2"><i class="fa fa-user"></i> {{ row['chef'] or '-' }}</span>
-          <span class="me-2"><i class="fa fa-tag"></i> {{ row['basic_category'] or '-' }}</span>
-        </div>
+
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="badge bg-info text-dark"><i class="fa fa-user"></i> {{ row['chef'] or '-' }}</span>
+		{% if row['total_time'] %}
+        <span class="badge bg-success"><i class="fa fa-clock"></i> {{ row['total_time'] or '-' }}'</span>
+		{% endif %}
+        {% if row['method'] %}
+          <span class="badge bg-warning text-dark"><i class="fa fa-fire"></i> {{ row['method'] }}</span>
+        {% endif %}
+        {% if row['tags'] %}
+          <span class="badge bg-secondary"><i class="fa fa-tag"></i> {{ row['tags'] }}</span>
+        {% endif %}
       </div>
     </div>
   </div>
+</div>
+
 
   {% set next_row = history[loop.index] if not loop.last else None %}
   {% if loop.last or (
@@ -344,6 +375,7 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+
 function submitManualDish() {
   var title = document.getElementById('manualDishTitle').value.trim();
   var day = missingDays[manualDayIdx];
@@ -354,10 +386,24 @@ function submitManualDish() {
     return;
   }
 
+  // Βρες αν υπάρχει ήδη αυτή η συνταγή στο autocomplete
+  var matched = allRecipes.find(function(r) {
+    return r.title.trim().toLowerCase() === title.toLowerCase();
+  });
+
+  var payload = {
+    title: title,
+    date: day
+  };
+
+  if (matched) {
+    payload.recipe_id = matched.id;
+  }
+
   fetch('/add_manual_recipe', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({title: title, date: day})
+    body: JSON.stringify(payload)
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
@@ -382,10 +428,11 @@ function submitManualDish() {
     } else if (manualDayIdx < missingDays.length) {
       showNextMissingDayModal();
     } else {
-	if (missingDaysModal) missingDaysModal.hide();
-	}
+      if (missingDaysModal) missingDaysModal.hide();
+    }
   });
 }
+
 
 function showAddFavoriteDialog(recipe_id, title) {
   var modalEl = document.getElementById('favDetailsModal');
@@ -637,7 +684,7 @@ function addCardToHistory(id, date, title, chef, category, is_favorite, recipe_i
     favoriteHTML =
       '<a href="javascript:void(0);" class="favorite-btn ms-1 d-inline-block" data-recipeid="' + recipe_id + '">' +
         '<i class="fa ' + favIconClass + ' fa-heart" onclick="toggleFavorite(this, ' + recipe_id + ')"' +
-        ' style="color: ' + favColor + '; font-size:18px; cursor:pointer; vertical-align:-2px;"></i>' +
+        ' style="color: ' + favColor + '; font-size:18px; cursor:pointer; vertical-align:-5px;"></i>' +
       '</a>';
   }
 
