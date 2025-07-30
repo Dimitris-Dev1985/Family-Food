@@ -9,7 +9,7 @@ function setMenuOnboardingDone() {
   localStorage.setItem('menu_onboarding_done', '1');
   document.body.classList.remove('menu-onboarding-active'); // ✅ remove class
 
-  if (localStorage.getItem('onboarding_done') && localStorage.getItem('menu_onboarding_done')) {
+  if (localStorage.getItem('profile_onboarding_done') && localStorage.getItem('menu_onboarding_done')) {
     fetch("/api/onboarding_complete", { method: "POST" });
   }
 }
