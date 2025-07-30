@@ -199,18 +199,11 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 
 {% endblock %}
 
-<script>
-<!-- JS για να προσθέσει την onboarding-active στο body -->
-{% if not onboarding_done %}
-	document.body.classList.add("onboarding-active");
-    localStorage.clear();
-	aiChatFilters = {}; 
-{% endif %}
-</script>
 
 {% block scripts %}
 
 <script>
+
 let todayMenu = "{{ today_menu|safe }}";
 let todayMenuId = "{{ today_menu_id }}";
 let tomorrowMenu = "{{ tomorrow_menu|safe }}";
@@ -218,6 +211,12 @@ let tomorrowMenuId = "{{ tomorrow_menu_id }}";
 let cookingDay = "today"; // default: σήμερα
 let onboarding_done = "{{ onboarding_done }}";
 let aiChatFilters = {};
+
+{% if not onboarding_done %}
+	document.body.classList.add("onboarding-active");
+    localStorage.clear();
+	aiChatFilters = {}; 
+{% endif %}
 
 function startSpeechRecognition() {
   if (!('webkitSpeechRecognition' in window)) {
