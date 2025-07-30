@@ -193,7 +193,6 @@ def delete_user_and_data():
 
 @app.route("/logout")
 def logout():
-    print("➡️ Εκτελείται session.clear() (δεν υπάρχουν flash messages)")
     session.clear()
     return redirect(url_for("login"))
 
@@ -242,7 +241,7 @@ def welcome():
             tomorrow_menu_id = recipe_tomorrow["id"]
 
     conn.close()
-    print(user["onboarding_done"])
+    
     return render_template(
         "welcome.html",
         greeting=greeting,
