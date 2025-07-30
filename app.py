@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash, get_flashed_messages
 import sqlite3, unicodedata, random
 
 
@@ -121,7 +121,8 @@ def login_required(f):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
-        session.clear()
+        if not get_flashed_messages():  # 👈 αν δεν υπάρχουν flash, άδειασέ το
+            session.clear()
         return render_template("login.html")
 
     if request.method == "POST":
@@ -742,7 +743,6 @@ def profile_completion_percent():
 
 
     percent = int((filled / total) * 100)
-    print(percent)
     return jsonify({"completion": percent})
 
 @app.route("/edit_profile_info", methods=["POST"])
@@ -999,7 +999,6 @@ def menu():
 
     show_success_modal = 0
     show_success_modal = request.args.get("created") == "1"
-    print(show_success_modal)
     
     return render_template(
         "menu.html",
@@ -1351,46 +1350,68 @@ def ai_suggest_dish():
     data = request.get_json()
     step = data.get('step', 1)
     filters = data.get('filters', {})
-    user, family = get_user()  # Πάρε τον user και τα μέλη
+    user, family = get_user()
+    user = dict(user)  # 👈 αυτό προσθέτει τα fields ως dict
 
-    # STEP 1: Πόσο χρόνο έχεις;
+    # STEP 1: Χρόνος
     if step == 1:
         return jsonify({
-            "question": "Πόσο χρόνο μπορείς να διαθέσεις σήμερα για μαγείρεμα (σε λεπτά);",
+            "question": "Πόσο χρόνο μπορείς να διαθέσεις σήμερα για μαγείρεμα;",
             "step": 2,
             "filters": filters
         })
 
-    # STEP 2: Ποιο υλικό προτιμάς;
+    # STEP 2: Υλικό
     if step == 2:
-        # Λάβε το χρόνο από το frontend
         time_limit = int(data.get('answer', 120))
-        filters['max_time'] = time_limit
+        filters['max_time'] = round(time_limit * 1.10)
+
+        if not filters.get('ingredient_hint_shown'):
+            filters['ingredient_hint_shown'] = True
+            question_text = "Προτιμάς κάποιο συγκεκριμένο υλικό; (π.χ. κοτόπουλο, ψάρι, ζυμαρικά, μοσχάρι, λαχανικά, ή άφησέ το κενό)"
+        else:
+            question_text = "Προτιμάς κάποιο συγκεκριμένο υλικό;"
+
         return jsonify({
-            "question": "Προτιμάς κάποιο συγκεκριμένο υλικό; (π.χ. κοτόπουλο, ψάρι, ζυμαρικά, μοσχάρι, λαχανικά, ή άφησέ το κενό)",
+            "question": question_text,
             "step": 3,
             "filters": filters
         })
 
-    # STEP 3: Πρόταση πιάτου!
+    # STEP 3: Πρόταση
     if step == 3:
         user_input = data.get('answer', '').strip()
         search_ingredient = remove_tonos(user_input)
 
-        # ---- Πάρε ΑΛΛΕΡΓΙΕΣ (όλων) ----
+        # Αλλεργίες
         allergy_set = set()
+        family = [dict(m) for m in family]
         for member in family:
-            if "allergies" in member and member["allergies"]:
-                allergy_set.update([remove_tonos(a.strip()) for a in member["allergies"].split(',')])
-        # ---- Προτιμώμενη μέθοδος/σεφ ----
-        method_prefs = []
-        if "cook_methods" in user and user["cook_methods"]:
-            method_prefs = [remove_tonos(m.strip()) for m in user["cook_methods"].split(',')]
-        chef_pref = remove_tonos(user["favorite_chef"]) if "favorite_chef" in user and user["favorite_chef"] else ""
+            raw_allergies = member.get("allergies", "")
+            if raw_allergies:
+                entries = [a.strip() for a in raw_allergies.split(',') if a.strip()]
+                allergy_set.update(entries)  # αφήνουμε με τόνους – θα γίνουν remove στο SQL
+        print(allergy_set)          
 
-        # ----- QUERY (όλα τα φίλτρα ΠΡΙΝ το ORDER BY) -----
+        # Προτιμήσεις
+        method_prefs = []
+        if user.get("cooking_method"):
+            method_prefs = [m.strip() for m in user["cooking_method"].split(',')]
+        print(method_prefs)    
+        chef_pref = user["chef"].strip() if user.get("chef") else ""
+        print(chef_pref)
+        
+        user_id = user["id"]
         conn = sqlite3.connect(DB)
         conn.row_factory = sqlite3.Row
+        conn.create_function("remove_tonos", 1, remove_tonos)
+
+        # Αγαπημένα του χρήστη
+        fav_rows = conn.execute("SELECT recipe_id FROM favorite_recipes WHERE user_id = ?", (user_id,)).fetchall()
+        fav_ids = [row["recipe_id"] for row in fav_rows]
+        print(f"[AI DEBUG] Αγαπημένα του χρήστη: {fav_ids}")
+
+        # Συνθήκες
         q = "SELECT * FROM recipes WHERE 1=1"
         params = []
 
@@ -1399,17 +1420,23 @@ def ai_suggest_dish():
             params.append(filters['max_time'])
 
         for allergen in allergy_set:
-            q += " AND tags NOT LIKE ? AND ingredients NOT LIKE ?"
-            s = f"%{allergen}%"
+            q += " AND remove_tonos(tags) NOT LIKE ? AND remove_tonos(ingredients) NOT LIKE ? AND remove_tonos(allergens) NOT LIKE ?"
+            s = f"%{remove_tonos(allergen)}%"
+            params.extend([s, s, s])
+
+        if search_ingredient:
+            q += " AND (remove_tonos(ingredients) LIKE ? OR remove_tonos(tags) LIKE ?)"
+            s = f"%{search_ingredient}%"
+            params.extend([s, s])
+            
+        missing = session.get('missing_ingredients', [])
+        print(f"[AI DEBUG] missing: {missing}")
+        for miss in missing:
+            s = f"%{remove_tonos(miss.strip().lower())}%"
+            q += " AND remove_tonos(ingredients) NOT LIKE ? AND remove_tonos(main_dish_tag) NOT LIKE ?"
             params.extend([s, s])
 
-        # Λίστα με υλικά που ΔΕΝ έχει ο χρήστης
-        missing = session.get('missing_ingredients', [])
-        for miss in missing:
-            q += " AND ingredients NOT LIKE ?"
-            params.append(f"%{miss}%")
-
-        # --- ΕΔΩ ΒΑΖΕΙΣ ΤΟ ORDER BY ΜΕΤΑ ΤΑ ΦΙΛΤΡΑ ---
+        # Προτεραιότητες
         q += " ORDER BY "
         if method_prefs:
             method_order = "CASE "
@@ -1419,44 +1446,72 @@ def ai_suggest_dish():
             q += method_order
         if chef_pref:
             q += f"CASE WHEN chef LIKE '%{chef_pref}%' THEN 0 ELSE 1 END, "
-        q += "RANDOM() LIMIT 25"
-
-        # --- Εκτέλεση
+        q += "RANDOM()"
+        print("Query preview:", q, "with params:", params)
         recipes = conn.execute(q, params).fetchall()
         conn.close()
+        
 
-        # ---- ΠΡΑΓΜΑΤΙΚΟ AI: Φιλτράρισμα με βάση υλικό/tags χωρίς τόνους ----
-        def matches_ingredient(recipe, ingr):
-            if not ingr:
-                return True  # ο χρήστης άφησε κενό, δέχεται όλα!
-            all_text = (recipe["ingredients"] or "") + " " + (recipe["tags"] or "")
-            all_text = remove_tonos(all_text)
-            return ingr in all_text
+        # Αποφυγή επαναλήψεων
+        prev_ids = session.get('suggested_dish_ids', [])
+        print(f"[AI DEBUG] Προηγούμενα IDs που έχουν προταθεί: {prev_ids}")
+        
+        filtered_recipes = [r for r in recipes if r['id'] not in prev_ids]
+        print(f"[AI DEBUG] filtered_recipes: {[r['id'] for r in filtered_recipes]}")
 
-        filtered_recipes = [r for r in recipes if matches_ingredient(r, search_ingredient)]
-
-        if filtered_recipes:
-            dishes = []
-            for r in filtered_recipes[:3]:
-                dishes.append({
-                    "id": r["id"],  # ΕΔΩ
-                    "title": r["title"],
-                    "total_time": r["total_time"],
-                    "ingredients": r["ingredients"],
-                    "link": r["url"]
-                })
+        if not filtered_recipes:
+            print("[AI DEBUG] Όλα τα διαθέσιμα πιάτα έχουν ήδη προταθεί.")
             return jsonify({
-                "question": "Τι λες για τα παρακάτω πιάτα;",
+                "question": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια! Θες να το ξαναπροσπαθήσουμε;",
                 "step": 0,
-                "dishes": dishes
+                "dishes": [],
+                "filters": filters
             })
-        else:
-            return jsonify({
-                "question": "Δυστυχώς δεν βρέθηκε πιάτο που να ταιριάζει! Θες να το ξαναπροσπαθήσουμε με άλλα κριτήρια;",
-                "step": 0,
-                "dishes": []
+
+        # Διαχωρισμός
+        fav_recipes = [r for r in filtered_recipes if r["id"] in fav_ids]
+        non_fav_recipes = [r for r in filtered_recipes if r["id"] not in fav_ids]
+
+        print(f"[AI DEBUG] Αγαπημένα διαθέσιμα: {[r['id'] for r in fav_recipes]}")
+        print(f"[AI DEBUG] Μη αγαπημένα διαθέσιμα: {[r['id'] for r in non_fav_recipes]}")
+
+        # Συνένωση όλων, με προτεραιότητα αγαπημένα
+        all_recipes = sorted(filtered_recipes, key=lambda r: 0 if r["id"] in fav_ids else 1)
+        
+        print(f"[AI DEBUG] All recipes: {[r['id'] for r in all_recipes]}")
+        
+        # Πάρε τα πρώτα 3
+        dishes = []
+        for r in all_recipes[:3]:
+            dishes.append({
+                "id": r["id"],
+                "title": r["title"],
+                "total_time": r["total_time"],
+                "ingredients": r["ingredients"],
+                "link": r["url"],
+                "favorite": r["id"] in fav_ids
             })
- 
+
+        
+
+        # Ενημέρωση session
+        session['suggested_dish_ids'] = prev_ids + [r["id"] for r in dishes]
+
+        print(f"[AI DEBUG] Προστέθηκαν νέα IDs: {[r['id'] for r in filtered_recipes[:3]]}")
+
+
+        return jsonify({
+            "question": "Τι λες για τα παρακάτω πιάτα;",
+            "step": 0,
+            "dishes": dishes,
+            "filters": filters
+        })
+
+@app.route('/clear_suggestions', methods=['POST'])
+def clear_suggestions():
+    session.pop('suggested_dish_ids', None)
+    return jsonify({"status": "ok"})
+
 @app.route("/history")
 @login_required
 def cooked_history():
@@ -1468,16 +1523,25 @@ def cooked_history():
         'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα'
     ]
 
-    # Πάρε όλες τις εγγραφές, με chef και tags από recipes (LEFT JOIN για ασφάλεια)
     res = conn.execute("""
-        SELECT cd.*, r.chef, r.tags, r.id as recipe_id
+        SELECT cd.*,
+               r.id AS recipe_id,
+               r.chef,
+               r.tags,
+               r.total_time,
+               r.method,
+               r.prep_time,
+               r.cook_time,
+               r.ingredients,
+               r.instructions,
+               r.url,
+               r.main_dish_tag
         FROM cooked_dishes cd
         LEFT JOIN recipes r ON cd.recipe_id = r.id
         WHERE cd.user_id=?
         ORDER BY cd.date DESC, cd.recorded_at DESC
     """, (user["id"],)).fetchall()
 
-    # Φέρε τα αγαπημένα
     favorite_ids = set(
         row[0] for row in conn.execute(
             "SELECT recipe_id FROM favorite_recipes WHERE user_id=?", (user["id"],)
@@ -1491,12 +1555,10 @@ def cooked_history():
         basic_category = next((t for t in tag_list if t in BASIC_CATEGORIES), "-")
         d = dict(row)
         d['basic_category'] = basic_category
-        # ΠΡΟΣΟΧΗ: μπορεί να είναι None (π.χ. αν δεν υπάρχει recipe_id)
         rec_id = d.get('recipe_id')
         d['is_favorite'] = rec_id in favorite_ids if rec_id else False
         history.append(d)
 
-    # Βρες τις προηγούμενες 2 μέρες
     today = datetime.now().date()
     days_to_check = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(1, 3)]
     existing_dates = [row['date'] for row in history]
@@ -1504,6 +1566,7 @@ def cooked_history():
     conn.close()
 
     return render_template('history.html', history=history, missing_days=missing_days)
+
 
 @app.route('/delete_history_entry', methods=['POST'])
 def delete_history_entry():
@@ -1526,31 +1589,39 @@ def add_manual_recipe():
     data = request.get_json()
     title = data["title"].strip()
     date = data["date"]
+    recipe_id = data.get("recipe_id")  # <-- μπορεί να είναι None
+
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    # Έλεγξε αν υπάρχει ήδη συνταγή
-    c.execute("SELECT id FROM recipes WHERE title=? ORDER BY id LIMIT 1", (title,))
-    r = c.fetchone()
-    if r:
-        recipe_id = r[0]
-        is_new = False
-    else:
-        c.execute("INSERT INTO recipes (title, chef, created_by) VALUES (?, ?, ?)", (title, "Me!!", user["id"]))
+
+    is_new = False
+    if not recipe_id:
+        # Δημιούργησε νέα συνταγή (ο τίτλος είναι υποχρεωτικός)
+        c.execute("INSERT INTO recipes (title, chef, created_by) VALUES (?, ?, ?)",
+                  (title, "Me!!", user["id"]))
         recipe_id = c.lastrowid
         is_new = True
-    # Καταχώρησε στο cooked_dishes
+    else:
+        # Εναλλακτικά: πάρε τον τίτλο από τη βάση (και αγνόησε ό,τι σου έστειλε ο client)
+        c.execute("SELECT title FROM recipes WHERE id=?", (recipe_id,))
+        r = c.fetchone()
+        if r:
+            title = r["title"]
+        else:
+            return jsonify({"status": "error", "message": "Invalid recipe_id"}), 400
+
+    # Καταχώρησε το πιάτο στο ιστορικό
     c.execute("INSERT INTO cooked_dishes (user_id, date, recipe_id, title) VALUES (?, ?, ?, ?)",
               (user["id"], date, recipe_id, title))
     cooked_dish_id = c.lastrowid
 
-    # === Βρες chef/tags για να τα επιστρέψεις ===
+    # Βρες info για απάντηση
     c.execute("SELECT chef, tags FROM recipes WHERE id=?", (recipe_id,))
     recipe_row = c.fetchone()
     chef = recipe_row["chef"] if recipe_row and recipe_row["chef"] else "-"
     tags = recipe_row["tags"] if recipe_row and recipe_row["tags"] else ""
 
-    # Βασικές κατηγορίες:
     BASIC_CATEGORIES = [
         'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα'
     ]
@@ -1559,6 +1630,7 @@ def add_manual_recipe():
 
     conn.commit()
     conn.close()
+
     return jsonify({
         "status": "ok",
         "new_recipe": is_new,
@@ -1595,7 +1667,6 @@ def cook_dish():
             return jsonify({"exists": True, "already": False, "old_title": old_title})
     else:
         c.execute("INSERT INTO cooked_dishes (user_id, date, recipe_id, title) VALUES (?, ?, ?, ?)", (user_id, date, recipe_id, title))
-        print(recipe_id)
         conn.commit()
         conn.close()
         return jsonify({"exists": False})
