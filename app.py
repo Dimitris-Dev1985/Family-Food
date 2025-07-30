@@ -71,7 +71,7 @@ def get_user():
 
 @app.route("/")
 def home():
-    return redirect("/welcome")
+    return redirect("/login")
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -116,7 +116,6 @@ def login_required(f):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return wrapped
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -164,7 +163,6 @@ def login():
             flash("Λανθασμένος κωδικός!", "danger")
             return redirect(url_for("login"))
 
-
 @app.route('/delete_user_and_data', methods=['POST'])
 def delete_user_and_data():
     user_id = session.get("user_id")
@@ -195,6 +193,7 @@ def delete_user_and_data():
 
 @app.route("/logout")
 def logout():
+    print("➡️ Εκτελείται session.clear() (δεν υπάρχουν flash messages)")
     session.clear()
     return redirect(url_for("login"))
 
@@ -243,7 +242,7 @@ def welcome():
             tomorrow_menu_id = recipe_tomorrow["id"]
 
     conn.close()
-
+    print(user["onboarding_done"])
     return render_template(
         "welcome.html",
         greeting=greeting,
