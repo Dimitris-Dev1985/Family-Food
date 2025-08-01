@@ -1,17 +1,34 @@
 // ========== MENU ONBOARDING MINIMAL/ROBUST ==========
 
 // LocalStorage helpers
+
+
 function isMenuOnboardingDone() {
-  return localStorage.getItem('menu_onboarding_done') === '1';
+  return window.menuOnboardingServer.completed === true;
+}
+
+function getMenuOnboardingStep() {
+  return Number(window.menuOnboardingServer.step || 0);
+}
+
+function setMenuOnboardingStep(step) {
+  window.menuOnboardingServer.step = step;
+  fetch("/api/onboarding_update_step", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ page: "menu", step })
+  });
 }
 
 function setMenuOnboardingDone() {
-  localStorage.setItem('menu_onboarding_done', '1');
-  document.body.classList.remove('menu-onboarding-active'); // ✅ remove class
+  window.menuOnboardingServer.completed = true;
+  document.body.classList.remove('menu-onboarding-active');
 
-  if (localStorage.getItem('profile_onboarding_done') && localStorage.getItem('menu_onboarding_done')) {
-    fetch("/api/onboarding_complete", { method: "POST" });
-  }
+  fetch("/api/onboarding_mark_completed", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ page: "menu" })
+  });
 }
 
 function resetMenuOnboarding() {
@@ -19,13 +36,6 @@ function resetMenuOnboarding() {
   localStorage.setItem('menu_onboarding_step', '0');
 }
 
-function getMenuOnboardingStep() {
-  return Number(localStorage.getItem('menu_onboarding_step') || '0');
-}
-
-function setMenuOnboardingStep(step) {
-  localStorage.setItem('menu_onboarding_step', String(step));
-}
 
 // Βάλε ΕΣΥ το selector και το html κάθε tooltip όπως θες!
 const menuTooltips = [
@@ -158,38 +168,6 @@ function removeMenuTooltips() {
 
 // ========== Hooks / Triggers ==========
 
-// 1. Εμφανίζει το tooltip1 στο load (αν δεν έχει ολοκληρωθεί)
-window.addEventListener('DOMContentLoaded', function() {
-  if (!isMenuOnboardingDone()) {
-    document.body.classList.add('menu-onboarding-active');
-
-    const step = getMenuOnboardingStep();
-
-    if (step === 0) {
-      showMenuTooltip(0);
-    }
-
-    else if (step === 1) {
-      const modalEl = document.getElementById('menuCreatedModal');
-      if (modalEl && !modalEl.classList.contains('show')) {
-        // Αν έχει ήδη κλείσει το modal, συνέχισε κατευθείαν
-        showMenuTooltip(1);
-      }
-      // Διαφορετικά, το showTooltip(1) θα ενεργοποιηθεί μόλις κλείσει (μέσω override)
-    }
-
-    else if (step >= 2 && step <= 5) {
-      // Αν step==5 και ΔΕΝ υπάρχουν στόχοι → τερματίζουμε
-      if (step === 5 && !(window.hasWeeklyGoals === true || window.hasWeeklyGoals === 'true')) {
-        setMenuOnboardingDone();
-      } else {
-        showMenuTooltip(step);
-      }
-    }
-  }
-});
-
-
 
 // 2. Tooltip1 εξαφανίζεται με click στο "Δημιουργία νέου Εβδομαδιαίου Μενού"
 document.addEventListener('click', function(e) {
@@ -303,3 +281,27 @@ document.addEventListener('click', function(e) {
 
   }
 });
+
+function startMenuOnboarding() {
+  if (!window.menuOnboardingServer.initialized) return;
+
+  if (!isMenuOnboardingDone()) {
+    document.body.classList.add('menu-onboarding-active');
+    const step = getMenuOnboardingStep();
+
+    if (step === 0) {
+      showMenuTooltip(0);
+    } else if (step === 1) {
+      const modalEl = document.getElementById('menuCreatedModal');
+      if (modalEl && !modalEl.classList.contains('show')) {
+        showMenuTooltip(1);
+      }
+    } else if (step >= 2 && step <= 5) {
+      if (step === 5 && !(window.hasWeeklyGoals === true || window.hasWeeklyGoals === 'true')) {
+        setMenuOnboardingDone();
+      } else {
+        showMenuTooltip(step);
+      }
+    }
+  }
+}
