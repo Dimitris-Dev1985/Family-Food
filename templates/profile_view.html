@@ -1090,14 +1090,19 @@ window.addEventListener('DOMContentLoaded', function() {
     duplicateItemsAllowed: false,
     maxItemCount: 10
   });
-  
-  const choicesInput = document.querySelector('.choices__input');
-  if (choicesInput) {
-    choicesInput.setAttribute('readonly', true);
-    choicesInput.setAttribute('tabindex', '-1'); // να μη γίνεται focus με tab
-  }  
-  
-  // Κλείνει το drop-down όταν επιλέγεται κάτι!
+
+  // Περιμένουμε λίγο να δημιουργηθεί το cloned input
+  setTimeout(() => {
+    const clonedInput = document.querySelector('.choices__input--cloned');
+    if (clonedInput) {
+      clonedInput.disabled = true;
+      clonedInput.setAttribute('tabindex', '-1');
+      clonedInput.style.pointerEvents = 'none';
+      clonedInput.style.userSelect = 'none';
+      clonedInput.style.caretColor = 'transparent';
+    }
+  }, 50);
+
   window.choicesCooking.passedElement.element.addEventListener('addItem', function(e) {
     window.choicesCooking.hideDropdown();
   });
