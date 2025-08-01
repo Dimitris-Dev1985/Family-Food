@@ -153,6 +153,34 @@
   </div>
 </div>
 
+
+
+<div id="historyTooltip1" class="onboarding-tooltip" style="display:none;">
+  Αυτό είναι το ιστορικό των πιάτων σου!
+  <div class="arrow-down"></div>
+  <button class="btn btn-sm btn-primary" onclick="nextHistoryStep(1)">Κατάλαβα!</button>
+</div>
+<div id="historyTooltip2" class="onboarding-tooltip" style="display:none;">
+  Μπορείς να κάνεις click για να δεις λεπτομέρειες πιάτου
+  <div class="arrow-down"></div>
+  <button class="btn btn-sm btn-primary" onclick="nextHistoryStep(2)">Κατάλαβα!</button>
+</div>
+<div id="historyTooltip3" class="onboarding-tooltip" style="display:none;">
+  Κάνε click στην καρδούλα για να το προσθέσεις στα αγαπημένα!
+  <div class="arrow-down"></div>
+  <button class="btn btn-sm btn-primary" onclick="nextHistoryStep(3)">Κατάλαβα!</button>
+</div>
+<div id="historyTooltip4" class="onboarding-tooltip" style="display:none;">
+  Εδώ βλέπεις την πρόοδο στους εβδομαδιαίους στόχους σου!
+  <div class="arrow-down"></div>
+  <button class="btn btn-sm btn-primary" onclick="nextHistoryStep(4)">Κατάλαβα!</button>
+</div>
+<div id="historyTooltip5" class="onboarding-tooltip" style="display:none;">
+  Αυτό ήταν! Καλή εξερεύνηση 👌
+  <div class="arrow-down"></div>
+  <button class="btn btn-sm btn-primary" onclick="markHistoryOnboardingComplete()">Κατάλαβα!</button>
+</div>
+
 {% endblock %}
 
 
@@ -229,6 +257,101 @@
 {% endblock %}
 
 {% block scripts %}
+
+<script>
+window.historyOnboarding = {
+  step: 0,
+  completed: false,
+  initialized: false
+};
+
+function updateHistoryOnboardingStep(step) {
+  window.historyOnboarding.step = step;
+  fetch("/api/onboarding_update_step", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page: "history", step })
+  });
+}
+
+function runHistoryOnboarding() {
+  if (!window.historyOnboarding.initialized || window.historyOnboarding.completed) return;
+
+  const step = window.historyOnboarding.step;
+
+  // Κρύψε όλα πρώτα
+  document.querySelectorAll(".onboarding-tooltip").forEach(t => {
+    t.style.display = "none";
+    t.style.visibility = "hidden";
+  });
+
+  const tooltipId = "historyTooltip" + (step + 1);
+  const tooltip = document.getElementById(tooltipId);
+  if (!tooltip) return;
+
+  tooltip.style.display = "block";
+  tooltip.style.visibility = "visible";
+
+  if (step === 4) {
+    tooltip.style.position = "fixed";
+    tooltip.style.bottom = "80px";
+    tooltip.style.left = "90px";
+    tooltip.style.width = "50vw";
+  } else {
+    tooltip.style.position = "absolute";
+    const selector = getHistoryTargetSelector(step);
+    const target = document.querySelector(selector);
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const tipWidth = tooltip.offsetWidth;
+      const tipHeight = tooltip.offsetHeight;
+
+      let left = rect.left + window.scrollX + (rect.width - tipWidth) / 2;
+      let top = rect.top + window.scrollY - tipHeight - 10;
+
+      const padding = 50;
+      const maxX = window.innerWidth - tipWidth - padding;
+      if (left < padding) left = padding;
+      if (left > maxX) left = maxX;
+      if (top < padding) top = rect.bottom + window.scrollY + 10;
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    }
+  }
+}
+
+function getHistoryTargetSelector(step) {
+  if (step === 0) return ".fw-bold";
+  if (step === 1) return ".card-body[onclick]";
+  if (step === 2) return ".favorite-btn";
+  if (step === 3) return "#weekly-goals-table";
+  return null;
+}
+
+function nextHistoryStep(nextStep) {
+  updateHistoryOnboardingStep(nextStep);
+  runHistoryOnboarding();
+}
+
+function markHistoryOnboardingComplete() {
+  window.historyOnboarding.completed = true;
+  fetch("/api/onboarding_mark_completed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page: "history" })
+  });
+
+  // 👇 Κρύψε όλα τα tooltips όταν ολοκληρωθεί
+  document.querySelectorAll(".onboarding-tooltip").forEach(t => {
+    t.style.display = "none";
+    t.style.visibility = "hidden";
+  });
+}
+
+  
+</script>
+
 <script>
 let missingDays = {{ missing_days|tojson }};
 let missingDaysModal = null;
@@ -238,7 +361,6 @@ let allRecipes = [];
 fetch('/get_recipes_for_autocomplete')
   .then(function(r) { return r.json(); })
   .then(function(data) { allRecipes = data; });
-
 
 function removeTonos(str) {
   if (!str) return "";
@@ -320,61 +442,87 @@ function updateWeeklyGoalsTable() {
 }
 
 window.addEventListener('DOMContentLoaded', function() {
+  console.log("1");
   updateWeeklyGoalsTable()
-  if (missingDays.length > 0) {
-    let list = document.getElementById('missingDaysList');
-    list.innerHTML = '';
-    missingDays.forEach(function(d) {
-      var li = document.createElement("li");
-      li.className = "list-group-item";
-      li.textContent = greekDate(d);
-      list.appendChild(li);
-    });
-	missingDaysModal = new bootstrap.Modal(document.getElementById('missingDaysModal'));
-	missingDaysModal.show();
-
-
-    document.getElementById('yesManualBtn').onclick = function() {
-      document.getElementById('manualEntryPrompt').style.display = 'none';
-      document.getElementById('manualEntryBox').style.display = 'block';
-      manualDayIdx = 0;
-      document.getElementById('currentDay').innerText = greekDate(missingDays[manualDayIdx]);
-      document.getElementById('manualDishTitle').focus();
-    };
-
-    // AUTOCOMPLETE για manualDishTitle
-    let manualInput = document.getElementById("manualDishTitle");
-    let manualAutocompleteDiv = document.getElementById("manual-autocomplete");
-    manualInput.addEventListener('input', function() {
-      let val = removeTonos(manualInput.value.trim());
-      if (val.length < 2) {
-        manualAutocompleteDiv.innerHTML = "";
-        return;
-      }
-      let found = allRecipes.filter(function(r) {
-        return removeTonos(r.title).includes(val)
-          || removeTonos(r.tags || "").includes(val)
-          || removeTonos(r.ingredients || "").includes(val)
-          || removeTonos(r.main_dish_tag || "").includes(val);
-      }).slice(0, 10);
-      manualAutocompleteDiv.innerHTML = "";
-      found.forEach(function(r) {
-        let opt = document.createElement("div");
-        opt.className = "autocomplete-option";
-        opt.textContent = r.title;
-        opt.onclick = function() {
-          manualInput.value = r.title;
-          manualAutocompleteDiv.innerHTML = "";
-        };
-        manualAutocompleteDiv.appendChild(opt);
+    
+  fetch("/api/onboarding_progress")
+  .then(r => r.json())
+  .then(data => {
+    const h = data["history"];
+    if (!h) {
+      fetch("/api/onboarding_create_if_needed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ page: "history" })
+      }).then(() => {
+        window.historyOnboarding.step = 0;
+        window.historyOnboarding.initialized = true;
+        runHistoryOnboarding();
       });
-    });
-    manualInput.addEventListener('blur', function() {
-      setTimeout(function() { manualAutocompleteDiv.innerHTML = ""; }, 200);
-    });
-  }
-});
+    } else {
+      window.historyOnboarding.step = h.step;
+      window.historyOnboarding.completed = h.completed;
+	  console.log("OKK");
+	  console.log(window.historyOnboarding.completed); 
+      window.historyOnboarding.initialized = true;
+      runHistoryOnboarding();
+	  
+	  if (missingDays.length > 0 && window.historyOnboarding.completed) {
+		console.log("2");
+		let list = document.getElementById('missingDaysList');
+		list.innerHTML = '';
+		missingDays.forEach(function(d) {
+		  var li = document.createElement("li");
+		  li.className = "list-group-item";
+		  li.textContent = greekDate(d);
+		  list.appendChild(li);
+		});
+		missingDaysModal = new bootstrap.Modal(document.getElementById('missingDaysModal'));
+		missingDaysModal.show();
 
+
+		document.getElementById('yesManualBtn').onclick = function() {
+		  document.getElementById('manualEntryPrompt').style.display = 'none';
+		  document.getElementById('manualEntryBox').style.display = 'block';
+		  manualDayIdx = 0;
+		  document.getElementById('currentDay').innerText = greekDate(missingDays[manualDayIdx]);
+		  document.getElementById('manualDishTitle').focus();
+		};
+
+		// AUTOCOMPLETE για manualDishTitle
+		let manualInput = document.getElementById("manualDishTitle");
+		let manualAutocompleteDiv = document.getElementById("manual-autocomplete");
+		manualInput.addEventListener('input', function() {
+		  let val = removeTonos(manualInput.value.trim());
+		  if (val.length < 2) {
+			manualAutocompleteDiv.innerHTML = "";
+			return;
+		  }
+		  let found = allRecipes.filter(function(r) {
+			return removeTonos(r.title).includes(val)
+			  || removeTonos(r.tags || "").includes(val)
+			  || removeTonos(r.ingredients || "").includes(val)
+			  || removeTonos(r.main_dish_tag || "").includes(val);
+		  }).slice(0, 10);
+		  manualAutocompleteDiv.innerHTML = "";
+		  found.forEach(function(r) {
+			let opt = document.createElement("div");
+			opt.className = "autocomplete-option";
+			opt.textContent = r.title;
+			opt.onclick = function() {
+			  manualInput.value = r.title;
+			  manualAutocompleteDiv.innerHTML = "";
+			};
+			manualAutocompleteDiv.appendChild(opt);
+		  });
+		});
+		manualInput.addEventListener('blur', function() {
+		  setTimeout(function() { manualAutocompleteDiv.innerHTML = ""; }, 200);
+		});
+	  } 
+    }
+  });
+});
 
 function submitManualDish() {
   var title = document.getElementById('manualDishTitle').value.trim();
@@ -432,7 +580,6 @@ function submitManualDish() {
     }
   });
 }
-
 
 function showAddFavoriteDialog(recipe_id, title) {
   var modalEl = document.getElementById('favDetailsModal');
@@ -737,4 +884,5 @@ document.getElementById('confirm-delete-history-btn').addEventListener('click', 
 
 
 </script>
+
 {% endblock %}

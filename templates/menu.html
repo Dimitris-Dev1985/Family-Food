@@ -48,7 +48,7 @@ body.menu-onboarding-active nav.navbar a.nav-link {
 .menu-onboarding-tip {
   font-family: 'Indie Flower', cursive, Arial, sans-serif;
   position: absolute;
-  background: #fff3cd;
+  background: #fbc6d7;
   padding: 2px 2px;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -71,7 +71,7 @@ body.menu-onboarding-active nav.navbar a.nav-link {
   border-left: 1px solid #faeab9;
   width: 22px;
   height: 22px;
-  background: #fff3cd;
+  background: #fbc6d7;
   border-radius: 4px;
   border: none;
   transform: rotate(45deg);
@@ -84,7 +84,7 @@ body.menu-onboarding-active nav.navbar a.nav-link {
   border-right: 1px solid #faeab9;
   width: 22px;
   height: 22px;
-  background: #fff3cd;
+  background: #fbc6d7;
   border-radius: 4px;
   border: none;
   transform: rotate(45deg);
@@ -299,9 +299,6 @@ body.menu-onboarding-active nav.navbar a.nav-link {
       </div>
       <div class="modal-body">
         🎯 Δημιουργήθηκε νέο εβδομαδιαίο μενού με βάση τις προτιμήσεις και τους στόχους σου... Μπορείς να το επεξεργαστείς αν θέλεις!
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">ΟΚ</button>
       </div>
     </div>
   </div>
@@ -633,6 +630,41 @@ function startSpeechForRecipe(menuid) {
 
   recognition.start();
 }
+
+
+window.menuOnboardingServer = {
+  step: 0,
+  completed: false,
+  initialized: false
+};
+
+fetch("/api/onboarding_progress")
+  .then(r => r.json())
+  .then(data => {
+    const pageData = data["menu"];
+
+    if (!pageData) {
+      // Αν ΔΕΝ υπάρχει, δημιουργούμε εγγραφή στον backend
+      return fetch("/api/onboarding_create_if_needed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ page: "menu" })
+      }).then(() => {
+        window.menuOnboardingServer.step = 0;
+        window.menuOnboardingServer.completed = false;
+        window.menuOnboardingServer.initialized = true;
+        startMenuOnboarding();
+      });
+    }
+
+    // Αν υπάρχει, αποθηκεύουμε τα δεδομένα
+    window.menuOnboardingServer.step = pageData.step;
+    window.menuOnboardingServer.completed = pageData.completed;
+    window.menuOnboardingServer.initialized = true;
+    startMenuOnboarding();
+  });
+
+
 
 </script>
 

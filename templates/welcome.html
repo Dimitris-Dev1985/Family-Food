@@ -21,7 +21,7 @@
   position: fixed;
   bottom: 80px;
   right: 18px;
-  background: #fff3cd;
+  background: #fbc6d7;
   padding: 12px 15px 13px 15px;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.24);
@@ -39,18 +39,12 @@
   right: 16px;
   width: 15px;
   height: 15px;
-  background: #fff3cd;
+  background: #fbc6d7;
   transform: rotate(45deg);
   border-bottom: 1px solid rgba(0,0,0,0.09);
   border-right: 1px solid rgba(0,0,0,0.09);
   box-shadow: 1px 1px 3px rgba(0,0,0,0.08);
   z-index: 0;
-}
-
-@keyframes pulse {
-  0%   { transform: scale(1); box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
-  50%  { transform: scale(1.04); box-shadow: 0 0 20px rgba(255, 244, 200, 1); }
-  100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
 }
 
 /* Απενεργοποιεί nav-bar κουμπιά, εκτός από το προφίλ */
@@ -171,21 +165,16 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
   <p class="lead" id="welcomeLead">
 	Εδώ, το <b>“Τι θα φάμε σήμερα;”</b> βρίσκει πάντα απάντηση!<br><br>Έτοιμοι να φτιάξουμε υπέροχες οικογενειακές στιγμές; 🍽️</p>
   <div class="welcome-actions d-flex flex-wrap justify-content-center">
-    <button id="startChatBtn" class="btn btn-primary"
-      onclick="showChatbox()"
-      {% if not onboarding_done %} disabled {% endif %}
-      >Ξεκίνα Chat</button>
+    <button id="startChatBtn" class="btn btn-primary" onclick="showChatbox()">Ξεκίνα Chat</button>
   </div>
 </div>
 
 
-{% if not onboarding_done %}
-  <div id="onboardingNavBackdrop"></div>
-  <div id="onboardingTooltip">
-    👉 Συμπλήρωσε το προφίλ σου για να ξεκινήσεις!
-    <div class="arrow-down"></div>
-  </div>
-{% endif %}
+<div id="onboardingNavBackdrop" style="display:none;"></div>
+<div id="onboardingTooltip" style="display:none;">
+  👉 Συμπλήρωσε το προφίλ σου για να ξεκινήσεις!
+  <div class="arrow-down"></div>
+</div>
 
 
 <div id="chatbox-section" style="display:none; margin:0 auto;">
@@ -211,15 +200,6 @@ let tomorrowMenuId = "{{ tomorrow_menu_id }}";
 let cookingDay = "today"; // default: σήμερα
 let onboarding_done = "{{ onboarding_done }}";
 let aiChatFilters = {};
-
-{% if not onboarding_done %}
-	if (!localStorage.getItem('profile_onboarding_done')) {
-		console.log("profile done");
-		document.body.classList.add("onboarding-active");
-		localStorage.clear();
-		aiChatFilters = {};
-		}	
-{% endif %}
 
 function startSpeechRecognition() {
   if (!('webkitSpeechRecognition' in window)) {
@@ -583,39 +563,36 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;");
 }
 
-function getNextOnboardingStep() {
-  if (localStorage.getItem("profile_onboarding_done") === "1") return null;
-
-  for (let i = 1; i <= 5; i++) {
-    if (!localStorage.getItem(`onboarding_step${i}_shown`)) {
-      return i;
-    }
-  }
-  return null;
-}
-
-{% if not profile_onboarding_done %}
-document.addEventListener("DOMContentLoaded", function () {
-  // Βρίσκει το κουμπί "Προφίλ" στη nav-bar
-  var profileLink = document.querySelector('nav.navbar.fixed-bottom a[href="/profile"]');
-  if (profileLink) {
-    profileLink.addEventListener("click", function (e) {
-      // Κρατάει το event μόνο αν το profile_onboarding_done είναι false/0!
-      localStorage.setItem("onboarding_step1_shown", "1");
-      // Δεν χρειάζεται preventDefault αν θέλεις να φύγει αμέσως από τη σελίδα.
-      // Αν θες smooth, κάνε:
-      // e.preventDefault();
-      // window.location.href = profileLink.href;
-    });
-  }
-});
-{% endif %}
-
 </script>
 
 <script>
   window.dayName = "{{ day_name }}";
 </script>
 <script src="{{ url_for('static', filename='JS/chat_history.js') }}"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  fetch("/api/onboarding_progress")
+    .then(res => res.json())
+    .then(data => {
+      const profile = data["profile"];
+      const startChatBtn = document.getElementById("startChatBtn");
+
+      if (!profile || !profile.completed) {
+        document.body.classList.add("onboarding-active");
+
+        const backdrop = document.getElementById("onboardingNavBackdrop");
+        const tooltip = document.getElementById("onboardingTooltip");
+
+        if (backdrop) backdrop.style.display = "block";
+        if (tooltip) tooltip.style.display = "block";
+        if (startChatBtn) startChatBtn.disabled = true;
+      } else {
+        if (startChatBtn) startChatBtn.disabled = false;
+      }
+    });
+});
+</script>
+
 
 {% endblock %}

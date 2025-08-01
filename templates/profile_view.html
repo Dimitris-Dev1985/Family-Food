@@ -23,7 +23,7 @@
 #onboardingTooltip6::after {
   width: 12px;
   height: 12px;
-  background: #fff3cd;
+  background: #fbc6d7;
   transform: rotate(45deg);
   position: absolute;
   bottom: -6px;
@@ -37,11 +37,12 @@
   width: 70vw;
   width: auto;
   max-width: 300px;
-  background: #fff3cd;
+  background: #fbc6d7;
   padding: 10px 14px;
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  font-size: 13px;
+  font-size: 15px;
+  text-align: center;
   animation: pulse 1.5s infinite;
   z-index: 1050;
   word-wrap: break-word;
@@ -52,7 +53,7 @@
 .onboarding-tooltip .arrow-down {
   width: 12px;
   height: 12px;
-  background: #fff3cd;
+  background: #fbc6d7;
   transform: rotate(45deg);
   position: absolute;
   bottom: -6px;
@@ -63,7 +64,7 @@
 .onboarding-tooltip .arrow-down-right {
   width: 12px;
   height: 12px;
-  background: #fff3cd;
+  background: #fbc6d7;
   transform: rotate(45deg);
   position: absolute;
   bottom: -6px;
@@ -71,11 +72,6 @@
   box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
-  50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(255,255,255,0.9); }
-  100% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.6); }
-}
 </style>
 
 <style>
@@ -534,7 +530,7 @@ body {
       <div class="modal-body py-4">
         <h4 class="mb-2">🎉 Συγχαρητήρια!</h4>
         <p>Ολοκλήρωσες το προφίλ σου.<br>Φύγαμε για τη κουζίνα;</p>
-        <button class="btn btn-success mt-3" data-bs-dismiss="modal">Πάμε!</button>
+        <button class="btn btn-success mt-3" style="font-size:1em!important; padding:10px 15px;" data-bs-dismiss="modal">Πάμε!</button>
       </div>
     </div>
   </div>
@@ -581,7 +577,7 @@ function updateProfileCompletionBar() {
 window.addEventListener("DOMContentLoaded", updateProfileCompletionBar);
 
 window.addEventListener("DOMContentLoaded", function () {
-  const done = localStorage.getItem("profile_onboarding_done") === "1";
+  const done = window.profileOnboarding.completed === true;
   if (done) return;
 
   // Επιτρέπονται μόνο: /menu και /profile
@@ -1242,17 +1238,13 @@ function showStrictTooltip(step, tooltipId, targetId, nextStep) {
 }
 
 function getNextOnboardingStep() {
-  
-  if (localStorage.getItem("profile_onboarding_done") === "1") return null;
-  for (let i = 1; i <= 6; i++) {
-    if (!localStorage.getItem(`onboarding_step${i}_shown`)) return i;	
-  }
-  return null;
+	if (!window.profileOnboarding.initialized || window.profileOnboarding.completed === true) return null;
+	return window.profileOnboarding.step;
 }
 
 function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = null) {
-  if (localStorage.getItem(`onboarding_step${step}_shown`) === "1") return;
-  // Κρύβει όλα τα tooltips
+  if (window.profileOnboarding.step > step) return;
+
   document.querySelectorAll(".onboarding-tooltip").forEach(t => {
     t.style.display = "none";
     t.style.visibility = "hidden";
@@ -1260,22 +1252,18 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
 
   const tooltip = document.getElementById(tooltipId);
   const target = targetId ? document.getElementById(targetId) : null;
-
   if (!tooltip) return;
 
   tooltip.style.visibility = "hidden";
   tooltip.style.display = "block";
 
-  // 🎯 Ειδική περίπτωση: step 6 → σταθερό κάτω tooltip
   if (step === 6) {
     tooltip.style.position = "fixed";
-	tooltip.style.width = "50vw";
+    tooltip.style.width = "50vw";
     tooltip.style.bottom = "80px";
     tooltip.style.left = "90px";
-    tooltip.style.top = ""; // 💡 ακυρώνει το top
-  }
-  else if (target) {
-    // Υπολόγισε θέση πάνω από το στοιχείο
+    tooltip.style.top = "";
+  } else if (target) {
     const rect = target.getBoundingClientRect();
     const tipWidth = tooltip.offsetWidth;
     const tipHeight = tooltip.offsetHeight;
@@ -1292,12 +1280,11 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
     tooltip.style.position = "absolute";
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
-    tooltip.style.bottom = ""; // clear in case
+    tooltip.style.bottom = "";
   }
 
   tooltip.style.visibility = "visible";
 
-  // Τονισμός του στοιχείου
   if (target) {
     target.classList.add("onboarding-highlight");
     target.style.zIndex = "2001";
@@ -1305,7 +1292,7 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
 
     const handler = () => {
       tooltip.style.display = "none";
-      localStorage.setItem(`onboarding_step${step}_shown`, "1");
+      updateProfileOnboardingStep(step + 1);
 
       target.classList.remove("onboarding-highlight");
       target.style.zIndex = "";
@@ -1314,8 +1301,9 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
       if (nextStep) {
         setTimeout(nextStep, 300);
       } else if (step === 6) {
-        localStorage.setItem("profile_onboarding_done", "1");
+        markProfileOnboardingComplete();
       }
+
       target.removeEventListener("click", handler);
     };
 
@@ -1323,7 +1311,7 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
   }
 }
 
-window.addEventListener("DOMContentLoaded", function () {
+function runProfileOnboarding() {
 
   const step = getNextOnboardingStep();
   const profileModal = document.getElementById("editProfileModal");
@@ -1333,16 +1321,20 @@ window.addEventListener("DOMContentLoaded", function () {
   const backdrop = document.getElementById("onboardingBackdrop");
   const menuLink = document.querySelector('nav.navbar.fixed-bottom a[href="/menu"]');
 
+	console.log(step);
+
   if (!step) return;
 
 	  // STEP 2
 	if (step === 2) {
 	  const editBtn = document.getElementById("edit-profile-button");
+	  console.log(editBtn);
 	  
 	  if (editBtn) {
+	    console.log(editBtn);
 		if (backdrop) backdrop.style.display = "block";
 		document.body.classList.add("onboarding-step-2");
-
+		console.log("ok");
 		showTooltipCenteredAbove(2, "onboardingTooltip2", "edit-profile-button", null);
 
 		editBtn.addEventListener("click", function () {
@@ -1397,8 +1389,6 @@ window.addEventListener("DOMContentLoaded", function () {
 	  }
 	}
 
-
-	  // STEP 3–6 recovery
 	if (step === 3) {
 	  backdrop.style.display = "block";
 
@@ -1426,7 +1416,6 @@ window.addEventListener("DOMContentLoaded", function () {
 		}
 	  });
 	}
-
 
 	if (step === 4) {
 	  backdrop.style.display = "block";
@@ -1470,7 +1459,6 @@ window.addEventListener("DOMContentLoaded", function () {
 	  });
 	}
 
-
   if (step === 6) {
     backdrop.style.display = "none";
 	document.getElementById("onboardingTooltip6").style.display = "none";
@@ -1483,12 +1471,66 @@ window.addEventListener("DOMContentLoaded", function () {
   if (menuLink) {
     menuLink.addEventListener("click", function () {
       document.getElementById("onboardingTooltip6").style.display = "none";
-      localStorage.setItem("onboarding_step6_shown", "1");
-      localStorage.setItem("profile_onboarding_done", "1");
+      updateProfileOnboardingStep(7);
+      markProfileOnboardingComplete();
     });
   }
-});
+}
 
+</script>
+
+<script>
+window.profileOnboarding = {
+  step: null,
+  completed: false,
+  initialized: false
+};
+
+fetch("/api/onboarding_progress")
+  .then(res => res.json())
+  .then(data => {
+    const profileData = data["profile"];
+    if (!profileData) {
+      return fetch("/api/onboarding_create_if_needed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ page: "profile" })
+      }).then(() => {
+        window.profileOnboarding.step = 2;
+        window.profileOnboarding.completed = false;
+        window.profileOnboarding.initialized = true;
+        runProfileOnboarding();
+      });
+    }
+
+    window.profileOnboarding.step = profileData.step;
+    window.profileOnboarding.completed = profileData.completed;
+    window.profileOnboarding.initialized = true;
+    runProfileOnboarding();
+  });
+
+function updateProfileOnboardingStep(step) {
+  window.profileOnboarding.step = step;
+  fetch("/api/onboarding_update_step", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page: "profile", step })
+  });
+}
+
+function markProfileOnboardingComplete() {
+  window.profileOnboarding.completed = true;
+  fetch("/api/onboarding_mark_completed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page: "profile" })
+  });
+}
+
+function getNextOnboardingStep() {
+  if (!window.profileOnboarding.initialized || window.profileOnboarding.completed) return null;
+  return window.profileOnboarding.step;
+}
 </script>
 
 {% endblock %}

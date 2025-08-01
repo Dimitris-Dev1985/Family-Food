@@ -23,12 +23,44 @@
   
 {% block head %}{% endblock %}
 
+<!--Tooltip styling-->
+<style>
+.onboarding-tooltip {
+  font-family: 'Indie Flower', cursive, Arial, sans-serif;
+  position: fixed;
+  right: 18px;
+  background: #fbc6d7;
+  padding: 12px 15px 13px 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.24);
+  z-index: 1001;
+  max-width: 230px;
+  font-size: 15px;
+  text-align: center;
+  animation: pulse 1.5s infinite;
+}
+.onboarding-tooltip .arrow-down {
+  content: "";
+  display: block;
+  position: absolute;
+  bottom: -7px;
+  right: 16px;
+  width: 15px;
+  height: 15px;
+  background: #fbc6d7;
+  transform: rotate(45deg);
+  border-bottom: 1px solid rgba(0,0,0,0.09);
+  border-right: 1px solid rgba(0,0,0,0.09);
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.08);
+  z-index: 0;
+}
+</style>
 
 <style>
 @keyframes pulse {
-  0%   { transform: scale(1); box-shadow: 0 0 10px #fff6c4; }
-  50%  { transform: scale(1.03); box-shadow: 0 0 24px #fffbe6; }
-  100% { transform: scale(1); box-shadow: 0 0 10px #fff6c4; }
+  0%   { transform: scale(1); box-shadow: 0 0 10px #fbc6d7; }
+  50%  { transform: scale(1.03); box-shadow: 0 0 24px #dbc4cc; }
+  100% { transform: scale(1); box-shadow: 0 0 10px #fbc6d7; }
 }
 </style>
 
@@ -148,7 +180,7 @@ body {
     overflow: visible !important;  max-height: 90vh; align-items: center; z-index: 1005;
   }
   
-  .modal-header { justify-content: center !important; }
+  .modal-header { justify-content: center !important; border-radius: 1.5rem;}
 
   .modal-title { font-size: 1.1rem !important; width: 100%; text-align: center;}
   .modal-body { flex: 1 1 auto; overflow: visible; }
@@ -224,7 +256,7 @@ body {
 .recipeModaltip{
   font-family: 'Indie Flower', cursive, Arial, sans-serif;
   position: absolute;
-  background: #fff3cd;
+  background: #fbc6d7;
   padding: 2px 2px;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -249,7 +281,7 @@ body {
   border-left: 1px solid #faeab9;
   width: 22px;
   height: 22px;
-  background: #fff3cd;
+  background: #fbc6d7;
   border-radius: 4px;
   border: none;
   transform: rotate(45deg);
@@ -271,7 +303,7 @@ body {
 <div class="modal fade" id="recipeModal" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header bg-primary" style="border-radius: 1.5rem !important;">
+      <div class="modal-header bg-primary">
         <h5 class="modal-title" id="recipeModalLabel">Λεπτομέρειες Συνταγής</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -524,7 +556,7 @@ function showRecipeModalTooltip() {
 	const arrow = document.createElement('div');
 	arrow.className = 'recipeModalarrow';
 	arrow.style.top = '65px';  // τοποθέτηση πάνω από το tooltip (άρα "δείχνει προς τα κάτω")
-	arrow.style.left = '-15px';  // θα το ρυθμίσεις με βάση τη θέση του anchor
+	arrow.style.left = '-10px';  // θα το ρυθμίσεις με βάση τη θέση του anchor
 	tip.appendChild(arrow);
 
   // Υπολόγισε θέση anchor
