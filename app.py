@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash, get_flashed_messages
 import sqlite3, unicodedata, random
 
-
 from datetime import datetime, timedelta
 from jinja2 import pass_context
 from functools import wraps
@@ -177,9 +176,8 @@ def delete_user_and_data():
         conn.execute("DELETE FROM weekly_goals WHERE user_id=?", (user_id,))
         conn.execute("DELETE FROM cooked_dishes WHERE user_id=?", (user_id,))
         conn.execute("DELETE FROM family_members WHERE user_id=?", (user_id,))
-        # Αν θες να διαγράφεις και custom recipes που έχει φτιάξει ο user (created_by)
+        conn.execute("DELETE FROM onboarding_progress WHERE user_id=?", (user_id,))
         conn.execute("DELETE FROM recipes WHERE created_by=?", (user_id,))
-        # Τέλος, διαγραφή του ίδιου του user
         conn.execute("DELETE FROM users WHERE id=?", (user_id,))
         conn.commit()
     except Exception as e:
@@ -188,7 +186,7 @@ def delete_user_and_data():
         return jsonify(success=False, error=str(e))
     conn.close()
     session.clear()
-    print("User succesfully deleted")
+    print("User successfully deleted")
     return jsonify(success=True)
 
 @app.route("/logout")
@@ -1719,6 +1717,89 @@ def get_recipe(recipe_id):
 @app.template_filter('todate')
 def todate_filter(s):
     return datetime.strptime(s, "%Y-%m-%d").date()
+
+####----ΟNBOARDING----####
+@app.route("/api/onboarding_progress")
+def get_all_onboarding_progress():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute("SELECT page, step, completed FROM onboarding_progress WHERE user_id=?", (user_id,)).fetchall()
+    conn.close()
+
+    data = {row["page"]: {"step": row["step"], "completed": bool(row["completed"])} for row in rows}
+    print(data)
+    return jsonify(data)
+
+@app.route("/api/onboarding_create_if_needed", methods=["POST"])
+def onboarding_create_if_needed():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    page = request.json.get("page", "").strip()
+    if not page:
+        return jsonify({"error": "Missing page"}), 400
+
+    conn = sqlite3.connect(DB)
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("""
+        INSERT OR IGNORE INTO onboarding_progress (user_id, page)
+        VALUES (?, ?)
+    """, (user_id, page))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
+@app.route("/api/onboarding_update_step", methods=["POST"])
+def onboarding_update_step():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    page = data.get("page", "").strip()
+    step = data.get("step")
+
+    if not page or step is None:
+        return jsonify({"error": "Missing page or step"}), 400
+
+    conn = sqlite3.connect(DB)
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("""
+        UPDATE onboarding_progress
+        SET step = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = ? AND page = ?
+    """, (step, user_id, page))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
+@app.route("/api/onboarding_mark_completed", methods=["POST"])
+def onboarding_mark_completed():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    page = request.json.get("page", "").strip()
+    if not page:
+        return jsonify({"error": "Missing page"}), 400
+
+    conn = sqlite3.connect(DB)
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("""
+        UPDATE onboarding_progress
+        SET completed = 1, updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = ? AND page = ?
+    """, (user_id, page))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
+####----ΟNBOARDING----####
 
 if __name__ == "__main__":
     app.run(debug=True)
