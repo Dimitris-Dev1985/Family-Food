@@ -130,7 +130,6 @@ body {
 </style>
 
 
-
 <div class="container py-3">
 
   <div class="sticky-top bg-white pt-3 pb-2 shadow-sm" style="z-index: 1021; background-color:rgb(250 255 236)!important; border-radius: 16px;margin-bottom:1.2rem;">
@@ -575,25 +574,6 @@ function updateProfileCompletionBar() {
 }
 
 window.addEventListener("DOMContentLoaded", updateProfileCompletionBar);
-
-window.addEventListener("DOMContentLoaded", function () {
-  const done = window.profileOnboarding.completed === true;
-  if (done) return;
-
-  // Επιτρέπονται μόνο: /menu και /profile
-  const allowedPaths = ["/menu"];
-
-  document.querySelectorAll("nav.navbar.fixed-bottom a").forEach(link => {
-    const href = link.getAttribute("href");
-    const isAllowed = allowedPaths.includes(href);
-
-    if (!isAllowed) {
-      link.classList.add("nav-disabled");
-      link.style.pointerEvents = "none";
-      link.style.opacity = "0.4";
-    }
-  });
-});
 
 function openGoalModal(mode, id, category, min, max) {
   const modal = new bootstrap.Modal(document.getElementById('addGoalModal'));
@@ -1096,23 +1076,34 @@ function editProfileInfo() {
   modal.show();
 }
 
+
 window.addEventListener('DOMContentLoaded', function() {
+  if (window.choicesCooking) {
+    window.choicesCooking.destroy();
+  }
+
   window.choicesCooking = new Choices('#cooking-methods-select', {
     removeItemButton: true,
-	searchEnabled: false,
+    searchEnabled: false,
     placeholderValue: 'Επίλεξε τρόπο... Μπορείς να επιλέξεις όσους θες!',
-    searchPlaceholderValue: 'Αναζήτηση...',
-    noResultsText: 'Δεν βρέθηκαν επιλογές',
-    itemSelectText: 'Επιλογή',
     shouldSort: false,
     duplicateItemsAllowed: false,
     maxItemCount: 10
   });
-      // Κλείνει το drop-down όταν επιλέγεται κάτι!
+  
+  const choicesInput = document.querySelector('.choices__input');
+  if (choicesInput) {
+    choicesInput.setAttribute('readonly', true);
+    choicesInput.setAttribute('tabindex', '-1'); // να μη γίνεται focus με tab
+  }  
+  
+  // Κλείνει το drop-down όταν επιλέγεται κάτι!
   window.choicesCooking.passedElement.element.addEventListener('addItem', function(e) {
     window.choicesCooking.hideDropdown();
   });
 });
+
+
 
 document.getElementById('profile-info-form').onsubmit = function(e) {
   e.preventDefault();
@@ -1235,11 +1226,6 @@ function showStrictTooltip(step, tooltipId, targetId, nextStep) {
   if (!tooltip || tooltip.style.display === "block") return;
 
   showTooltipCenteredAbove(step, tooltipId, targetId, nextStep);
-}
-
-function getNextOnboardingStep() {
-	if (!window.profileOnboarding.initialized || window.profileOnboarding.completed === true) return null;
-	return window.profileOnboarding.step;
 }
 
 function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = null) {
@@ -1477,37 +1463,64 @@ function runProfileOnboarding() {
   }
 }
 
-</script>
-
-<script>
 window.profileOnboarding = {
   step: null,
   completed: false,
   initialized: false
 };
 
-fetch("/api/onboarding_progress")
-  .then(res => res.json())
-  .then(data => {
-    const profileData = data["profile"];
-    if (!profileData) {
-      return fetch("/api/onboarding_create_if_needed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page: "profile" })
-      }).then(() => {
-        window.profileOnboarding.step = 2;
-        window.profileOnboarding.completed = false;
-        window.profileOnboarding.initialized = true;
-        runProfileOnboarding();
-      });
-    }
+window.addEventListener("DOMContentLoaded", function () {
+  fetch("/api/onboarding_progress")
+    .then(res => res.json())
+    .then(data => {
+      const profileData = data["profile"];
 
-    window.profileOnboarding.step = profileData.step;
-    window.profileOnboarding.completed = profileData.completed;
-    window.profileOnboarding.initialized = true;
-    runProfileOnboarding();
+      // Αν δεν υπάρχει καθόλου εγγραφή onboarding, τη δημιουργούμε
+      if (!profileData) {
+        return fetch("/api/onboarding_create_if_needed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ page: "profile" })
+        }).then(() => {
+          window.profileOnboarding.step = 2;
+          window.profileOnboarding.completed = false;
+          window.profileOnboarding.initialized = true;
+
+          restrictNavIfNeeded(false); // false = not completed
+          runProfileOnboarding();
+        });
+      }
+
+      const completed = profileData.completed === true;
+
+      window.profileOnboarding.step = profileData.step;
+      window.profileOnboarding.completed = completed;
+      window.profileOnboarding.initialized = true;
+
+      restrictNavIfNeeded(completed);
+      runProfileOnboarding();
+    })
+    .catch(err => {
+      console.error("Error loading onboarding progress", err);
+    });
+});
+
+function restrictNavIfNeeded(completed) {
+  if (completed) return;
+
+  const allowedPaths = ["/menu"];
+
+  document.querySelectorAll("nav.navbar.fixed-bottom a").forEach(link => {
+    const href = link.getAttribute("href");
+    const isAllowed = allowedPaths.includes(href);
+
+    if (!isAllowed) {
+      link.classList.add("nav-disabled");
+      link.style.pointerEvents = "none";
+      link.style.opacity = "0.4";
+    }
   });
+}
 
 function updateProfileOnboardingStep(step) {
   window.profileOnboarding.step = step;
