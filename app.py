@@ -419,18 +419,57 @@ def toggle_favorite_recipe():
 
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
-    found = conn.execute("SELECT * FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id)).fetchone()
-        
-    if found:
-        conn.execute("DELETE FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id))
-        conn.commit()
+
+    try:
+        found = conn.execute(
+            "SELECT * FROM favorite_recipes WHERE user_id=? AND recipe_id=?",
+            (user_id, recipe_id)
+        ).fetchone()
+
+        if found:
+            conn.execute(
+                "DELETE FROM favorite_recipes WHERE user_id=? AND recipe_id=?",
+                (user_id, recipe_id)
+            )
+            conn.commit()
+            conn.close()
+            return jsonify({"success": True, "status": "removed", "first_time": False})
+        else:
+            # Προσθήκη αγαπημένης
+            conn.execute(
+                "INSERT INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)",
+                (user_id, recipe_id)
+            )
+
+            # Έλεγχος για εγγραφή onboarding
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT 1 FROM onboarding_progress WHERE user_id = ? AND page = ?",
+                (user_id, "favorites")
+            )
+            exists = cursor.fetchone()
+            first_time = not exists
+
+            if first_time:
+                cursor.execute(
+                    "INSERT INTO onboarding_progress (user_id, page, step, completed) VALUES (?, ?, ?, ?)",
+                    (user_id, "favorites", 0, 0)
+                )
+
+            conn.commit()
+            conn.close()
+
+            return jsonify({
+                "success": True,
+                "status": "added",
+                "first_time": first_time
+            })
+
+    except Exception as e:
         conn.close()
-        return jsonify({"success": True, "status": "removed"})
-    else:
-        conn.execute("INSERT INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)", (user_id, recipe_id))
-        conn.commit()
-        conn.close()
-        return jsonify({"success": True, "status": "added"})
+        return jsonify({"success": False, "error": str(e)})
+
+
 
 @app.route("/add_favorite_recipe", methods=["POST"])
 def add_favorite_recipe():
@@ -440,12 +479,33 @@ def add_favorite_recipe():
     recipe_id = data.get("recipe_id")
     if not recipe_id:
         return jsonify(success=False)
+
     try:
         conn = sqlite3.connect(DB)
-        conn.execute("INSERT OR IGNORE INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)", (user_id, recipe_id))
+        cursor = conn.cursor()
+
+        # Προσθήκη στο favorite_recipes
+        cursor.execute(
+            "INSERT OR IGNORE INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)",
+            (user_id, recipe_id)
+        )
+
+        # Δημιουργία εγγραφής onboarding για favorites (αν δεν υπάρχει)
+        cursor.execute(
+            "SELECT 1 FROM onboarding_progress WHERE user_id = ? AND page = ?",
+            (user_id, "favorites")
+        )
+        exists = cursor.fetchone()
+        if not exists:
+            cursor.execute(
+                "INSERT INTO onboarding_progress (user_id, page, step, completed) VALUES (?, ?, ?, ?)",
+                (user_id, "favorites", 0, 0)
+            )
+
         conn.commit()
         conn.close()
-        return jsonify(success=True) 
+        return jsonify(success=True)
+
     except Exception as e:
         return jsonify(success=False, error=str(e))
 
@@ -1718,6 +1778,12 @@ def get_recipe(recipe_id):
 def todate_filter(s):
     return datetime.strptime(s, "%Y-%m-%d").date()
 
+
+@app.route("/page-flip-transition")
+def page_flip_transition():
+    return render_template("page-flip-transition.html")
+
+
 ####----ΟNBOARDING----####
 @app.route("/api/onboarding_progress")
 def get_all_onboarding_progress():
@@ -1731,7 +1797,6 @@ def get_all_onboarding_progress():
     conn.close()
 
     data = {row["page"]: {"step": row["step"], "completed": bool(row["completed"])} for row in rows}
-    print(data)
     return jsonify(data)
 
 @app.route("/api/onboarding_create_if_needed", methods=["POST"])
