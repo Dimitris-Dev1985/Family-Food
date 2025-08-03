@@ -64,7 +64,8 @@
     {% if favorites|length == 0 %}
       <div class="col-12">
         <div class="alert alert-secondary text-center py-3 mb-2">
-          Δεν έχεις προσθέσει αγαπημένες συνταγές!
+          Δεν έχεις προσθέσει αγαπημένες συνταγές! Ξεκίνα από εδώ! &#x1F447;
+
         </div>
       </div>
     {% endif %}	
@@ -97,6 +98,33 @@
       </div>
     </div>
   </div>
+</div>
+
+
+
+<div id="favoritesTooltip1" class="onboarding-tooltip" style="display:none;">
+  Η αγαπημένη σου συνταγή προστέθηκε! Κάνε click πάνω στην κάρτα για να δεις τις λεπτομέρειές της!
+  <button class="btn btn-sm btn-primary" onclick="nextFavoritesStep(1)">Κατάλαβα!</button>
+</div>
+
+<div id="favoritesTooltip2" class="onboarding-tooltip" style="display:none;">
+  Πατώντας το edit μπορείς να βάλεις στη συνταγή τη δική σου πινελιά! Θα είσαι εσύ πια ο Chef, δοκίμασέ το!
+  <button class="btn btn-sm btn-primary" onclick="nextFavoritesStep(2)">Κατάλαβα!</button>
+</div>
+
+<div id="favoritesTooltip3" class="onboarding-tooltip" style="display:none;">
+  Πάτα εδώ για να διαγράψεις αν θες τη συνταγή από τα αγαπημένα σου!
+  <button class="btn btn-sm btn-primary" onclick="nextFavoritesStep(3)">Κατάλαβα!</button>
+</div>
+
+<div id="favoritesTooltip4" class="onboarding-tooltip" style="display:none;">
+  Από εδώ μπορείς να προσθέσεις νέα αγαπημένη συνταγή! Θα παίρνει προτεραιότητα στις προτάσεις μαγειρέματος!
+  <button class="btn btn-sm btn-primary" onclick="nextFavoritesStep(4)">Κατάλαβα!</button>
+</div>
+
+<div id="favoritesTooltip5" class="onboarding-tooltip no-arrow" style="display:none;">
+  Αυτό ήταν! Καλή εξερεύνηση!
+  <button class="btn btn-sm btn-success" onclick="markFavoritesOnboardingComplete()">Φύγαμε!</button>
 </div>
 
 
@@ -385,6 +413,128 @@ function startSpeechForFavorites() {
 }
 
 
+</script>
+
+<script>
+window.favoritesOnboarding = {
+  step: 0,
+  completed: false,
+  initialized: false
+};
+
+function updateFavoritesOnboardingStep(step) {
+  window.favoritesOnboarding.step = step;
+  fetch("/api/onboarding_update_step", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page: "favorites", step })
+  });
+}
+
+function markFavoritesOnboardingComplete() {
+  window.favoritesOnboarding.completed = true;
+
+  fetch("/api/onboarding_mark_completed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page: "favorites" })
+  });
+
+  document.querySelectorAll(".onboarding-tooltip").forEach(t => {
+    t.style.display = "none";
+    t.style.visibility = "hidden";
+  });
+
+  // ✅ Τώρα έλεγχος αν έχει ολοκληρωθεί και το menu onboarding
+  fetch("/api/onboarding_progress")
+    .then(res => res.json())
+    .then(data => {
+      const menu = data["menu"];
+      if (!menu || !menu.completed) {
+        // 💾 Αποθήκευσε snapshot και κάνε flip επιστροφή στο /menu
+        sessionStorage.setItem("page_snapshot_html", document.documentElement.innerHTML);
+        window.location.href = "/page-flip-transition?to=/menu&label=Μενού";
+      }
+    });
+}
+
+
+function nextFavoritesStep(nextStep) {
+  updateFavoritesOnboardingStep(nextStep);
+  runFavoritesOnboarding();
+}
+
+function getFavoritesTargetSelector(step) {
+  if (step === 0) return ".card-body";            // Παλιά ήταν step 1
+  if (step === 1) return ".btn-outline-primary"; // Παλιά ήταν step 2
+  if (step === 2) return ".btn-danger";          // Παλιά ήταν step 3
+  if (step === 3) return "button.btn-success";   // Παλιά ήταν step 4
+  return null;
+}
+
+function runFavoritesOnboarding() {
+  if (!window.favoritesOnboarding.initialized || window.favoritesOnboarding.completed) return;
+
+  const step = window.favoritesOnboarding.step;
+  document.querySelectorAll(".onboarding-tooltip").forEach(t => {
+    t.style.display = "none";
+    t.style.visibility = "hidden";
+  });
+
+  const tooltipId = "favoritesTooltip" + (step + 1);
+  const tooltip = document.getElementById(tooltipId);
+  if (!tooltip) return;
+
+  tooltip.style.display = "block";
+  tooltip.style.visibility = "visible";
+
+  if (step === 4) {
+    tooltip.style.position = "fixed";
+    tooltip.style.bottom = "300px";
+    tooltip.style.left = "90px";
+    tooltip.style.width = "50vw";
+	tooltip.style.fontSize = "20px";
+  } else {
+	tooltip.style.position = "absolute";
+	const selector = getFavoritesTargetSelector(step);
+	const target = document.querySelector(selector);
+	if (target) {
+	  const rect = target.getBoundingClientRect();
+	  const tipWidth = tooltip.offsetWidth;
+
+	  const top = rect.bottom + window.scrollY + 10;
+	  const left = (window.innerWidth - tipWidth) / 2;
+
+	  tooltip.style.top = `${top}px`;
+	  tooltip.style.left = `${left}px`;
+	  
+	  // arrow offset υπολογισμός
+		const tooltipCenter = window.innerWidth / 2;
+		const targetCenter = rect.left + rect.width / 2;
+		const arrowOffset = tipWidth / 2 + (targetCenter - tooltipCenter);
+		const margin = 16; // ελάχιστο περιθώριο από τα άκρα του tooltip
+		const clampedArrowOffset = Math.max(
+		  margin,
+		  Math.min(tipWidth - margin, arrowOffset)
+		);
+		tooltip.style.setProperty("--arrow-offset", `${clampedArrowOffset}px`);  
+	}
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  fetch("/api/onboarding_progress")
+    .then(res => res.json())
+    .then(data => {
+      const f = data["favorites"];
+      if (!f || f.completed) return;
+
+      window.favoritesOnboarding.step = f.step;
+      window.favoritesOnboarding.completed = f.completed;
+      window.favoritesOnboarding.initialized = true;
+      runFavoritesOnboarding();
+    });
+});
 </script>
 
 {% endblock %}

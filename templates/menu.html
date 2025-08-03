@@ -426,16 +426,25 @@ function hideAutocomplete(input) {
 function toggleFavorite(icon, recipe_id) {
   fetch('/toggle_favorite_recipe', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({recipe_id: recipe_id})
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe_id: recipe_id })
   })
   .then(r => r.json())
   .then(data => {
-    if(data.status === "added") {
+    if (data.status === "added") {
       icon.classList.remove('far');
       icon.classList.add('fas');
       icon.style.color = '#c33';
-    } else if(data.status === "removed") {
+
+      // ✅ Αν είναι πρώτη φορά, κάνε fade-out και redirect
+		if (data.first_time) {
+			sessionStorage.setItem("page_snapshot_html", document.documentElement.innerHTML);
+			window.location.href = "/page-flip-transition?to=/favorites&label=Αγαπημένες";
+		}
+
+
+
+    } else if (data.status === "removed") {
       icon.classList.remove('fas');
       icon.classList.add('far');
       icon.style.color = 'gray';
