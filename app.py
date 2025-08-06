@@ -1539,22 +1539,35 @@ def update_menu_entries():
     conn.close()
     return jsonify({"success": True})
 
+
 @app.route("/get_recipes_for_autocomplete")
+@login_required
 def get_recipes_for_autocomplete():
+    user, _ = get_user()
+    user_id = user["id"]
+
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
-    rows = conn.execute("SELECT id, title, tags, ingredients, main_dish_tag FROM recipes").fetchall()
+    rows = conn.execute("""
+        SELECT id, title, chef, tags, ingredients, main_dish_tag
+        FROM recipes
+        WHERE created_by = 0 OR created_by = ?
+    """, (user_id,)).fetchall()
+
     result = []
     for r in rows:
         result.append({
             "id": r["id"],
             "title": r["title"],
+            "chef": r["chef"],
             "tags": r["tags"] or "",
             "ingredients": r["ingredients"] or "",
             "main_dish_tag": r["main_dish_tag"] or ""
         })
+
     conn.close()
     return jsonify(result)
+
 
 @app.route('/ai_suggest_dish', methods=['POST'])
 def ai_suggest_dish():
