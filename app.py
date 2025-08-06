@@ -13,20 +13,6 @@ DB = "family_food_app.db"
 WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"]
 default_minutes = 60
 
-@app.route("/api/onboarding_complete", methods=["POST"])
-def onboarding_complete():
-    user_id = session.get("user_id")
-    if not user_id:
-        return "", 401  # Unauthorized
-
-    conn = sqlite3.connect(DB)
-    conn.execute("UPDATE users SET onboarding_done = 1 WHERE id = ?", (user_id,))
-    conn.commit()
-    conn.close()
-
-    session["onboarding_done"] = 1  # για άμεση χρήση στη session
-    return "", 204  # No content
-
 @app.route("/login/google/callback")
 def google_login_callback():
     if not google.authorized:
@@ -132,8 +118,7 @@ def login():
             user = conn.execute("SELECT * FROM users ORDER BY id LIMIT 1").fetchone()
             conn.close()
             if user:
-                session["user_id"] = user["id"]
-                session["onboarding_done"] = user["onboarding_done"]
+                session["user_id"] = user["id"]                
                 return redirect(url_for("welcome"))
             else:
                 flash("Δεν βρέθηκε χρήστης για debug login!", "danger")
@@ -156,7 +141,6 @@ def login():
         conn.close()
         if user:
             session["user_id"] = user["id"]
-            session["onboarding_done"] = user["onboarding_done"]
             return redirect(url_for("welcome"))
         else:
             flash("Λανθασμένος κωδικός!", "danger")
@@ -249,8 +233,8 @@ def welcome():
         today_menu_id=today_menu_id,
         tomorrow_menu=tomorrow_menu,
         tomorrow_menu_id=tomorrow_menu_id,
-        onboarding_done=user["onboarding_done"]
     )
+
 
 @app.route('/delete_user_recipe', methods=['POST'])
 def delete_user_recipe():
@@ -468,8 +452,6 @@ def toggle_favorite_recipe():
     except Exception as e:
         conn.close()
         return jsonify({"success": False, "error": str(e)})
-
-
 
 @app.route("/add_favorite_recipe", methods=["POST"])
 def add_favorite_recipe():
@@ -773,6 +755,46 @@ def profile():
         chef_options=chef_options,
     )
 
+
+@app.route("/settings", methods=["GET", "POST"])
+@login_required
+def settings():
+    user, _ = get_user()
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    if request.method == "POST":
+        # Λήψη τιμών από τη φόρμα
+        menu_1st_day = int(request.form.get("menu_1st_day", 1))
+        reset_onboarding = request.form.get("reset_onboarding") == "on"
+
+        # Ενημέρωση user στη βάση
+        conn.execute(
+            "UPDATE users SET menu_1st_day=? WHERE id=?",
+            (menu_1st_day, user["id"])
+        )
+
+        # Αν ζητήθηκε reset onboarding
+        if reset_onboarding:
+            conn.execute(
+                "UPDATE onboarding_progress SET step = 0, completed = 0 WHERE user_id = ?",
+                (user["id"],)
+            )
+        conn.commit()
+        flash("Οι ρυθμίσεις αποθηκεύτηκαν.", "success")
+        return redirect("/settings")
+
+    # Φέρε ενημερωμένο χρήστη
+    user = conn.execute(
+        "SELECT * FROM users WHERE id=?",
+        (user["id"],)
+    ).fetchone()
+
+    conn.close()
+
+    return render_template("settings.html", user=user)
+
+
 @app.route("/profile_completion_percent")
 @login_required
 def profile_completion_percent():
@@ -1051,6 +1073,13 @@ def menu():
         if not available:
             unreachable_goals.append(cat)
 
+
+    # Φέρε τη μέρα έναρξης από τον πίνακα users
+    menu_1st_day = conn.execute(
+        "SELECT menu_1st_day FROM users WHERE id = ?",
+        (user["id"],)
+    ).fetchone()["menu_1st_day"]
+
     conn.close()
 
     show_success_modal = 0
@@ -1061,7 +1090,7 @@ def menu():
         menu=menu_entries,
         goals_achievement=goals_achievement,
         unreachable_goals=unreachable_goals,
-        menu_1st_day=1,
+        menu_1st_day=menu_1st_day,
         show_success_modal=show_success_modal
     )
 
