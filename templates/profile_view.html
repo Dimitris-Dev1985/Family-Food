@@ -75,14 +75,7 @@
 </style>
 
 <style>
-body {
-  font-family: 'Inter', sans-serif;
-  background: #eef4fb;
-}
-.container {
-  max-width: 480px;
-  margin: 0 auto;
-}
+
 .card {
   border: none;
   border-radius: 16px;
@@ -101,7 +94,8 @@ body {
   border-top-right-radius: 16px;
 }
 .card-body {
-  padding: 1rem 1.2rem;
+  padding: 0.8rem 1rem;
+  background-color: #fff;
 }
 #profile-completion-bar {
   height: 10px;
@@ -123,11 +117,7 @@ body {
   background-color: #ffecb3;
   color: #444;
 }
-.table {
-  background: #fcfcfc;
-  border-radius: 12px;
-  vertical-align: middle;
-}
+
 </style>
 
 
@@ -254,11 +244,11 @@ body {
   </div>
 
   <div class="card">
-    <div class="card-section-title">Στόχοι Εβδομάδας</div>
+    <div class="card-section-title">Εβδομαδιαίοι στόχοι</div>
     <div class="card-body">
-      <table class="table table-sm mb-2 text-center" style="font-size:0.85em">
+      <table class="table table-sm mb-0 goals-table" style="text-align:center">
         <thead>
-          <tr><th>Κατηγορία</th><th>Τύπος</th><th></th></tr>
+          <tr><th>Κατηγορία</th><th>Στόχος</th><th></th></tr>
         </thead>
         <tbody id="goals-tbody">
           {% for row in weekly_goals %}
@@ -283,9 +273,9 @@ body {
         </tbody>
       </table>
       <div class="d-flex justify-content-between">
-        <button class="btn btn-success btn-sm" id="add-goal-btn" onclick="addGoalRow()"><i class="fa fa-plus"></i> Προσθήκη στόχου</button>
+        <button class="btn btn-success btn-sm my-2" id="add-goal-btn" onclick="addGoalRow()"><i class="fa fa-plus"></i> Προσθήκη στόχου</button>
         {% if weekly_goals|length > 0 %}
-        <button id="deleteAllBtn" class="btn btn-outline-danger btn-sm" onclick="deleteAllGoals()">
+        <button id="deleteAllBtn" class="btn btn-outline-danger btn-sm my-2" onclick="deleteAllGoals()">
           <i class="fa fa-trash"></i> Διαγραφή όλων
         </button>
         {% endif %}

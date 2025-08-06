@@ -14,9 +14,11 @@
   {{ days[date_obj.weekday()] }}, {{ d|int }} {{ months[m|int] }} {{ y }}
 {% endmacro %}
 
-<div class="d-flex justify-content-center mb-3">
-  <h2 class="fw-bold mb-1" style="font-size:2em;">Ιστορικό Πιάτων</h2>
-</div>
+
+  <!-- Τίτλος -->
+  <div class="text-center mb-3">
+    <h2 class="fancy-title">🕘 Ιστορικό Πιάτων</h2>
+  </div>
 
 {% set shown_weeks = namespace(seen=[]) %}
 {% for row in history %}
@@ -66,8 +68,7 @@
     </div>
 
     {% if row.recipe_id %}
-    <div class="card-body py-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between"
-         style="background-color: beige; cursor: pointer;"
+    <div class="card-body py-1 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between"
          onclick="openRecipeModal(this)"
 		 data-title="{{ row.title }}"
 		 data-chef="{{ row.chef or '' }}"
@@ -81,8 +82,7 @@
 		 data-instructions="{{ row.instructions or '' }}"
          data-recipeid="{{ row.recipe_id }}">
     {% else %}
-    <div class="card-body py-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between"
-         style="background-color: beige;">
+    <div class="card-body py-1 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between"
     {% endif %}
 
       <div class="d-flex align-items-center mb-2">
@@ -132,11 +132,11 @@
 <div class="row g-3">
   <div class="col-12" style="padding-top: 20px;">
     <div class="card shadow-sm my-4">
-      <div class="card-header" style="background-color:#9fd78b !important; font-size:1em !important;">
+      <div class="card-header" style="background-color:#9fd78b;font-size:0.9em;text-wrap-style: balance;">
         <i class="fa fa-bullseye me-2 text-info"></i> Εβδομαδιαίοι Στόχοι (τελευταίες 7 ημέρες)
       </div>
-      <div class="card-body">
-        <table class="table table-sm mb-0 goals-table" id="weekly-goals-table" style="font-size: smaller; text-align:center;">
+      <div class="card-body px-1 py-2" style="background-color:#ffffff !important;">
+        <table class="table table-sm mb-0 goals-table" style="text-align:center"; id="weekly-goals-table">
           <thead>
             <tr>
               <th>Κατηγορία</th>

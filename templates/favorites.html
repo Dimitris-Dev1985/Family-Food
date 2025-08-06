@@ -1,11 +1,51 @@
 {% extends "base.html" %}
 {% block content %}
 
+
+<style>
+  .pagination .page-link {
+    border-radius: 10px;
+    margin: 2px;
+    min-width: 32px;
+    height: 32px;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .pagination .page-item.active .page-link {
+    background-color: #198754;
+    border-color: #198754;
+    color: white;
+  }
+
+  .pagination {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+</style>
+
+<style>
+#favorites-container {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#favorites-container.fade-out {
+  opacity: 0;
+}
+
+#favorites-container.fade-in {
+  opacity: 1;
+}
+</style>
+
+
 <div class="container py-2" style="max-width: 95vh; background: linear-gradient(to bottom right, #fefefe, #eef6ff); border-radius: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
 
   <!-- Τίτλος -->
   <div class="text-center mb-3">
-    <h2 class="fw-bold mb-2" style="font-size: 2.2em; color: #336699;">💚 Οι Αγαπημένες μου Συνταγές!</h2>
+    <h2 class="fancy-title">⭐ Οι Αγαπημένες μου Συνταγές!</h2>
   </div>
 
   <!-- Κουμπιά: Προσθήκη (αριστερά) / Διαγραφή (δεξιά) -->
@@ -56,8 +96,11 @@
   </div>
 
   <!-- Live Search (σε δική του γραμμή) -->
-  <div class="mb-3">
+  <div class="mb-3 d-flex">
     <input type="text" id="search-term" class="form-control form-control-sm" placeholder="Αναζήτηση... ή πάτα το μικρόφωνο 🎤" oninput="loadFavorites()">
+	<button class="btn btn-outline-secondary btn-sm ms-2" onclick="resetFilters()">
+	  <i class="fa fa-rotate-left"></i>
+	</button>
   </div>
 
   <!-- Συνταγές -->
@@ -66,9 +109,9 @@
   </div>
 
   <!-- Pagination -->
-  <nav>
-    <ul id="pagination" class="pagination justify-content-center mb-0"></ul>
-  </nav>
+	<nav aria-label="Σελιδοποίηση" class="mt-3">
+	  <ul class="pagination justify-content-center flex-wrap" id="pagination"></ul>
+	</nav>
 
 </div>
 
@@ -122,7 +165,7 @@
 {% block scripts %}
 
 <script>
-
+let favoriteRecipeIds = []; 
 let allRecipes = [];
 fetch('/get_recipes_for_autocomplete')
   .then(r => r.json())
@@ -135,9 +178,7 @@ let deleteAllMode = false;
 
 function deleteFavFromDataAttr(btn) {
   const id = btn.getAttribute('data-id');
-  // Βγάζουμε το έξτρα wrapping quotes:
-  let raw = btn.getAttribute('data-title');
-  let title = raw ? JSON.parse(raw) : '';
+  let title = btn.getAttribute('data-title') || '';
   const created = btn.getAttribute('data-createdby');
   deleteFavorite(id, title, created);
 }
@@ -270,17 +311,20 @@ function showAddFavorite() {
       listDiv.innerHTML = "";
       return;
     }
-    let found = allRecipes.filter(r =>
-      removeTonos(r.title).includes(val) ||
-      removeTonos(r.tags || "").includes(val) ||
-      removeTonos(r.ingredients || "").includes(val) ||
-      removeTonos(r.main_dish_tag || "").includes(val)
-    ).slice(0,20);
+	let found = allRecipes
+	  .filter(r =>
+		!favoriteRecipeIds.includes(r.id) && (
+		removeTonos(r.title).includes(val) ||
+		removeTonos(r.tags || "").includes(val) ||
+		removeTonos(r.ingredients || "").includes(val) ||
+		removeTonos(r.main_dish_tag || "").includes(val)
+	  ))
+	  .slice(0, 20);
     listDiv.innerHTML = "";
     found.forEach(r => {
       let opt = document.createElement("div");
       opt.className = "autocomplete-option";
-      opt.textContent = r.title;
+      opt.innerHTML = r.title + (r.chef ? ' <span class="text-muted small fst-italic">by ' + r.chef + '</span>' : '');
       opt.style.cursor = "pointer";
       opt.onclick = function() {
         addFavorite(r.id);
@@ -477,36 +521,106 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <script>
 let currentPage = 1;
+let totalPages = 1;
 let perPage = 4;
 
 function renderPagination(current, total) {
   const pag = document.getElementById("pagination");
+
+  if (total <= 1) {
+    pag.style.display = "none";
+    pag.innerHTML = "";
+    return;
+  }
+
+  pag.style.display = "flex";
   pag.innerHTML = "";
 
-  for (var i = 1; i <= total; i++) {
-    var li = document.createElement("li");
+  function createPageItem(label, page, disabled = false, active = false) {
+    const li = document.createElement("li");
     li.className = "page-item";
-    if (i === current) li.className += " active";
+    if (disabled) li.classList.add("disabled");
+    if (active) li.classList.add("active");
 
-    var a = document.createElement("a");
-    a.className = "page-link";
+    const a = document.createElement("a");
+    a.className = "page-link small";
     a.href = "#";
-    a.textContent = i;
-    a.onclick = (function(pageNum) {
-      return function(e) {
-        e.preventDefault();
-        loadFavorites(pageNum);
-      };
-    })(i);
+    a.innerHTML = label;
+
+    a.onclick = function (e) {
+      e.preventDefault();
+      if (!disabled && current !== page) loadFavorites(page);
+    };
 
     li.appendChild(a);
-    pag.appendChild(li);
+    return li;
   }
+
+  function createEllipsis() {
+    const li = document.createElement("li");
+    li.className = "page-item disabled";
+    const span = document.createElement("span");
+    span.className = "page-link small";
+    span.innerHTML = "...";
+    li.appendChild(span);
+    return li;
+  }
+
+  // Πλοήγηση αρχής / προηγούμενη
+  pag.appendChild(createPageItem("&laquo;", 1, current === 1));
+  pag.appendChild(createPageItem("&lsaquo;", current - 1, current === 1));
+
+  let start = Math.max(1, current - 1);
+  let end = Math.min(total, current + 1);
+
+  if (start > 2) {
+    pag.appendChild(createPageItem("1", 1));
+    if (start > 3) pag.appendChild(createEllipsis());
+  }
+
+  for (let i = start; i <= end; i++) {
+    pag.appendChild(createPageItem(i, i, false, i === current));
+  }
+
+  if (end < total - 1) {
+    pag.appendChild(createEllipsis());
+    pag.appendChild(createPageItem(total, total));
+  } else if (end === total - 1) {
+    pag.appendChild(createPageItem(total, total));
+  }
+
+  pag.appendChild(createPageItem("&rsaquo;", current + 1, current === total));
+  pag.appendChild(createPageItem("&raquo;", total, current === total));
 }
 
 document.addEventListener("DOMContentLoaded", function() {
   fetchFilters();
   loadFavorites();
+
+  // ✅ Swipe gestures για mobile pagination
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  document.addEventListener("touchstart", function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  }, false);
+
+  document.addEventListener("touchend", function(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, false);
+
+  function handleSwipe() {
+    const threshold = 50; // ελάχιστη απόσταση για swipe
+
+    if (touchEndX < touchStartX - threshold && currentPage < totalPages) {
+      loadFavorites(currentPage + 1); // swipe left → επόμενη
+    }
+
+    if (touchEndX > touchStartX + threshold && currentPage > 1) {
+      loadFavorites(currentPage - 1); // swipe right → προηγούμενη
+    }
+  }
 });
 
 function fetchFilters() {
@@ -540,68 +654,81 @@ function loadFavorites(page) {
     search: term
   });
 
-  fetch('/api/favorites?' + params.toString())
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      const container = document.getElementById("favorites-container");
-      container.innerHTML = "";
+  const container = document.getElementById("favorites-container");
 
-      if (data.recipes.length === 0) {
-        container.innerHTML = '<div class="col-12 text-center text-muted">Δεν βρέθηκαν συνταγές.</div>';
-        renderPagination(1, 1);
-        return;
-      }
+  // ➤ 1. ξεκινά το fade-out
+  container.classList.remove("fade-in");
+  container.classList.add("fade-out");
 
-      data.recipes.forEach(function(rec) {
-        const el = document.createElement("div");
-        el.className = "col-12";
+  setTimeout(function () {
+    fetch('/api/favorites?' + params.toString())
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+	    currentPage = data.page;
+        totalPages = data.total_pages;
+		
+		// 🔁 Αποθήκευση των IDs
+        favoriteRecipeIds = data.recipes.map(r => r.id);
+		
+        container.innerHTML = "";
 
-        var cardHtml = '';
-        cardHtml += '<div class="card shadow-sm h-100" onclick="openRecipeModal(this)" style="cursor: pointer;"';
-        cardHtml += ' data-title="' + rec.title + '"';
-        cardHtml += ' data-chef="' + (rec.chef || '') + '"';
-        cardHtml += ' data-method="' + (rec.method || '') + '"';
-        cardHtml += ' data-category="' + (rec.main_dish_tag || '') + '"';
-        cardHtml += ' data-tags="' + (rec.tags || '') + '"';
-        cardHtml += ' data-url="' + (rec.url || '') + '"';
-        cardHtml += ' data-prep="' + (rec.prep_time || '') + '"';
-        cardHtml += ' data-cook="' + (rec.cook_time || '') + '"';
-        cardHtml += ' data-ingredients="' + (rec.ingredients || '') + '"';
-        cardHtml += ' data-instructions="' + (rec.instructions || '') + '">';
+        if (data.recipes.length === 0) {
+          container.innerHTML = '<div class="col-12 text-center text-muted">Δεν βρέθηκαν συνταγές.</div>';
+          renderPagination(1, 1);
+        } else {
+          data.recipes.forEach(function(rec) {
+            const el = document.createElement("div");
+            el.className = "col-12";
 
-        cardHtml += '<div class="card-header d-flex justify-content-between align-items-center no-click" style="padding:2px 10px;">';
-        cardHtml += '<span class="fw-bold flex-grow-1 me-2" style="font-size:1.1em;">' + rec.title + '</span>';
-        cardHtml += '<div class="d-flex gap-1 flex-shrink-0">';
-        cardHtml += '<a href="/favorites/edit/' + rec.id + '" class="btn btn-outline-primary btn-sm no-click" onclick="event.stopPropagation()">';
-        cardHtml += '<i class="fa fa-pen"></i></a>';
-        cardHtml += '<button class="btn btn-danger btn-sm no-click" data-id="' + rec.id + '" data-title="' + rec.title + '" data-createdby="' + (rec.created_by || 0) + '" onclick="event.stopPropagation(); deleteFavFromDataAttr(this)">';
-        cardHtml += '<i class="fa fa-trash"></i></button>';
-        cardHtml += '</div></div>';
+            var cardHtml = '';
+            cardHtml += '<div class="card shadow-sm h-100" onclick="openRecipeModal(this)" style="cursor: pointer;"';
+            cardHtml += ' data-title="' + rec.title + '"';
+            cardHtml += ' data-chef="' + (rec.chef || '') + '"';
+            cardHtml += ' data-method="' + (rec.method || '') + '"';
+            cardHtml += ' data-category="' + (rec.main_dish_tag || '') + '"';
+            cardHtml += ' data-tags="' + (rec.tags || '') + '"';
+            cardHtml += ' data-url="' + (rec.url || '') + '"';
+            cardHtml += ' data-prep="' + (rec.prep_time || '') + '"';
+            cardHtml += ' data-cook="' + (rec.cook_time || '') + '"';
+            cardHtml += ' data-ingredients="' + (rec.ingredients || '') + '"';
+            cardHtml += ' data-instructions="' + (rec.instructions || '') + '">';
 
-        cardHtml += '<div class="card-body py-2 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between" style="background-color: beige;">';
-        cardHtml += '<div class="d-flex flex-wrap align-items-center gap-2">';
-        cardHtml += '<span class="badge bg-info text-dark"><i class="fa fa-user"></i> ' + (rec.chef || '-') + '</span>';
-        cardHtml += '<span class="badge bg-success"><i class="fa fa-clock"></i> ' + (rec.total_time || '-') + '\'</span>';
-        if (rec.method) {
-          cardHtml += '<span class="badge bg-warning text-dark"><i class="fa fa-fire"></i> ' + rec.method + '</span>';
+            cardHtml += '<div class="card-header d-flex justify-content-between align-items-center no-click" style="padding:2px 10px;">';
+            cardHtml += '<span class="fw-bold flex-grow-1 me-2" style="font-size:1.1em;">' + rec.title + '</span>';
+            cardHtml += '<div class="d-flex gap-1 flex-shrink-0">';
+            cardHtml += '<a href="/favorites/edit/' + rec.id + '" class="btn btn-outline-primary btn-sm no-click" onclick="event.stopPropagation()">';
+            cardHtml += '<i class="fa fa-pen"></i></a>';
+            cardHtml += '<button class="btn btn-danger btn-sm no-click" data-id="' + rec.id + '" data-title="' + rec.title + '" data-createdby="' + (rec.created_by || 0) + '" onclick="event.stopPropagation(); deleteFavFromDataAttr(this)">';
+            cardHtml += '<i class="fa fa-trash"></i></button>';
+            cardHtml += '</div></div>';
+
+            cardHtml += '<div class="card-body py-2 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between" style="background-color: beige;">';
+            cardHtml += '<div class="d-flex flex-wrap align-items-center gap-2">';
+            cardHtml += '<span class="badge bg-info text-dark"><i class="fa fa-user"></i> ' + (rec.chef || '-') + '</span>';
+            cardHtml += '<span class="badge bg-success"><i class="fa fa-clock"></i> ' + (rec.total_time || '-') + '\'</span>';
+            if (rec.method) {
+              cardHtml += '<span class="badge bg-warning text-dark"><i class="fa fa-fire"></i> ' + rec.method + '</span>';
+            }
+            if (rec.tags) {
+              cardHtml += '<span class="badge bg-secondary"><i class="fa fa-tag"></i> ' + rec.tags + '</span>';
+            }
+            cardHtml += '</div></div>';
+            cardHtml += '</div>'; // end card
+
+            el.innerHTML = cardHtml;
+            container.appendChild(el);
+          });
+
+          renderPagination(data.page, data.total_pages);
         }
-        if (rec.tags) {
-          cardHtml += '<span class="badge bg-secondary"><i class="fa fa-tag"></i> ' + rec.tags + '</span>';
-        }
-        cardHtml += '</div></div>';
-        cardHtml += '</div>'; // end card
 
-        el.innerHTML = cardHtml;
-        container.appendChild(el);
+        // ➤ 2. Ενεργοποίηση fade-in
+        container.classList.remove("fade-out");
+        container.classList.add("fade-in");
+		
       });
-
-      renderPagination(data.page, data.total_pages);
-    });
-	
-	console.log("method=", method, "category=", category, "chef=", chef, "time=", time, "search=", term);
-
+  }, 300); // λίγο delay για να φανεί το fade-out
 }
-
 
 function populateFilter(selectId, values, defaultLabel) {
   const select = document.getElementById(selectId);
@@ -642,6 +769,16 @@ function populateTimeFilter(selectId, timeList) {
       select.appendChild(o);
     }
   });
+}
+
+function resetFilters() {
+  document.getElementById("filter-method").selectedIndex = 0;
+  document.getElementById("filter-category").selectedIndex = 0;
+  document.getElementById("filter-chef").selectedIndex = 0;
+  document.getElementById("filter-time").selectedIndex = 0;
+  document.getElementById("search-term").value = "";
+
+  loadFavorites(1);  // Επαναφορτώνει τα αποτελέσματα από την 1η σελίδα
 }
 
 

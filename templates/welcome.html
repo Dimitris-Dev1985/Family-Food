@@ -339,7 +339,7 @@ msg += "<div class='me-1 text-start'>";
 msg += "<div class='fw-bold'>" + dishTitle + "</div>";
 if (dishTime) msg += "<small class='text-muted'>Χρόνος: " + dishTime + "′</small>";
 msg += "</div>";
-msg += "<button class='btn btn-outline-primary btn-sm fixed-recipe-btn' onclick='showRecipeUrl(" + todayMenuId + ")'>Δες τη συνταγή</button>";
+msg += "<button class='btn btn-info btn-sm fixed-recipe-btn' onclick='showRecipeUrl(" + todayMenuId + ")'>Δες τη συνταγή</button>";
 msg += "</li>";
 
 msg += "</ul>";
@@ -366,7 +366,7 @@ function showTomorrow() {
   if (dishTime) msg += ' (χρόνος: ' + dishTime + '′)';
   msg +=
     '<div class="mt-2 mb-2">' +
-      '<button class="btn btn-primary btn-sm" onclick="showRecipeUrl(' + tomorrowMenuId + ')">Δες τη συνταγή</button>' +
+      '<button class="btn btn-info btn-sm" onclick="showRecipeUrl(' + tomorrowMenuId + ')">Δες τη συνταγή</button>' +
     '</div>' +
     '<div class="mb-2 mt-2">Τι θα ήθελες να κάνεις;</div>';
   addChatLine('assistant', msg);
@@ -434,7 +434,7 @@ function nextAIChatStep(userAnswer) {
 		  html += "<div class='fw-bold'>" + dish.title + heart + "</div>";
 		  html += "<small class='text-muted'>Χρόνος: " + dish.total_time + "′</small>";
 		  html += "</div>";
-		  html += "<button type='button' class='btn btn-outline-primary btn-sm fixed-recipe-btn' onclick=\"showRecipeUrl('" + dish.id + "')\">Δες τη συνταγή</button>";
+		  html += "<button type='button' class='btn btn-info btn-sm fixed-recipe-btn' onclick=\"showRecipeUrl('" + dish.id + "')\">Δες τη συνταγή</button>";
 		  html += "</li>";
 		}
 
@@ -524,7 +524,7 @@ function nextAIChatStep(userAnswer) {
             '</button>';
         }
         html0 += '<button class="btn btn-secondary btn-sm ai-ok-btn py-0 px-1" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';  
-        html0 += '<button class="btn btn-info btn-sm  ai-ok-btn py-0 px-1" style="width:fit-content"' +
+        html0 += '<button class="btn btn-warning btn-sm ai-ok-btn py-0 px-1" style="width:fit-content"' +
           'onclick="addChatLine(\'user\',\'Θα παραγγείλω!\'); addChatLine(\'assistant\',\'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">' +
           'Θα παραγγείλω' +
           '</button>';
@@ -553,9 +553,9 @@ function updateCookedDish(recipe_id, title, date) {
       addChatLine('assistant', 'Το πιάτο ενημερώθηκε επιτυχώς! 🍲');
       // Προσθήκη επιπλέον μηνύματος:
       if (cookingDay === "today") {
-        addChatLine('assistant', 'Σήμερα θα φάμε <b>' + title + '</b>.');
+        addChatLine('assistant', 'Σήμερα θα φάμε: <b>' + title + '</b>.');
       } else {
-        addChatLine('assistant', 'Αύριο θα φάμε <b>' + title + '</b>.');
+        addChatLine('assistant', 'Αύριο θα φάμε: <b>' + title + '</b>.');
       }
       clearChatControls();
     } else {
@@ -628,7 +628,7 @@ function recordCookedDish(recipe_id, title) {
     if (data.exists) {
       if (data.already) {
         addChatLine('assistant', 'Το πιάτο <b>' + title + '</b> είναι ήδη καταχωρημένο για αυτή τη μέρα!');
-        var html = '<button class="btn btn-primary btn-sm" onclick="showRecipeUrl(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
+        var html = '<button class="btn btn-info btn-sm" onclick="showRecipeUrl(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
         addChatLine('assistant', html);
       } else {
         addChatLine('assistant', 'Υπάρχει ήδη επιλεγμένο πιάτο για αυτή τη μέρα: <b>' + data.old_title + '</b>. Θέλεις να το αλλάξεις;');
