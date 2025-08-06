@@ -127,6 +127,14 @@ body.menu-onboarding-active nav.navbar a.nav-link {
 }
 
 
+.fixed-recipe-btn {
+  min-width: 70px;
+  width: 70px;
+  padding: 1px 4px;
+  font-size: 0.75rem;
+}
+
+
 
 /* ==================================================
    ✦ AUTOCOMPLETE & INPUT STYLING
@@ -388,7 +396,6 @@ body {
 .goalerror-alert.fade {
   transition: opacity 1s linear;
 }
-
 
 /* ==================================================
    ✦ VOICE INPUT STYLING
