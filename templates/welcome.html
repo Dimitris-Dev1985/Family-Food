@@ -3,6 +3,14 @@
 {% block content %}
 
 <style>
+
+.li {
+padding-left: 1.3rem!important;
+text-align: left;
+}
+
+
+
 /* Backdrop ΜΟΝΟ στη navbar (fixed-bottom) */
 #onboardingNavBackdrop {
   position: fixed;
@@ -80,6 +88,8 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 }
 .chat-line {
   text-align: justify;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 .chat-assistant { color: #fe9441; font-weight: 700; }
 .chat-user { color: #2078b6; font-weight: 600; }
@@ -245,18 +255,18 @@ function startSpeechRecognition() {
 function showMainChoices() {
   if (document.querySelector('#chatbox #choicesRow')) return;
   let html = '<div class="d-flex justify-content-center gap-2" id="choicesRow" style="margin-top:10px">' +
-    '<button class="btn btn-outline-primary" onclick="replyAndHideBtns(\'Ό,τι έχει το πρόγραμμα\', \'\', false, \'program\')">📋 Ό,τι έχει το πρόγραμμα</button>' +
-    '<button class="btn btn-outline-success" onclick="replyAndHideBtns(\'Δώσε καμιά ιδέα!\', \'\', false, \'ai\')">💡 Δώσε καμιά ιδέα!</button>' +
-    '<button class="btn btn-outline-warning" onclick="replyAndHideBtns(\'Θέλω να μαγειρέψω για αύριο\', \'\', false, \'tomorrow\')">Θέλω να μαγειρέψω για αύριο</button>' +
+    '<button class="btn btn-outline-primary btn-sm" onclick="replyAndHideBtns(\'Ό,τι έχει το πρόγραμμα\', \'\', false, \'program\')">📋 Ό,τι έχει το πρόγραμμα</button>' +
+    '<button class="btn btn-outline-success btn-sm" onclick="replyAndHideBtns(\'Δώσε καμιά ιδέα!\', \'\', false, \'ai\')">💡 Δώσε καμιά ιδέα!</button>' +
+    '<button class="btn btn-outline-warning btn-sm" onclick="replyAndHideBtns(\'Θέλω να δω για αύριο\', \'\', false, \'tomorrow\')">Θέλω να δω για αύριο</button>' +
     '</div>';
   addChatLine('controls', html);
 }
 
 function showActionsAfterMenu(menuId, menuTitle) {
   let html = '<div class="d-flex justify-content-center gap-2" id="afterMenuBtns">' +
-    '<button class="btn btn-success" onclick="replyAndHideBtns(\'Το μαγειρεύω\', \'\', false, \'cook_' + menuId + '_' + escapeHtml(menuTitle) + '\')">Το μαγειρεύω</button>' +
-    '<button class="btn btn-info" onclick="replyAndHideBtns(\'Το παραγγέλνω!\', \'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">Το παραγγέλνω</button>' +
-    '<button class="btn btn-secondary" onclick="replyAndHideBtns(\'Δείξε μου κάτι άλλο\', \'\', true)">Δείξε μου κάτι άλλο</button>' +
+    '<button class="btn btn-success btn-sm" onclick="replyAndHideBtns(\'Το μαγειρεύω\', \'\', false, \'cook_' + menuId + '_' + escapeHtml(menuTitle) + '\')">Το μαγειρεύω</button>' +
+    '<button class="btn btn-info btn-sm" onclick="replyAndHideBtns(\'Το παραγγέλνω!\', \'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">Το παραγγέλνω</button>' +
+    '<button class="btn btn-secondary btn-sm" onclick="replyAndHideBtns(\'Δείξε μου κάτι άλλο\', \'\', true)">Δείξε μου κάτι άλλο</button>' +
     '</div>';
   addChatLine('controls', html);
 }
@@ -290,23 +300,36 @@ function replyAndHideBtns(userText, botText, isAI, nextAction) {
 }
 
 function showTodayMenu() {
-  // Υπολόγισε τίτλο και χρόνο από todayMenu (αν υπάρχει)
-  var dishTitle = todayMenu;
-  var dishTime = '';
-  var m = todayMenu.match(/^(.*?)\s*[–-]\s*χρόνος(?:\s*μαγειρέματος)?[: ]*([\d]+)′/i);
-  if (m) {
-    dishTitle = m[1].trim();
-    dishTime = m[2].trim();
-  }
-  var msg = 'Σήμερα το πρόγραμμα έχει: <b>' + dishTitle + '</b>';
-  if (dishTime) msg += ' (χρόνος: ' + dishTime + '′)';
-  msg +=
-    '<div class="mt-2 mb-2">' +
-      '<button class="btn btn-primary btn-sm" onclick="showRecipeUrl(' + todayMenuId + ')">Δες τη συνταγή</button>' +
-    '</div>' +
-    '<div class="mb-2 mt-2">Τι θα ήθελες να κάνεις;</div>';
-  addChatLine('assistant', msg);
-  showActionsAfterMenu(todayMenuId, dishTitle);
+// Υπολόγισε τίτλο και χρόνο από todayMenu (αν υπάρχει)
+var dishTitle = todayMenu;
+var dishTime = '';
+var m = todayMenu.match(/^(.*?)\s*[–-]\s*χρόνος(?:\s*μαγειρέματος)?[: ]*([\d]+)′/i);
+if (m) {
+	dishTitle = m[1].trim();
+	dishTime = m[2].trim();
+	}
+  
+var msg = "<div class='mb-1'>👩‍🍳 Σήμερα το πρόγραμμα έχει:</div>";
+
+msg += "<ul class='list-group mb-2'>";
+
+msg += "<li class='list-group-item py-0 px-2 d-flex justify-content-between align-items-center'>";
+msg += "<div class='me-1 text-start'>";
+msg += "<div class='fw-bold'>" + dishTitle + "</div>";
+if (dishTime) msg += "<small class='text-muted'>Χρόνος: " + dishTime + "′</small>";
+msg += "</div>";
+msg += "<button class='btn btn-outline-primary btn-sm fixed-recipe-btn' onclick='showRecipeUrl(" + todayMenuId + ")'>Δες τη συνταγή</button>";
+msg += "</li>";
+
+msg += "</ul>";
+
+addChatLine('controls', msg);
+
+msg = "<div class='chat-line'>👩‍🍳 Τι θα ήθελες να κάνεις;</div>";
+
+addChatLine('controls', msg);
+
+showActionsAfterMenu(todayMenuId, dishTitle);
 }
 
 function showTomorrow() {
@@ -341,21 +364,16 @@ function startAIChat() {
 
 function submitAIAnswer() {
   let val = '';
-  
-  console.log("aiChatStep=",aiChatStep);
 
   if (aiChatStep === 2) {
     const inputs = document.querySelectorAll('#chatbox input[id^="ai_time_"]');
     val = inputs.length ? inputs[inputs.length - 1].value : '';
-	console.log(val);
   }
 
   if (aiChatStep === 3) {
     const inputs = document.querySelectorAll('#chatbox input[id^="ai_ingredient_"]');
     val = inputs.length ? inputs[inputs.length - 1].value : '';
-	console.log(val);
   }
-
   clearChatControls();
   nextAIChatStep(val);
 }
@@ -382,18 +400,28 @@ function nextAIChatStep(userAnswer) {
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.dishes && data.dishes.length > 0) {
-      var html = "<div class='mb-2'>" + "👩‍🍳 " + data.question + "</div>";
-      html += "<ul>";
-      for (var i = 0; i < data.dishes.length; i++) {
-        var dish = data.dishes[i];
-		let heart = dish.favorite ? " ❤️" : "";
-        html += "<li><b>" + dish.title + "</b>" + heart + " (χρόνος: " + dish.total_time + "′) " +
-          "<button type='button' class='btn btn-primary btn-sm' " +
-          "onclick=\"showRecipeUrl('" + dish.id + "')\">" + "Δες τη συνταγή</button>";
-        html += "</li>";
-      }
-      html += "</ul>";
-      addChatLine('consoles', html);
+		var html = "<div class='mb-2'>👩‍🍳 " + data.question + "</div>";
+
+		html += "<ul class='list-group'>";
+
+		for (var i = 0; i < data.dishes.length; i++) {
+		  var dish = data.dishes[i];
+		  let heart = dish.favorite ? " ❤️" : "";
+
+		  html += "<li class='list-group-item py-0 px-2 d-flex justify-content-between align-items-center'>";
+		  html += "<div class='me-1 text-start'>";
+		  html += "<div class='fw-bold'>" + dish.title + heart + "</div>";
+		  html += "<small class='text-muted'>Χρόνος: " + dish.total_time + "′</small>";
+		  html += "</div>";
+		  html += "<button type='button' class='btn btn-outline-primary btn-sm fixed-recipe-btn' onclick=\"showRecipeUrl('" + dish.id + "')\">Δες τη συνταγή</button>";
+		  html += "</li>";
+		}
+
+		html += "</ul>";
+
+		addChatLine('consoles', html);
+
+
     } else {
       addChatLine('assistant', data.question.replace(/\n/g, "<br>"));
     }
@@ -405,7 +433,7 @@ function nextAIChatStep(userAnswer) {
 			<span class="chat-assistant">🙋‍♂️</span>
 			<label class="mb-0 me-2" for="${aiTimeId}">Λεπτά:</label>
 			<input id="${aiTimeId}" type="number" min="10" max="180" step="5" value="60"
-				   class="form-control d-inline ai-ok-btn" style="width:100px">
+				   class="form-control d-inline ai-ok-btn" style="width:80px; padding: 0.2rem;">
 			<button onclick="submitAIAnswer()" class="btn btn-primary btn-sm ai-ok-btn">OK</button>
 		  </div>
 		`;
@@ -421,10 +449,10 @@ function nextAIChatStep(userAnswer) {
 		  <label class="mb-0 me-2" for="${ingredientId}">Υλικό προτίμησης:</label>
 		  <div class="position-relative" style="width: 90px;">
 			<input id="${ingredientId}"
-				   class="form-control d-inline"
+				   class="form-control d-inline ai-ok-btn"
 				   autocomplete="off"
 				   placeholder="π.χ. ψάρι"
-				   style="width: 100%;">
+				   style="width: 100%;padding: 0.2rem;">
 			<div id="${ingredientId}_autocomplete" class="autocomplete-list" style="display: none; position:absolute; width: max-content;"></div>
 		  </div>
 		  <button onclick="startSpeechRecognition()" class="btn btn-secondary btn-sm ai-ok-btn">🎤</button>
@@ -469,13 +497,13 @@ function nextAIChatStep(userAnswer) {
         html0 += '<div class="d-flex flex-column gap-2 my-2 align-items-center">';
         for (var i = 0; i < data.dishes.length; i++) {
           var dish2 = data.dishes[i];
-          html0 += '<button class="btn btn-success" style="width:fit-content"' +
+          html0 += '<button class="btn btn-success btn-sm" style="width:fit-content"' +
             'onclick="recordCookedDish(\'' + dish2.id + '\', \'' + escapeHtml(dish2.title) + '\')">' +
             'Μαγειρεύω ' + escapeHtml(dish2.title) +
             '</button>';
         }
-        html0 += '<button class="btn btn-secondary ai-ok-btn" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';  
-        html0 += '<button class="btn btn-info ai-ok-btn" style="width:fit-content"' +
+        html0 += '<button class="btn btn-secondary btn-sm ai-ok-btn" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';  
+        html0 += '<button class="btn btn-info btn-sm  ai-ok-btn" style="width:fit-content"' +
           'onclick="addChatLine(\'user\',\'Θα παραγγείλω!\'); addChatLine(\'assistant\',\'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">' +
           'Θα παραγγείλω' +
           '</button>';
@@ -592,8 +620,7 @@ function recordCookedDish(recipe_id, title) {
     } else {
       addChatLine('user', 'Μαγειρεύω: ' + title);
       var html3 = '<button class="btn btn-info btn-sm me-2" onclick="showRecipeUrl(\'' + recipe_id + '\')">Δες τη συνταγή</button>';
-      addChatLine('assistant', html3);
-      addChatLine('assistant', 'Καλή όρεξη! 😋');
+      addChatLine('assistant', 'Καλή όρεξη! 😋' + html3);
     }
   });
 }
@@ -612,9 +639,6 @@ function setupIngredientAutocomplete(allRecipes, ingredientInputId) {
   const listDiv = document.getElementById(`${ingredientInputId}_autocomplete`);
   const chatbox = document.getElementById("chatbox");
 
-  console.log("🔥 Running autocomplete setup");
-  console.log("input:", input);
-
   if (!input || !listDiv || !chatbox) {
     console.warn("⚠️ Missing DOM elements", { input, listDiv, chatbox });
     return;
@@ -631,7 +655,6 @@ function setupIngredientAutocomplete(allRecipes, ingredientInputId) {
   const allIngredients = Array.from(allIngredientsSet);
 
   input.addEventListener('input', function () {
-    console.log("👂 ακουω");
     const val = removeTonos(input.value.trim().toLowerCase());
     listDiv.innerHTML = "";
 
@@ -659,7 +682,6 @@ function setupIngredientAutocomplete(allRecipes, ingredientInputId) {
         listDiv.style.display = "none";
       };
       listDiv.appendChild(option);
-      console.log("return3");
     });
 
     listDiv.style.display = "block";

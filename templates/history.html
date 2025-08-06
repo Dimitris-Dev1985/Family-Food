@@ -439,7 +439,6 @@ function updateWeeklyGoalsTable() {
 }
 
 window.addEventListener('DOMContentLoaded', function() {
-  console.log("1");
   updateWeeklyGoalsTable()
     
   fetch("/api/onboarding_progress")
@@ -459,13 +458,10 @@ window.addEventListener('DOMContentLoaded', function() {
     } else {
       window.historyOnboarding.step = h.step;
       window.historyOnboarding.completed = h.completed;
-	  console.log("OKK");
-	  console.log(window.historyOnboarding.completed); 
       window.historyOnboarding.initialized = true;
       runHistoryOnboarding();
 	  
 	  if (missingDays.length > 0 && window.historyOnboarding.completed) {
-		console.log("2");
 		let list = document.getElementById('missingDaysList');
 		list.innerHTML = '';
 		missingDays.forEach(function(d) {
@@ -788,31 +784,15 @@ function ensureWeekSection(year, week, dateStr) {
 
 function addCardToHistory(id, date, title, chef, category, is_favorite, recipe_id) {
 
-	console.log('[ADD CARD]');
-	console.log('- date:', date);
-	console.log('- title:', title);
-	console.log('- chef:', chef);
-	console.log('- category:', category);
-
-	var d = new Date(date);
-	console.log('- JS parsed date:', d);
-
-	var year = d.getFullYear();
-	var week = getISOWeekNumber(d);
-	console.log('- computed week:', week);
-	console.log('- computed year:', year);
-
-	var collapseId = 'week-' + year + '_' + week;
-	console.log('- collapseId:', collapseId);
-
-	ensureWeekSection(year, week, date);
-
+var d = new Date(date);
+var year = d.getFullYear();
+var week = getISOWeekNumber(d);
+var collapseId = 'week-' + year + '_' + week;
 
   ensureWeekSection(year, week, date); // ← Δημιουργεί την εβδομάδα αν δεν υπάρχει
 
   var container = document.querySelector('#' + collapseId + ' .row.g-3');
   if (!container) {
-    console.warn('Δεν βρέθηκε container για την εβδομάδα:', collapseId);
     return;
   }
 
