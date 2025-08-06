@@ -377,20 +377,146 @@ def delete_recipe(rid):
 @app.route("/favorites")
 @login_required
 def favorites():
+    return render_template("favorites.html")
+
+@app.route("/api/favorites/filters")
+@login_required
+def get_favorite_filters():
     user, _ = get_user()
     user_id = user["id"]
+
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
-    favorites = conn.execute("""
-    SELECT r.id, r.title, r.chef, r.prep_time, r.cook_time, r.url, r.main_dish_tag, r.total_time, r.created_by, r.parent_id, r.method, r.tags, r.ingredients, r.instructions, r.allergens
+
+    rows = conn.execute("""
+    SELECT r.chef, r.main_dish_tag, r.total_time, r.method
     FROM favorite_recipes f
     JOIN recipes r ON r.id = f.recipe_id
-    WHERE f.user_id=?
-    ORDER BY f.rowid ASC
+    WHERE f.user_id = ?
     """, (user_id,)).fetchall()
 
     conn.close()
-    return render_template("favorites.html", favorites=favorites)
+
+    chefs = set()
+    categories = set()
+    times = set()
+    methods = set()
+
+    for r in rows:
+        if r["chef"]:
+            chefs.add(r["chef"])
+        if r["main_dish_tag"]:
+            categories.add(r["main_dish_tag"])
+        if r["total_time"]:
+            times.add(int(r["total_time"]))
+        if r["method"]:
+            methods.add(r["method"])
+
+    return jsonify({
+        "chefs": sorted(chefs),
+        "categories": sorted(categories),
+        "times": sorted(times),
+        "methods": sorted(methods)
+    })
+
+@app.route("/api/favorites")
+@login_required
+def api_favorites():
+    user, _ = get_user()
+    user_id = user["id"]
+
+    # Query params
+    page = int(request.args.get("page", 1))
+    per_page = int(request.args.get("per_page", 4))
+    method = request.args.get("method", "").strip()
+    category = request.args.get("category", "").strip()
+    chef = request.args.get("chef", "").strip()
+    time_limit = request.args.get("time", "").strip()
+    search = request.args.get("search", "").strip()
+
+    offset = (page - 1) * per_page
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    base_query = """
+    SELECT r.id, r.title, r.chef, r.prep_time, r.cook_time, r.url,
+           r.main_dish_tag, r.total_time, r.created_by, r.parent_id,
+           r.method, r.tags, r.ingredients, r.instructions
+    FROM favorite_recipes f
+    JOIN recipes r ON r.id = f.recipe_id
+    WHERE f.user_id = ?
+    """
+
+    filters = [user_id]
+    conditions = []
+
+    if method:
+        conditions.append("r.method = ?")
+        filters.append(method)
+
+    if category:
+        conditions.append("r.main_dish_tag = ?")
+        filters.append(category)
+
+    if chef:
+        conditions.append("r.chef = ?")
+        filters.append(chef)
+
+    if time_limit:
+        try:
+            time_limit = int(time_limit)
+            conditions.append("r.total_time <= ?")
+            filters.append(time_limit)
+        except ValueError:
+            pass
+
+    if search:
+        search_term = f"%{search.lower()}%"
+        conditions.append("(" +
+            "LOWER(r.title) LIKE ? OR " +
+            "LOWER(r.tags) LIKE ? OR " +
+            "LOWER(r.main_dish_tag) LIKE ?)"
+        )
+        filters += [search_term, search_term, search_term]
+
+    if conditions:
+        base_query += " AND " + " AND ".join(conditions)
+
+    base_query += " ORDER BY f.rowid ASC"
+
+    count_query = "SELECT COUNT(*) FROM (" + base_query + ")"
+    total_count = conn.execute(count_query, filters).fetchone()[0]
+
+    paginated_query = base_query + " LIMIT ? OFFSET ?"
+    final_filters = filters + [per_page, offset]
+
+    rows = conn.execute(paginated_query, final_filters).fetchall()
+    conn.close()
+
+    def row_to_dict(row):
+        return {
+            "id": row["id"],
+            "title": row["title"],
+            "chef": row["chef"],
+            "prep_time": row["prep_time"],
+            "cook_time": row["cook_time"],
+            "total_time": row["total_time"],
+            "url": row["url"],
+            "main_dish_tag": row["main_dish_tag"],
+            "created_by": row["created_by"],
+            "method": row["method"],
+            "tags": row["tags"],
+            "ingredients": row["ingredients"],
+            "instructions": row["instructions"]
+        }
+
+    return jsonify({
+        "recipes": [row_to_dict(r) for r in rows],
+        "page": page,
+        "total_pages": (total_count + per_page - 1) // per_page
+    })
+
 
 @app.route('/toggle_favorite_recipe', methods=['POST'])
 def toggle_favorite_recipe():
