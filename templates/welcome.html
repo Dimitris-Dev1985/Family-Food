@@ -178,7 +178,7 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 #chatRestartOnScroll button {
   background: linear-gradient(90deg, #fe9441 0%, #ffe15f 90%);
   color: #444;
-  padding: 0.3rem, 0.5rem;
+  padding: 0.3rem 0.5rem;
   border-radius: 12px;
   border: none;
   font-weight: 700;
@@ -783,15 +783,13 @@ function ensureRestartButtonExists() {
 
   const btnHtml = `
     <div id="chatRestartOnScroll"
-         style="display:none; position: absolute; top: 8px; left: 0; right: 0; z-index: 10;"
+         style="display:none; position: absolute; top: 50px; left: 0; right: 0; z-index: 10;"
          class="text-center">
-      <button type="button" class="btn btn-outline-danger btn-sm" onclick="restartChat()">↩️ Επανεκκίνηση Chat</button>
+      <button type="button" class="btn btn-primary" onclick="restartChat()">↩️ Επανεκκίνηση Chat</button>
     </div>
   `;
   section.insertAdjacentHTML('afterbegin', btnHtml);
 }
-
-
 
 </script>
 

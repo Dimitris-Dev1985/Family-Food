@@ -23,24 +23,25 @@
 			 data-ingredients="{{ rec.ingredients or '' }}"
 			 data-instructions="{{ rec.instructions or '' }}"
 		>
-		  <div class="card-header d-flex justify-content-between align-items-center no-click" style="background-color: mintcream;">
-			<span class="fw-bold" style="font-size:1.1em;max-width: 300px;">{{ rec.title }}</span>
-			<div>
-			  <a href="{{ url_for('edit_favorite_recipe', recipe_id=rec.id) }}"
-				 class="btn btn-outline-primary btn-sm no-click"
-				 title="Επεξεργασία"
-				 onclick="event.stopPropagation()">
-				<i class="fa fa-pen"></i>
-			  </a>
-			  <button class="btn btn-danger btn-sm ms-1 no-click"
-					  data-id="{{ rec.id }}"
-					  data-title="{{ rec.title|tojson }}"
-					  data-createdby="{{ rec.created_by or 0 }}"
-					  onclick="event.stopPropagation(); deleteFavFromDataAttr(this)">
-				<i class="fa fa-trash"></i>
-			  </button>
+			<div class="card-header d-flex justify-content-between align-items-center no-click" style="background-color: mintcream;">
+			  <span class="fw-bold flex-grow-1 me-2" style="font-size:1.1em;">{{ rec.title }}</span>
+			  <div class="d-flex gap-1 flex-shrink-0">
+				<a href="{{ url_for('edit_favorite_recipe', recipe_id=rec.id) }}"
+				   class="btn btn-outline-primary btn-sm no-click"
+				   title="Επεξεργασία"
+				   onclick="event.stopPropagation()">
+				  <i class="fa fa-pen"></i>
+				</a>
+				<button class="btn btn-danger btn-sm no-click"
+						data-id="{{ rec.id }}"
+						data-title="{{ rec.title|tojson }}"
+						data-createdby="{{ rec.created_by or 0 }}"
+						onclick="event.stopPropagation(); deleteFavFromDataAttr(this)">
+				  <i class="fa fa-trash"></i>
+				</button>
+			  </div>
 			</div>
-		  </div>
+
 
 		  <div class="card-body py-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between" style="background-color: beige;">
 			<div>
@@ -83,7 +84,7 @@
 </div>
 
 
-<div class="card shadow-sm" style="height: 100%; width: 100%;">
+<div class="card shadow-sm mb-3" style="height: 100%; width: 100%;">
   <div class="card-body d-flex flex-column align-items-stretch justify-content-center">
 
     <button class="btn btn-success btn-sm align-self-start" onclick="showAddFavorite()">
