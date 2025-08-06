@@ -126,6 +126,7 @@ body {
 .table {
   background: #fcfcfc;
   border-radius: 12px;
+  vertical-align: middle;
 }
 </style>
 
@@ -1114,7 +1115,7 @@ document.getElementById('profile-info-form').onsubmit = function(e) {
     first_name: form.first_name.value.trim(),
     family_name: form.family_name.value.trim(),
     address: form.address.value.trim(),
-    alt_address: form.alt_address.value.trim(),
+//    alt_address: form.alt_address.value.trim(),
     chef: form.chef.value.trim(),
     menu_day: form.menu_day.value.trim(),
     menu_hour: form.menu_hour.value.trim(),
@@ -1297,13 +1298,10 @@ function runProfileOnboarding() {
   const backdrop = document.getElementById("onboardingBackdrop");
   const menuLink = document.querySelector('nav.navbar.fixed-bottom a[href="/menu"]');
 
-	console.log(step);
-
   if (!step) return;
 
 	  // STEP 2
 	if (step === 2) {
-		console.log(window.profileOnboarding.lightMode);
 	  const editBtn = document.getElementById("edit-profile-button");
 	  
 	  if (editBtn) {	
@@ -1367,7 +1365,6 @@ function runProfileOnboarding() {
 	}
 
 	if (step === 3) {
-	console.log(window.profileOnboarding.lightMode);
 	  if (!window.profileOnboarding.lightMode) {
 		  backdrop.style.display = "block";
 		}
@@ -1424,7 +1421,6 @@ function runProfileOnboarding() {
 	}
 
 	if (step === 5) {
-		console.log(window.profileOnboarding.lightMode);
 	  if (!window.profileOnboarding.lightMode) {
 		  backdrop.style.display = "block";
 		}
@@ -1493,12 +1489,14 @@ window.addEventListener("DOMContentLoaded", function () {
       const completed = profileData.completed === true;
 
       // ✅ Υπολογισμός lightMode
-      let lightMode = false;
-      if (backendStep === 0) {
+      let lightMode = true;
+
+      
+	  if (backendStep === 0) {
         localStorage.setItem("profileOnboardingLightMode", "1");
         if (backdrop) backdrop.style.display = "none";  // Καμία επικάλυψη
       } 
-	  lightMode=localStorage.getItem("profileOnboardingLightMode");
+//	  lightMode=localStorage.getItem("profileOnboardingLightMode");
       window.profileOnboarding.step = backendStep === 0 ? 2 : backendStep;
       window.profileOnboarding.completed = completed;
       window.profileOnboarding.initialized = true;
