@@ -25,10 +25,37 @@ function showChatbox(auto = false) {
   };
   btn.disabled = false;
 
+  // ➕ Προσθήκη του restart button (αν δεν υπάρχει ήδη)
+  ensureRestartButtonExists();
+
+  // ➕ Προσθήκη scroll listener για εμφάνιση/απόκρυψη
+  const chatbox = document.getElementById('chatbox');
+  const restartScrollBtn = document.getElementById('chatRestartOnScroll');
+
+  if (chatbox && restartScrollBtn && !chatbox.dataset.scrollBound) {
+    let lastScrollTop = 0;
+
+    chatbox.addEventListener('scroll', function () {
+      const st = chatbox.scrollTop;
+      const goingUp = st < lastScrollTop;
+
+      if (goingUp && st > 60) {
+        restartScrollBtn.style.display = 'block';
+      } else {
+        restartScrollBtn.style.display = 'none';
+      }
+
+      lastScrollTop = st <= 0 ? 0 : st;
+    });
+
+    chatbox.dataset.scrollBound = "true";
+  }
+
+  // ➕ Μόνο στην πρώτη εκκίνηση (όχι restore)
   if (!sessionStorage.getItem('chatHistory') && !auto) {
     clearChatHistory();
     clearChatControls();
-    addChatLine('assistant', '<b>' + window.dayName + '</b>' + ' σήμερα, τι θα μαγειρέψουμε;');
+    addChatLine('assistant', window.dayName + ' σήμερα, τι θα μαγειρέψουμε;');
     showMainChoices();
   }
 
@@ -105,7 +132,7 @@ function restartChat() {
     .then(() => {
       clearChatHistory();
       clearChatControls();
-      addChatLine('assistant', '<b>' + window.dayName + '</b>' + ' σήμερα, τι θα μαγειρέψουμε;');
+      addChatLine('assistant', window.dayName + ' σήμερα, τι θα μαγειρέψουμε;');
       showMainChoices();
     });
 }
