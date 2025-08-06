@@ -167,6 +167,24 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
   .welcome-hero h1 { font-size: 1.3rem; }
   .welcome-actions .btn { min-width: 90px; padding: 0.67em 0.7em; font-size: 1em;}
 }
+
+#chatRestartOnScroll {
+  transition: opacity 0.3s ease;
+  position: absolute;
+  z-index: 1010;
+  text-align: center;
+}
+
+#chatRestartOnScroll button {
+  background: linear-gradient(90deg, #fe9441 0%, #ffe15f 90%);
+  color: #444;
+  padding: 0.3rem, 0.5rem;
+  border-radius: 12px;
+  border: none;
+  font-weight: 700;
+}
+
+
 </style>
 
 <div class="welcome-hero text-center">
@@ -181,19 +199,22 @@ body.onboarding-active nav.navbar.fixed-bottom a[href="/profile"] {
 
 
 <div id="onboardingNavBackdrop" style="display:none;"></div>
+
 <div id="onboardingTooltip" style="display:none;">
   👉 Συμπλήρωσε το προφίλ σου για να ξεκινήσεις!
   <div class="arrow-down"></div>
 </div>
 
-
-<div id="chatbox-section" style="display:none; margin:0 auto;">
+<div id="chatbox-section" style="display:none; margin:0 auto; position: relative;">
   <div class="chatbox rounded shadow-sm mb-3" id="chatbox">
+  
     <div class="chat-line">
       <span class="chat-assistant">👩‍🍳 Family Food:</span> {{ day_name }} σήμερα, τι θα φάμε;
     </div>
   </div>
+  
   <div id="ai-chat-controls"></div>
+  
 </div>
 
 {% endblock %}
@@ -494,23 +515,23 @@ function nextAIChatStep(userAnswer) {
     if (data.step === 0) {
       var html0 = "";
       if (data.dishes && data.dishes.length > 0) {
-        html0 += '<div class="d-flex flex-column gap-2 my-2 align-items-center">';
+        html0 += '<div class="d-flex flex-column gap-1 align-items-center">';
         for (var i = 0; i < data.dishes.length; i++) {
           var dish2 = data.dishes[i];
-          html0 += '<button class="btn btn-success btn-sm" style="width:fit-content"' +
+          html0 += '<button class="btn btn-success btn-sm py-0 px-1" style="width:fit-content"' +
             'onclick="recordCookedDish(\'' + dish2.id + '\', \'' + escapeHtml(dish2.title) + '\')">' +
             'Μαγειρεύω ' + escapeHtml(dish2.title) +
             '</button>';
         }
-        html0 += '<button class="btn btn-secondary btn-sm ai-ok-btn" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';  
-        html0 += '<button class="btn btn-info btn-sm  ai-ok-btn" style="width:fit-content"' +
+        html0 += '<button class="btn btn-secondary btn-sm ai-ok-btn py-0 px-1" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button>';  
+        html0 += '<button class="btn btn-info btn-sm  ai-ok-btn py-0 px-1" style="width:fit-content"' +
           'onclick="addChatLine(\'user\',\'Θα παραγγείλω!\'); addChatLine(\'assistant\',\'Έγινε! Θα βρούμε διαθέσιμο delivery σε επόμενο βήμα.\')">' +
           'Θα παραγγείλω' +
           '</button>';
         html0 += '</div>';  
         addChatLine('controls', html0);
       } else {
-        html0 = '<div class="d-flex gap-2 my-2"><button class="btn btn-secondary ai-ok-btn" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button></div>';
+        html0 = '<div class="d-flex gap-2 my-2"><button class="btn btn-secondary ai-ok-btn px-1" style="width:fit-content" onclick="startAIChat()">Δώσε μου κάποια άλλη ιδέα</button></div>';
         addChatLine('controls', html0);
       }
     }
@@ -612,8 +633,8 @@ function recordCookedDish(recipe_id, title) {
       } else {
         addChatLine('assistant', 'Υπάρχει ήδη επιλεγμένο πιάτο για αυτή τη μέρα: <b>' + data.old_title + '</b>. Θέλεις να το αλλάξεις;');
         var html2 = '<div id="replaceBtns">' +
-          '<button class="btn btn-danger me-2 ai-ok-btn" onclick="updateCookedDish(\'' + recipe_id + '\', \'' + escapeHtml(title) + '\', \'' + date + '\')">Ναι, θέλω να το αλλάξω</button>' +
-          '<button class="btn btn-secondary ai-ok-btn" onclick="refuseChange(\'' + escapeHtml(data.old_title) + '\')">Όχι, θα παραμείνω στο ' + escapeHtml(data.old_title) + '</button>' +
+          '<button class="btn btn-danger me-2 btn-sm ai-ok-btn py-0" onclick="updateCookedDish(\'' + recipe_id + '\', \'' + escapeHtml(title) + '\', \'' + date + '\')">Ναι, θέλω να το αλλάξω</button>' +
+          '<button class="btn btn-secondary btn-sm ai-ok-btn py-0 mt-1" onclick="refuseChange(\'' + escapeHtml(data.old_title) + '\')">Όχι, θα παραμείνω στο ' + escapeHtml(data.old_title) + '</button>' +
         '</div>';
         addChatLine('controls', html2);
       }
@@ -730,8 +751,48 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         if (startChatBtn) startChatBtn.disabled = false;
       }
-    });
+    });	
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+
+	ensureRestartButtonExists(); // 👈 πολύ σημαντικό να έρθει πρώτο
+
+	let lastScrollTop = 0;
+	const chatbox = document.getElementById('chatbox');
+	const restartScrollBtn = document.getElementById('chatRestartOnScroll');
+
+	chatbox.addEventListener('scroll', function () {
+	  const st = chatbox.scrollTop;
+	  const goingUp = st < lastScrollTop;
+
+	  // Αν ο χρήστης πάει προς τα πάνω και δεν είναι ήδη στην κορυφή
+	  if (goingUp && st > 60) {
+		restartScrollBtn.style.display = 'block';
+	  } else {
+		restartScrollBtn.style.display = 'none';
+	  }
+
+	  lastScrollTop = st <= 0 ? 0 : st; // Για iOS bounce scroll fix
+	});	
+});
+
+function ensureRestartButtonExists() {
+  const section = document.getElementById('chatbox-section');
+  if (!section || document.getElementById('chatRestartOnScroll')) return;
+
+  const btnHtml = `
+    <div id="chatRestartOnScroll"
+         style="display:none; position: absolute; top: 8px; left: 0; right: 0; z-index: 10;"
+         class="text-center">
+      <button type="button" class="btn btn-outline-danger btn-sm" onclick="restartChat()">↩️ Επανεκκίνηση Chat</button>
+    </div>
+  `;
+  section.insertAdjacentHTML('afterbegin', btnHtml);
+}
+
+
+
 </script>
 
 
