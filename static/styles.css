@@ -1,10 +1,7 @@
 /* ==================================================
    ✦ GLOBAL UTILITIES & TRANSITIONS
    ================================================== */
-.fade-out {
-  opacity: 0;
-  transition: opacity 0.4s ease-out;
-}
+
 
 .page-flip {
   transform: rotateY(90deg);
@@ -17,6 +14,17 @@
   0%   { transform: scale(1); box-shadow: 0 0 10px #fbc6d7; }
   50%  { transform: scale(1.03); box-shadow: 0 0 24px #dbc4cc; }
   100% { transform: scale(1); box-shadow: 0 0 10px #fbc6d7; }
+}
+
+
+/* ==================================================
+   ✦ PAGE TITLE
+   ================================================== */
+.fancy-title {
+  font-family: 'Baloo 2', cursive;
+  font-size: 2.3em;
+  color: #336699;
+  text-align: center;
 }
 
 
@@ -141,7 +149,7 @@ body.menu-onboarding-active nav.navbar a.nav-link {
    ================================================== */
 .autocomplete-list {
   position: relative;
-  top: 100%;
+  bottom: 100%;
   left: 0;
   right: 0;
   z-index: 1000;
@@ -233,6 +241,7 @@ body {
   border-bottom: none;
   font-weight: bold;
   font-size: 1.1em;
+  padding: 0.2em 1em;
 }
 
 .card .fw-bold {
@@ -241,6 +250,8 @@ body {
 
 .card-body {
   padding: 0.5em 1em;
+  background-color: beige;
+  cursor: pointer;
 }
 
 .recipe-card {
@@ -297,6 +308,7 @@ body {
   .modal-header {
     justify-content: center !important;
     border-radius: 1.5rem;
+    background-color: #acebd0!important;
   }
 
   .modal-title {
