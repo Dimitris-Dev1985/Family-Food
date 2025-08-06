@@ -30,7 +30,6 @@
   border-radius: 12px;
   font-size: 15px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  border: 2px dashed #faa;
   animation: pulse 1.5s infinite;
   display: flex;
   align-items: center;
@@ -64,26 +63,109 @@
   display: none;
 }
 
+body.menu-onboarding-active nav.navbar a.nav-link {
+  pointer-events: none !important;
+  opacity: 0.3;
+}
+
+.menu-onboarding-tip {
+  font-family: 'Indie Flower', cursive, Arial, sans-serif;
+  position: absolute;
+  background: #fbc6d7;
+  padding: 10px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  z-index: 1001;
+  width: 90vw;
+  max-width: 90%;    
+  min-width: 250px;    
+  font-size: 15px;
+  text-align: center;
+  border: none;
+  animation: pulse 1.5s infinite;
+  left: 0;
+  top: 0;
+}
+
+.onboard-arrow-up {
+  width: 22px;
+  height: 22px;
+  background: #fbc6d7;
+  border-radius: 4px;
+  border: none;
+  transform: rotate(45deg);
+  z-index: -1;
+  position: absolute; 
+}
+
+.onboard-arrow-down {
+  width: 22px;
+  height: 22px;
+  background: #fbc6d7;
+  border-radius: 4px;
+  border: none;
+  transform: rotate(45deg);
+  z-index: -1;
+  position: absolute;
+}
+
+
+
+#add-favorite-cell {
+  flex: 1;
+  width: 100%;
+}
+
+#add-favorite-cell .position-relative {
+  width: 100%;
+}
+
+#fav-input {
+  width: 100%;
+}
+
+
 
 /* ==================================================
    ✦ AUTOCOMPLETE & INPUT STYLING
    ================================================== */
 .autocomplete-list {
-  position: absolute !important;
+  position: relative;
   top: 100%;
   left: 0;
   right: 0;
   z-index: 1000;
-  background: #fff3cd;
+  background: #fff3cd; /* παστέλ κίτρινο για έμφαση */
   border: 1px solid #ccc;
-  max-height: 90vh;
-  overflow-y: auto;
   border-radius: 4px;
+  max-height: 50vh;
+  width: 100%;
+  min-width: 100%;
+  overflow-y: auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.autocomplete-option:nth-child(odd) {
+  background-color: #fffdf5;  /* πολύ απαλό κίτρινο */
+}
+
+.autocomplete-option:nth-child(even) {
+  background-color: #fff3cd;  /* ελαφρώς πιο έντονο */
 }
 
 .autocomplete-option:hover {
-  background: #f0f0f0;
+  background-color: #ffe8a1;  /* έντονο hover για καλύτερη αίσθηση */
 }
+
+.autocomplete-option {
+  padding: 5px 5px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #333;
+}
+
 
 .choices__input {
   min-width: 80vh!important;
@@ -196,7 +278,7 @@ body {
 
   .modal-content {
     display: flow;
-    border-radius: 2rem;
+    border-radius: 1rem;
     padding: 0.5em;
     overflow: visible !important;
     max-height: 90vh;
@@ -254,6 +336,23 @@ body {
   border-radius: 16px;
   height: fit-content;
   margin-top: 10px;
+  background: #a8ffd3;
+}
+
+.list-group-item {
+  background: #ffffdd;
+}
+.offcanvas-backdrop.show {
+  opacity: 0.5;
+}
+
+.offcanvas-backdrop {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.offcanvas-backdrop.fade.show {
+  opacity: 0.5;
 }
 
 
