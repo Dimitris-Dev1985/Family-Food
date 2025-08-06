@@ -80,16 +80,13 @@
     <ul class="list-group">
       <li class="list-group-item"><a href="/welcome" class="text-decoration-none">🏠 Αρχική</a></li>
       <li class="list-group-item"><a href="/menu" class="text-decoration-none">📅 Εβδομαδιαίο Μενού</a></li>
-	  <li class="list-group-item"><a href="/ingredients" class="text-decoration-none">Υλικά</a></li>
-      <li class="list-group-item"><a href="/history" class="text-decoration-none">📜 Ιστορικό</a></li>
+	  <li class="list-group-item"><a href="/ingredients" class="text-decoration-none">📜 Υλικά</a></li>
+      <li class="list-group-item"><a href="/history" class="text-decoration-none">🕘 Ιστορικό</a></li>
       <li class="list-group-item"><a href="/favorites" class="text-decoration-none">⭐ Αγαπημένα</a></li>
-      <li class="list-group-item"><a href="/profile" class="text-decoration-none">👤 Προφίλ</a></li>
-      <li class="list-group-item">
-        <a href="/logout" class="text-danger text-decoration-none" onclick="return confirmLogout();">🚪 Έξοδος</a>
-      </li>
-	  <li class="list-group-item">
-		  <a href="#" class="text-danger text-decoration-none" onclick="showDeleteUserModal(); return false;">🗑️ Διαγραφή Χρήστη</a>
-		</li>
+      <li class="list-group-item"><a href="/profile" class="text-decoration-none">🧑 Προφίλ</a></li>
+	  <li class="list-group-item"><a href="/settings" class="text-decoration-none">⚙️ Ρυθμίσεις Εφαρμογής</a></li>
+      <li class="list-group-item"><a href="/logout" class="text-danger text-decoration-none" onclick="return confirmLogout();">🚪 Έξοδος</a></li>
+	  <li class="list-group-item"><a href="#" class="text-danger text-decoration-none" onclick="showDeleteUserModal(); return false;">🗑️ Διαγραφή Χρήστη</a></li>
     </ul>
   </div>
 </div>
@@ -174,6 +171,11 @@
 
 <script>
 
+function removeTonos(str) {
+  if (!str) return "";
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 let lastIngredients = [];
 
 function showDeleteUserModal() {
@@ -195,7 +197,6 @@ function showDeleteUserModal() {
     });
   };
 }
-
 	
 function confirmLogout() {
 	  return confirm("Θέλεις σίγουρα να αποσυνδεθείς;");

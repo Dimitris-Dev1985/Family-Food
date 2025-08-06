@@ -198,8 +198,8 @@ let todayMenuId = "{{ today_menu_id }}";
 let tomorrowMenu = "{{ tomorrow_menu|safe }}";
 let tomorrowMenuId = "{{ tomorrow_menu_id }}";
 let cookingDay = "today"; // default: σήμερα
-let onboarding_done = "{{ onboarding_done }}";
 let aiChatFilters = {};
+let allRecipesData = null;
 
 function startSpeechRecognition() {
   if (!('webkitSpeechRecognition' in window)) {
@@ -338,23 +338,28 @@ function startAIChat() {
   nextAIChatStep('');
 }
 
+
 function submitAIAnswer() {
   let val = '';
-  let inputs;
+  
+  console.log("aiChatStep=",aiChatStep);
 
   if (aiChatStep === 2) {
-    inputs = document.querySelectorAll('#chatbox #ai_time');
+    const inputs = document.querySelectorAll('#chatbox input[id^="ai_time_"]');
     val = inputs.length ? inputs[inputs.length - 1].value : '';
+	console.log(val);
   }
 
   if (aiChatStep === 3) {
-    inputs = document.querySelectorAll('#chatbox #ai_ingredient');
+    const inputs = document.querySelectorAll('#chatbox input[id^="ai_ingredient_"]');
     val = inputs.length ? inputs[inputs.length - 1].value : '';
+	console.log(val);
   }
 
   clearChatControls();
   nextAIChatStep(val);
 }
+
 
 function nextAIChatStep(userAnswer) {
   // 🔒 Απενεργοποίησε τα κουμπιά με .ai-ok-btn στο chat
@@ -392,31 +397,70 @@ function nextAIChatStep(userAnswer) {
     } else {
       addChatLine('assistant', data.question.replace(/\n/g, "<br>"));
     }
-
+	
+	const aiTimeId = `ai_time_${Date.now()}`;
 	if (data.step === 2) {
 	  var html2 = `
-		<div class="d-flex align-items-center gap-2">
-		  <span class="chat-assistant">🙋‍♂️</span>
-		  <label class="mb-0 me-2">Λεπτά:</label>
-		  <input id="ai_time" type="number" min="10" max="180" step="5" value="60"
-				 class="form-control d-inline ai-ok-btn" style="width:100px">
-		  <button onclick="submitAIAnswer()" class="btn btn-primary ms-2 ai-ok-btn">OK</button>
-		</div>
-	  `;
+		  <div class="d-flex align-items-center gap-2">
+			<span class="chat-assistant">🙋‍♂️</span>
+			<label class="mb-0 me-2" for="${aiTimeId}">Λεπτά:</label>
+			<input id="${aiTimeId}" type="number" min="10" max="180" step="5" value="60"
+				   class="form-control d-inline ai-ok-btn" style="width:100px">
+			<button onclick="submitAIAnswer()" class="btn btn-primary btn-sm ai-ok-btn">OK</button>
+		  </div>
+		`;
+	  
 	  addChatLine('controls', html2);
+	
 	} else if (data.step === 3) {
-	  var html3 = `
+	  const ingredientId = `ai_ingredient_${Date.now()}`;
+
+	  const html3 = `
 		<div class="d-flex align-items-center gap-2">
 		  <span class="chat-assistant">🙋‍♂️</span>
-		  <label class="mb-0 me-2" for="ai_ingredient">Υλικό προτίμησης:</label>
-		  <input id="ai_ingredient" type="text" value="" placeholder="π.χ. ψάρι"
-				 class="form-control d-inline ai-ok-btn" style="width:100px">
+		  <label class="mb-0 me-2" for="${ingredientId}">Υλικό προτίμησης:</label>
+		  <div class="position-relative" style="width: 90px;">
+			<input id="${ingredientId}"
+				   class="form-control d-inline"
+				   autocomplete="off"
+				   placeholder="π.χ. ψάρι"
+				   style="width: 100%;">
+			<div id="${ingredientId}_autocomplete" class="autocomplete-list" style="display: none; position:absolute; width: max-content;"></div>
+		  </div>
 		  <button onclick="startSpeechRecognition()" class="btn btn-secondary btn-sm ai-ok-btn">🎤</button>
 		  <button onclick="submitAIAnswer()" class="btn btn-primary btn-sm ai-ok-btn">OK</button>
 		</div>
 	  `;
+
 	  addChatLine('controls', html3);
+
+	  // ⏳ Περίμενε μέχρι να φορτωθεί το input στο DOM
+	  const waitForInputThenBind = () => {
+		const input = document.getElementById(ingredientId);
+		const list = document.getElementById(`${ingredientId}_autocomplete`);
+		if (input && list) {
+		  setupIngredientAutocomplete(allRecipesData, ingredientId);
+		} else {
+		  setTimeout(waitForInputThenBind, 50);
+		}
+	  };
+
+	  // Αν έχεις ήδη τα δεδομένα:
+	  if (allRecipesData) {
+		waitForInputThenBind();
+	  } else {
+		fetch('/get_recipes_for_autocomplete')
+		  .then(r => r.json())
+		  .then(data => {
+			allRecipesData = data;
+			waitForInputThenBind();
+		  });
+	  }
 	}
+
+
+	
+
 
 
     if (data.step === 0) {
@@ -563,6 +607,80 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;");
 }
 
+function setupIngredientAutocomplete(allRecipes, ingredientInputId) {
+  const input = document.getElementById(ingredientInputId);
+  const listDiv = document.getElementById(`${ingredientInputId}_autocomplete`);
+  const chatbox = document.getElementById("chatbox");
+
+  console.log("🔥 Running autocomplete setup");
+  console.log("input:", input);
+
+  if (!input || !listDiv || !chatbox) {
+    console.warn("⚠️ Missing DOM elements", { input, listDiv, chatbox });
+    return;
+  }
+
+  // Λίστα υλικών χωρίς διπλά
+  const allIngredientsSet = new Set();
+  allRecipes.forEach(r => {
+    (r.ingredients || "").split(',').forEach(ing => {
+      const cleaned = ing.trim();
+      if (cleaned) allIngredientsSet.add(cleaned);
+    });
+  });
+  const allIngredients = Array.from(allIngredientsSet);
+
+  input.addEventListener('input', function () {
+    console.log("👂 ακουω");
+    const val = removeTonos(input.value.trim().toLowerCase());
+    listDiv.innerHTML = "";
+
+    if (val.length < 1) {
+      listDiv.style.display = "none";
+      return;
+    }
+
+    const results = allIngredients.filter(ing =>
+      removeTonos(ing).startsWith(val)
+    ).slice(0, 20);
+
+    if (results.length === 0) {
+      listDiv.style.display = "none";
+      return;
+    }
+
+    results.forEach(result => {
+      const option = document.createElement("div");
+      option.className = "autocomplete-option";
+      option.textContent = result;
+      option.onclick = function () {
+        input.value = result;
+        listDiv.innerHTML = "";
+        listDiv.style.display = "none";
+      };
+      listDiv.appendChild(option);
+      console.log("return3");
+    });
+
+    listDiv.style.display = "block";
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitAIAnswer();
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!listDiv.contains(e.target) && e.target !== input) {
+      listDiv.innerHTML = "";
+      listDiv.style.display = "none";
+    }
+  });
+}
+
+
 </script>
 
 <script>
@@ -593,6 +711,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 </script>
+
+
+
 
 
 {% endblock %}

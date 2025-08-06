@@ -51,22 +51,19 @@
 </div>
 
 
-<div class="col-12">
-  <div class="card h-100 shadow-sm">
-    <div class="card-body" style="padding-top: 10px !important; padding-bottom: 10px !important;">
-      <div class="d-flex align-items-start flex-wrap gap-2">
 
-        <!-- Κουμπί Προσθήκης -->
-        <button class="btn btn-success btn-sm" onclick="showAddMissingIngredient()" title="Προσθήκη μη διαθέσιμου υλικού">
-          <i class="fa fa-plus"></i> Προσθήκη
-        </button>
+<div class="card shadow-sm" style="height: 100%; width: 100%;">
+  <div class="card-body d-flex flex-column align-items-stretch justify-content-center">
 
-        <!-- Το input εμφανίζεται μόνο όταν πατήσουμε το κουμπί -->
-        <div id="add-missing-cell" style="width: 240px;"></div>
-      </div>
-    </div>
+    <button class="btn btn-success btn-sm align-self-start" onclick="showAddMissingIngredient()">
+      <i class="fa fa-plus"></i> Προσθήκη
+    </button>
+
+    <div id="add-missing-cell" class="w-100"></div>
+
   </div>
 </div>
+
 
 
 <script>
@@ -76,10 +73,6 @@ fetch('/get_recipes_for_autocomplete')
   .then(r => r.json())
   .then(data => { allRecipes = data; });
 
-function removeTonos(str) {
-  if (!str) return "";
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
 
 function deleteMissing(item) {
   if (!confirm("Να αφαιρεθεί το υλικό;")) return;
@@ -148,13 +141,13 @@ function startSpeechForMissing() {
 function showAddMissingIngredient() {
   let cell = document.getElementById("add-missing-cell");
   cell.innerHTML =
-    '<div class="position-relative">' +
+    '<div class="position-relative w-100">' +
       '<input type="text"' +
         ' id="missing-input"' +
         ' class="form-control voice-enabled"' +
-        ' placeholder="Αναζήτηση υλικού.. ή πάτα 🎤"' +
+        ' placeholder="Αναζήτησε υλικό.. ή πάτα το μικρόφωνο:"' +
         ' autocomplete="off"' +
-        ' style="display:inline-block; width:240px;">' +
+        ' style="width:100%; margin-top: 15px;">' +
       '<div id="missing-autocomplete" class="autocomplete-list"></div>' +
     '</div>';
 

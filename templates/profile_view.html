@@ -299,7 +299,7 @@ body {
 <div id="onboardingBackdrop" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0;background:rgba(0, 0, 0, 0.5); z-index:1020;"></div>
 
 <div id="onboardingTooltip2" class="onboarding-tooltip no-arrow" style="display:none;">
-    👉 Πάτα εδώ!
+    Πάτα εδώ! 👇
     <div class="arrow-down-right"></div>
 </div>
 
@@ -322,7 +322,7 @@ body {
 </div>
 
 <div id="onboardingTooltip6" class="onboarding-tooltip no-arrow" style="display:none;">
-  👉 Πάτα ΕΔΩ για να δεις το εβδομαδιαίο πλάνο σου!
+ 👇 Πάτα εδώ για να δεις το εβδομαδιαίο πλάνο σου!
   <div class="arrow-down"></div>
 </div>
 
@@ -347,10 +347,6 @@ body {
         <div class="mb-2">
           <label>Διεύθυνση</label>
           <input name="address" class="form-control" value="{{ profile.address or ''}}">
-        </div>
-        <div class="mb-2">
-          <label>Εναλλακτική Διεύθυνση</label>
-          <input name="alt_address" class="form-control" value="{{ profile.alt_address or '' }}">
         </div>
         <div class="mb-2">
           <label>Αγαπημένος Σεφ</label>	  
@@ -1076,7 +1072,6 @@ function editProfileInfo() {
   modal.show();
 }
 
-
 window.addEventListener('DOMContentLoaded', function() {
   if (window.choicesCooking) {
     window.choicesCooking.destroy();
@@ -1107,8 +1102,6 @@ window.addEventListener('DOMContentLoaded', function() {
     window.choicesCooking.hideDropdown();
   });
 });
-
-
 
 document.getElementById('profile-info-form').onsubmit = function(e) {
   e.preventDefault();
@@ -1225,14 +1218,6 @@ window.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// Προσθήκη helper για να εμφανίσει ΜΟΝΟ αν δεν έχει ήδη φανεί
-function showStrictTooltip(step, tooltipId, targetId, nextStep) {
-  const tooltip = document.getElementById(tooltipId);
-  if (!tooltip || tooltip.style.display === "block") return;
-
-  showTooltipCenteredAbove(step, tooltipId, targetId, nextStep);
-}
-
 function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = null) {
   if (window.profileOnboarding.step > step) return;
 
@@ -1250,7 +1235,7 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
 
   if (step === 6) {
     tooltip.style.position = "fixed";
-    tooltip.style.width = "50vw";
+    tooltip.style.width = "60vw";
     tooltip.style.bottom = "80px";
     tooltip.style.left = "90px";
     tooltip.style.top = "";
@@ -1260,7 +1245,7 @@ function showTooltipCenteredAbove(step, tooltipId, targetId = null, nextStep = n
     const tipHeight = tooltip.offsetHeight;
 
     let left = rect.left + window.scrollX + (rect.width - tipWidth) / 2;
-    let top = rect.top + window.scrollY - tipHeight - 10;
+    let top = rect.top + window.scrollY - tipHeight - 15;
 
     const padding = 50;
     const maxX = window.innerWidth - tipWidth - padding;
@@ -1318,14 +1303,15 @@ function runProfileOnboarding() {
 
 	  // STEP 2
 	if (step === 2) {
+		console.log(window.profileOnboarding.lightMode);
 	  const editBtn = document.getElementById("edit-profile-button");
-	  console.log(editBtn);
 	  
-	  if (editBtn) {
-	    console.log(editBtn);
-		if (backdrop) backdrop.style.display = "block";
+	  if (editBtn) {	
+		if (!window.profileOnboarding.lightMode) {
+		  backdrop.style.display = "block";
+		}	
 		document.body.classList.add("onboarding-step-2");
-		console.log("ok");
+
 		showTooltipCenteredAbove(2, "onboardingTooltip2", "edit-profile-button", null);
 
 		editBtn.addEventListener("click", function () {
@@ -1381,8 +1367,10 @@ function runProfileOnboarding() {
 	}
 
 	if (step === 3) {
-	  backdrop.style.display = "block";
-
+	console.log(window.profileOnboarding.lightMode);
+	  if (!window.profileOnboarding.lightMode) {
+		  backdrop.style.display = "block";
+		}
 	  showTooltipCenteredAbove(3, "onboardingTooltip3", "edit-cook-times", () => {
 		const waitAndShowStep4 = () => {
 		  showTooltipCenteredAbove(4, "onboardingTooltip4", "add-member", () => {
@@ -1409,8 +1397,9 @@ function runProfileOnboarding() {
 	}
 
 	if (step === 4) {
-	  backdrop.style.display = "block";
-
+	  if (!window.profileOnboarding.lightMode) {
+		  backdrop.style.display = "block";
+		}
 	  const waitAndShowStep5 = () => {
 		showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
 		  if (goalModal && goalModal.classList.contains("show")) {
@@ -1435,8 +1424,10 @@ function runProfileOnboarding() {
 	}
 
 	if (step === 5) {
-	  backdrop.style.display = "block";
-
+		console.log(window.profileOnboarding.lightMode);
+	  if (!window.profileOnboarding.lightMode) {
+		  backdrop.style.display = "block";
+		}
 	  showTooltipCenteredAbove(5, "onboardingTooltip5", "add-goal-btn", () => {
 		if (goalModal && goalModal.classList.contains("show")) {
 		  goalModal.addEventListener("hidden.bs.modal", () => {
@@ -1479,8 +1470,9 @@ window.addEventListener("DOMContentLoaded", function () {
     .then(res => res.json())
     .then(data => {
       const profileData = data["profile"];
+      const backdrop = document.getElementById("onboardingBackdrop");
 
-      // Αν δεν υπάρχει καθόλου εγγραφή onboarding, τη δημιουργούμε
+      // Αν δεν υπάρχει καθόλου εγγραφή onboarding, είναι η ΠΡΩΤΗ ΦΟΡΑ → κανονικό onboarding
       if (!profileData) {
         return fetch("/api/onboarding_create_if_needed", {
           method: "POST",
@@ -1490,25 +1482,36 @@ window.addEventListener("DOMContentLoaded", function () {
           window.profileOnboarding.step = 2;
           window.profileOnboarding.completed = false;
           window.profileOnboarding.initialized = true;
+          window.profileOnboarding.lightMode = false; // ✅ Πλήρης ροή
 
-          restrictNavIfNeeded(false); // false = not completed
+          localStorage.removeItem("profileOnboardingLightMode");
           runProfileOnboarding();
         });
       }
 
+      const backendStep = profileData.step ?? 0;
       const completed = profileData.completed === true;
 
-      window.profileOnboarding.step = profileData.step;
+      // ✅ Υπολογισμός lightMode
+      let lightMode = false;
+      if (backendStep === 0) {
+        localStorage.setItem("profileOnboardingLightMode", "1");
+        if (backdrop) backdrop.style.display = "none";  // Καμία επικάλυψη
+      } 
+	  lightMode=localStorage.getItem("profileOnboardingLightMode");
+      window.profileOnboarding.step = backendStep === 0 ? 2 : backendStep;
       window.profileOnboarding.completed = completed;
       window.profileOnboarding.initialized = true;
+      window.profileOnboarding.lightMode = lightMode;
 
-      restrictNavIfNeeded(completed);
+      if (!lightMode) restrictNavIfNeeded(!completed);
       runProfileOnboarding();
     })
     .catch(err => {
       console.error("Error loading onboarding progress", err);
     });
 });
+
 
 function restrictNavIfNeeded(completed) {
   if (completed) return;
@@ -1538,6 +1541,7 @@ function updateProfileOnboardingStep(step) {
 
 function markProfileOnboardingComplete() {
   window.profileOnboarding.completed = true;
+  localStorage.removeItem("profileOnboardingLightMode");
   fetch("/api/onboarding_mark_completed", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1549,6 +1553,7 @@ function getNextOnboardingStep() {
   if (!window.profileOnboarding.initialized || window.profileOnboarding.completed) return null;
   return window.profileOnboarding.step;
 }
+
 </script>
 
 {% endblock %}
