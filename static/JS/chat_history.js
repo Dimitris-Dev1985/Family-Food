@@ -28,7 +28,7 @@ function showChatbox(auto = false) {
   if (!sessionStorage.getItem('chatHistory') && !auto) {
     clearChatHistory();
     clearChatControls();
-    addChatLine('assistant', window.dayName + ' σήμερα, τι θα μαγειρέψουμε;');
+    addChatLine('assistant', '<b>' + window.dayName + '</b>' + ' σήμερα, τι θα μαγειρέψουμε;');
     showMainChoices();
   }
 
@@ -105,7 +105,7 @@ function restartChat() {
     .then(() => {
       clearChatHistory();
       clearChatControls();
-      addChatLine('assistant', window.dayName + ' σήμερα, τι θα μαγειρέψουμε;');
+      addChatLine('assistant', '<b>' + window.dayName + '</b>' + ' σήμερα, τι θα μαγειρέψουμε;');
       showMainChoices();
     });
 }
