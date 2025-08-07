@@ -1,4 +1,6 @@
 Flask==3.1.1
+gunicorn==21.2.0
+Jinja2==3.1.2
 Flask-Dance==7.1.0
 requests==2.32.4
 requests-oauthlib==2.0.0
