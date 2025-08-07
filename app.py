@@ -419,6 +419,11 @@ def get_favorite_filters():
         "methods": sorted(methods)
     })
 
+
+def strip_tonos(text):
+    return ''.join(c for c in unicodedata.normalize('NFD', text)
+                   if unicodedata.category(c) != 'Mn').lower()
+
 @app.route("/api/favorites")
 @login_required
 def api_favorites():
@@ -434,8 +439,6 @@ def api_favorites():
     time_limit = request.args.get("time", "").strip()
     search = request.args.get("search", "").strip()
 
-    offset = (page - 1) * per_page
-
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
 
@@ -447,7 +450,6 @@ def api_favorites():
     JOIN recipes r ON r.id = f.recipe_id
     WHERE f.user_id = ?
     """
-
     filters = [user_id]
     conditions = []
 
@@ -471,27 +473,12 @@ def api_favorites():
         except ValueError:
             pass
 
-    if search:
-        search_term = f"%{search.lower()}%"
-        conditions.append("(" +
-            "LOWER(r.title) LIKE ? OR " +
-            "LOWER(r.tags) LIKE ? OR " +
-            "LOWER(r.main_dish_tag) LIKE ?)"
-        )
-        filters += [search_term, search_term, search_term]
-
     if conditions:
         base_query += " AND " + " AND ".join(conditions)
 
     base_query += " ORDER BY f.rowid ASC"
 
-    count_query = "SELECT COUNT(*) FROM (" + base_query + ")"
-    total_count = conn.execute(count_query, filters).fetchone()[0]
-
-    paginated_query = base_query + " LIMIT ? OFFSET ?"
-    final_filters = filters + [per_page, offset]
-
-    rows = conn.execute(paginated_query, final_filters).fetchall()
+    rows = conn.execute(base_query, filters).fetchall()
     conn.close()
 
     def row_to_dict(row):
@@ -511,8 +498,24 @@ def api_favorites():
             "instructions": row["instructions"]
         }
 
+    all_recipes = [row_to_dict(r) for r in rows]
+
+    # ✅ Fulltext search (χωρίς τόνους + πεζά)
+    if search:
+        search_clean = strip_tonos(search)
+        all_recipes = [
+            r for r in all_recipes
+            if search_clean in strip_tonos(r["title"] or "") or
+               search_clean in strip_tonos(r["tags"] or "") or
+               search_clean in strip_tonos(r["main_dish_tag"] or "")
+        ]
+
+    total_count = len(all_recipes)
+    start = (page - 1) * per_page
+    end = start + per_page
+
     return jsonify({
-        "recipes": [row_to_dict(r) for r in rows],
+        "recipes": all_recipes[start:end],
         "page": page,
         "total_pages": (total_count + per_page - 1) // per_page
     })
@@ -1432,20 +1435,6 @@ def swap_menu_entries():
     conn.commit()
     conn.close()
     return jsonify(success=True)
-
-@app.route("/search_recipes")
-def search_recipes():
-    q = request.args.get("q", "").strip().lower()
-    if not q or len(q) < 2:
-        return jsonify([])
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    recipes = conn.execute(
-        "SELECT id, title, chef, tags FROM recipes WHERE LOWER(title) LIKE ? OR LOWER(tags) LIKE ? LIMIT 12",
-        (f"%{q}%", f"%{q}%")
-    ).fetchall()
-    conn.close()
-    return jsonify([{"id": r["id"], "title": r["title"], "chef": r["chef"]} for r in recipes])
 
 def remove_tonos(s):
     if not s:
