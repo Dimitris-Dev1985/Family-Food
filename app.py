@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash, get_flashed_messages
 import sqlite3, unicodedata, random
-
+from rapidfuzz import fuzz
 from datetime import datetime, timedelta
 from jinja2 import pass_context
 from functools import wraps
@@ -500,15 +500,24 @@ def api_favorites():
 
     all_recipes = [row_to_dict(r) for r in rows]
 
-    # ✅ Fulltext search (χωρίς τόνους + πεζά)
+    # ✅ Fuzzy Search
     if search:
         search_clean = strip_tonos(search)
-        all_recipes = [
-            r for r in all_recipes
-            if search_clean in strip_tonos(r["title"] or "") or
-               search_clean in strip_tonos(r["tags"] or "") or
-               search_clean in strip_tonos(r["main_dish_tag"] or "")
-        ]
+        
+        def match(recipe):
+            fields = [
+                recipe["title"] or "",
+                recipe["tags"] or "",
+                recipe["main_dish_tag"] or ""
+            ]
+            for f in fields:
+                target = strip_tonos(f)
+                score = fuzz.partial_ratio(search_clean, target)
+                if score > 80:  # κατώφλι fuzzy matching
+                    return True
+            return False
+       
+        all_recipes = [r for r in all_recipes if match(r)]
 
     total_count = len(all_recipes)
     start = (page - 1) * per_page
@@ -1395,7 +1404,6 @@ def create_weekly_menu(user, members):
 
     conn.commit()
     conn.close()
-    print("New weekly MENU created")
 
 @app.route("/generate_menu", methods=["POST"])
 def generate_menu():
