@@ -436,6 +436,30 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const bottomNav = document.querySelector('.navbar.fixed-bottom');
+    const container =
+      document.querySelector('.main-welcome-container') ||
+      document.querySelector('.container');
+
+    if (!bottomNav || !container) return;
+
+    const navHeight = bottomNav.offsetHeight;
+    const hasScroll = document.documentElement.scrollHeight > window.innerHeight;
+    const needsPadding = !hasScroll;
+
+    console.log('navHeight =', navHeight);
+    console.log('scrollHeight =', document.documentElement.scrollHeight);
+    console.log('innerHeight =', window.innerHeight);
+    console.log('needsPadding =', needsPadding);
+
+    container.style.paddingBottom = needsPadding
+      ? navHeight + 'px'
+      : '60px';
+  });
+</script>
+
 
 {% block scripts %}{% endblock %}
 

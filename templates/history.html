@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 
+<style>
+  body { background: linear-gradient(to bottom right, #fff, #daffff); }
+</style>
+
 {% macro format_ddmmyyyy(datestr) -%}
   {%- set y, m, d = datestr.split('-') -%}
   {{ d }}/{{ m }}/{{ y }}
@@ -35,7 +39,7 @@
     {% set week_first_date = week_dates | last %}
     {% set week_last_date = week_dates | first %}
     <div class="card my-2 shadow-sm">
-      <div class="card-header bg-info-subtle d-flex justify-content-between align-items-center" style="font-size:0.9em"
+      <div class="card-header bg-info-subtle d-flex justify-content-between align-items-center" style="font-size: clamp(14.3px, 3.9vw, 18px)"
            role="button"
            data-bs-toggle="collapse"
            href="#{{ collapse_id }}"

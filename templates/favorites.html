@@ -40,8 +40,11 @@
 }
 </style>
 
+<style>
+  body { background: linear-gradient(to bottom right, #fff, #ffd4e0); }
+</style>
 
-<div class="container py-2" style="max-width: 95vh; background: linear-gradient(to bottom right, #fefefe, #eef6ff); border-radius: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
+
 
   <!-- Τίτλος -->
   <div class="text-center mb-3">
@@ -113,7 +116,7 @@
 	  <ul class="pagination justify-content-center flex-wrap" id="pagination"></ul>
 	</nav>
 
-</div>
+
 
 {% endblock %}
 
@@ -686,6 +689,11 @@ function loadFavorites(page) {
   const time = document.getElementById("filter-time").value;
   const term = document.getElementById("search-term").value;
 
+  if (term && term.trim().length > 0 && term.trim().length < 3) {
+    // Αν ο χρήστης έγραψε <3 χαρακτήρες, δεν κάνουμε αναζήτηση
+    return;
+  }
+
   const params = new URLSearchParams({
     page: page,
     per_page: perPage,
@@ -823,8 +831,6 @@ function resetFilters() {
   loadFavorites(1);  // Επαναφορτώνει τα αποτελέσματα από την 1η σελίδα
 }
 
-
 </script>
-
 
 {% endblock %}

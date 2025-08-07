@@ -2,6 +2,9 @@
 {% block title %}Προφίλ{% endblock %}
 {% block content %}
 
+<style>
+  body { background: linear-gradient(to bottom right, #fff, #faffec); }
+</style>
 
 
 <style>
@@ -98,17 +101,27 @@
   background-color: #fff;
 }
 #profile-completion-bar {
-  height: 10px;
-  border-radius: 5px;
-  background: #d6d6d6;
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 20px;
+  border-radius: 10px;
   overflow: hidden;
-  margin: 0.5rem 0 1rem;
+  z-index:1050;
 }
 #profile-completion-fill {
   width: 0%;
   height: 100%;
-  background: linear-gradient(to right, #9be15d, #00e3ae);
+  background: linear-gradient(to right, #f5c278, #0aff1f);
   transition: width 0.8s ease;
+  font-size: 0.8em;
+  font-weight: bold;
+  text-align: center;
+  line-height: 20px;
+  white-space: nowrap;
+  border-radius: 10px;
 }
 .badge {
   font-size: 0.8em;
@@ -120,15 +133,17 @@
 
 </style>
 
+<!-- Τίτλος -->
+<div class="text-center mb-3">
+	<h2 class="fancy-title">👪 Το Προφίλ μου</h2>
+</div>
 
-<div class="container py-3">
+<div id="profile-completion-bar" style="display:none;">
+  <div id="profile-completion-fill">Πρόοδος προφίλ: <span id="profile-completion-percent"></span></div>
+</div>
 
-  <div class="sticky-top bg-white pt-3 pb-2 shadow-sm" style="z-index: 1021; background-color:rgb(250 255 236)!important; border-radius: 16px;margin-bottom:1.2rem;">
-	  <h4 class="fw-bold text-center mb-2">👤 Το Προφίλ μου</h4>
-	  <div id="profile-completion-bar" class="mx-3">
-		<div id="profile-completion-fill"></div>
-	  </div>
-	</div>
+
+<div class="container">
 
   <div class="card">
 	  <div class="card-section-title">Στοιχεία Χρήστη</div>
@@ -282,6 +297,7 @@
       </div>
     </div>
   </div>
+
 </div>
 
 
@@ -513,7 +529,7 @@
 <div class="modal fade" id="profileCompleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content text-center">
-      <div class="modal-body py-4">
+      <div class="modal-body">
         <h4 class="mb-2">🎉 Συγχαρητήρια!</h4>
         <p>Ολοκλήρωσες το προφίλ σου.<br>Φύγαμε για τη κουζίνα;</p>
         <button class="btn btn-success mt-3" style="font-size:1em!important; padding:10px 15px;" data-bs-dismiss="modal">Πάμε!</button>
@@ -539,24 +555,36 @@ function updateProfileCompletionBar() {
       if (bar) {
         bar.style.width = val + "%";
       }
-	const splashShown = localStorage.getItem("profileSplashShown") === "true";
+	  const percentSpan = document.getElementById("profile-completion-percent");
+		if (percentSpan) {
+		  percentSpan.textContent = `(${val}%)`;
+		}
+	  const splashShown = localStorage.getItem("profileSplashShown") === "true";
       // Αν φτάσει 100% και δεν έχει ξαναγίνει splash
-      if (val >= 100 && !splashShown) {
-        
-        // 🎉 Confetti
-        confetti({
-          particleCount: 150,
-          spread: 120,
-          origin: { y: 0.6 },
-          scalar: 1.1
-        });
+		if (val >= 100 && !splashShown) {
 
-        // 🪩 Splash modal
-        const modal = new bootstrap.Modal(document.getElementById("profileCompleteModal"));
-        modal.show();
-		// ✅ Θυμάται ότι εμφανίστηκε
-        localStorage.setItem("profileSplashShown", "true");
-      }
+		  // 🎉 Confetti μετά από 500ms
+		  setTimeout(() => {
+			confetti({
+			  particleCount: 150,
+			  spread: 120,
+			  origin: { y: 0.6 },
+			  scalar: 1.1
+			});
+		  }, 500);
+
+		  // 🪩 Modal μετά από 1500ms
+		  setTimeout(() => {
+			const modal = new bootstrap.Modal(document.getElementById("profileCompleteModal"));
+			modal.show();
+			localStorage.setItem("profileSplashShown", "true");
+		  }, 1500);
+		}
+  
+	    if (val < 100) {
+		document.getElementById('profile-completion-bar').style.display = 'block';
+		}
+	  
     });
 }
 
@@ -1494,12 +1522,16 @@ window.addEventListener("DOMContentLoaded", function () {
 
       if (!lightMode) restrictNavIfNeeded(!completed);
       runProfileOnboarding();
+	  
+	  if (window.profileOnboarding && window.profileOnboarding.completed === false) {
+		document.getElementById('profile-completion-bar').style.display = 'block';
+		}
+	  
     })
     .catch(err => {
       console.error("Error loading onboarding progress", err);
     });
 });
-
 
 function restrictNavIfNeeded(completed) {
   if (completed) return;
