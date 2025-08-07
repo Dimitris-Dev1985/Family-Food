@@ -390,6 +390,8 @@ body {
 
 .goals-table td {
   vertical-align: middle;
+  font-size: clamp(13px, 4vw, 18px);
+  white-space: nowrap;  
 }
 
 .goal-check {
