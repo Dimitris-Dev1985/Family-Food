@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+
+<title>{% block title %}FamilyFood{% endblock %}</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Indie+Flower&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400|Quicksand:500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#4CAF50">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#f44336">
+  <meta name="mobile-web-app-capable" content="yes">
+
+<link rel="stylesheet" href="/static/styles.css">
+  
+{% block head %}{% endblock %}
+
+</head>
+
+<body>
+
+  <div class="container{% if request.endpoint == 'welcome' %} main-welcome-container{% endif %}">
+    {% block content %}{% endblock %}
+  </div>
+
+<!-- Show recipe modal -->
+<div class="modal fade" id="recipeModal" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h5 class="modal-title" id="recipeModalLabel">Λεπτομέρειες Συνταγής</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="background:#fefefe; max-height:75vh;">
+        <p><strong>Τίτλος:</strong> <span id="modalTitle"></span></p>
+        <p><strong>Σεφ:</strong> <span id="modalChef"></span></p>
+        <p><strong>Χρόνος:</strong>
+          <span id="modalPrepTime"></span>′ προετοιμασία,
+          <span id="modalCookTime"></span>′ μαγείρεμα
+        </p>
+        <p><strong>Μέθοδος:</strong> <span id="modalMethod"></span></p>
+        <p><strong>Κατηγορία:</strong> <span id="modalCategory"></span></p>
+        <p><strong>Tags:</strong> <span id="modalTags"></span></p>
+        <p><strong>Σύνδεσμος:</strong> <a href="#" id="modalUrl" target="_blank">Δες τη συνταγή</a></p>
+
+        <hr>
+        <p><strong>Υλικά:</strong></p>
+        <form id="modalIngredientsForm">
+		  <ul id="modalIngredients" style="padding-left: 20px; list-style: none;"></ul>
+		</form>
+        <p class="mt-3"><strong>Οδηγίες:</strong></p>
+        <div id="modalInstructions" style="white-space: pre-wrap; word-break: break-word;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% if request.endpoint not in ['login', 'signup'] and session.get('user_id') %}
+<!-- Side Menu Button -->
+<button class="btn btn-outline-secondary position-fixed top-0 start-0 m-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu" aria-controls="sideMenu">
+  <i class="fa fa-bars"></i>
+</button>
+
+<!-- Side Slide Offcanvas -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sideMenu" aria-labelledby="sideMenuLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="sideMenuLabel">🍽 Family Food</h5>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Κλείσιμο"></button>
+  </div>
+  <div class="offcanvas-body">
+    <ul class="list-group">
+      <li class="list-group-item"><a href="/welcome" class="text-decoration-none">🏠 Αρχική</a></li>
+      <li class="list-group-item"><a href="/menu" class="text-decoration-none">📅 Εβδομαδιαίο Μενού</a></li>
+	  <li class="list-group-item"><a href="/ingredients" class="text-decoration-none">📜 Υλικά</a></li>
+      <li class="list-group-item"><a href="/history" class="text-decoration-none">🕘 Ιστορικό</a></li>
+      <li class="list-group-item"><a href="/favorites" class="text-decoration-none">⭐ Αγαπημένα</a></li>
+      <li class="list-group-item"><a href="/profile" class="text-decoration-none">🧑 Προφίλ</a></li>
+	  <li class="list-group-item"><a href="/settings" class="text-decoration-none">⚙️ Ρυθμίσεις Εφαρμογής</a></li>
+      <li class="list-group-item"><a href="/logout" class="text-danger text-decoration-none" onclick="return confirmLogout();">🚪 Έξοδος</a></li>
+	  <li class="list-group-item"><a href="#" class="text-danger text-decoration-none" onclick="showDeleteUserModal(); return false;">🗑️ Διαγραφή Χρήστη</a></li>
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+ 
+<!-- Bottom nav -->
+{% if request.endpoint not in ['login', 'signup'] and session.get('user_id') %}  
+  <nav class="navbar fixed-bottom navbar-light bg-light shadow-sm" style="z-index:999;">
+    <div class="container-fluid justify-content-center p-0">
+		<div class="row w-100 text-center">
+		  <div class="col">
+			<a href="/welcome" class="nav-link py-2{% if request.endpoint=='welcome' %} active{% endif %}">
+			  <i class="fa fa-home fa-lg"></i><div style="font-size:12px;">Αρχική</div>
+			</a>
+		  </div>
+		  <div class="col">
+			<a href="/menu" id = "menu-btn" class="nav-link py-2{% if request.endpoint=='menu' %} active{% endif %}">
+			  <i class="fa fa-calendar-week fa-lg"></i><div style="font-size:12px;">Μενού</div>
+			</a>
+		  </div>
+		  <div class="col">
+			<a href="/history" class="nav-link py-2{% if request.endpoint=='history' %} active{% endif %}">
+			  <i class="fa fa-history fa-lg"></i><div style="font-size:12px;">Ιστορικό</div>
+			</a>
+		  </div>
+		  <div class="col">
+			<a href="/favorites" class="nav-link py-2{% if request.endpoint=='favorites' %} active{% endif %}">
+			  <i class="fa fa-star fa-lg"></i><div style="font-size:12px;">Αγαπημένα</div>
+			</a>
+		  </div>
+		  <div class="col">
+			<a href="/profile" class="nav-link py-2{% if request.endpoint=='profile' %} active{% endif %}">
+			  <i class="fa fa-user fa-lg"></i><div style="font-size:12px;">Προφίλ</div>
+			</a>
+		  </div>
+		</div>
+
+    </div>
+  </nav>
+{% endif %}
+
+
+<!--
+{% if session.user_id %}
+  <div class="nav-item"><a href="/logout"><i class="fas fa-sign-out-alt"></i> Έξοδος</a></div>
+{% endif %}
+-->
+
+
+
+  <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 14px;">
+      <div class="modal-header bg-danger-subtle">
+        <h5 class="modal-title" id="deleteUserModalLabel">
+          <i class="fa fa-user-times text-danger me-2"></i> Οριστική Διαγραφή Λογαριασμού
+        </h5>
+      </div>
+      <div class="modal-body text-center" style="font-size:1.1em;">
+        <p>Θέλεις σίγουρα να <b>διαγράψεις οριστικά τον λογαριασμό σου</b> και όλα τα δεδομένα σου;</p>
+        <p class="text-danger">Αυτή η ενέργεια δεν μπορεί να αναιρεθεί!</p>
+      </div>
+      <div class="modal-footer d-flex flex-column gap-2">
+        <button type="button" class="btn btn-danger btn-lg w-100" id="delete-user-confirm-btn">Ναι, διαγραφή</button>
+        <button type="button" class="btn btn-secondary btn-lg w-100" data-bs-dismiss="modal">Άκυρο</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% block modals %}{% endblock %} 
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+
+
+<script>
+
+function removeTonos(str) {
+  if (!str) return "";
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+let lastIngredients = [];
+
+function showDeleteUserModal() {
+  var modal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+  modal.show();
+
+  document.getElementById('delete-user-confirm-btn').onclick = function() {
+    fetch('/delete_user_and_data', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'}
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = '/login';
+      } else {
+        alert('Σφάλμα: ' + (data.error || 'Δεν ολοκληρώθηκε η διαγραφή.'));
+      }
+    });
+  };
+}
+	
+function confirmLogout() {
+	  return confirm("Θέλεις σίγουρα να αποσυνδεθείς;");
+}
+	
+function openRecipeModal(card) {
+  if (card.classList.contains('no-click')) return;
+
+  const modal = new bootstrap.Modal(document.getElementById('recipeModal'));
+  document.getElementById('modalTitle').innerText = card.getAttribute('data-title') || '-';
+  document.getElementById('modalChef').innerText = card.getAttribute('data-chef') || '-';
+  document.getElementById('modalMethod').innerText = card.getAttribute('data-method') || '-';
+  document.getElementById('modalCategory').innerText = card.getAttribute('data-category') || '-';
+  document.getElementById('modalTags').innerText = card.getAttribute('data-tags') || '-';
+  document.getElementById('modalUrl').href = card.getAttribute('data-url') || '#';
+  document.getElementById('modalPrepTime').innerText = card.getAttribute('data-prep') || '-';
+  document.getElementById('modalCookTime').innerText = card.getAttribute('data-cook') || '-';
+
+  // Υλικά με checkbox
+  const ingStr = card.getAttribute('data-ingredients') || '';
+  lastIngredients = [];
+  var ingredients = ingStr.split(',');
+  var ingList = document.getElementById('modalIngredients');
+  ingList.innerHTML = '';
+  for (var idx = 0; idx < ingredients.length; idx++) {
+    var item = ingredients[idx].trim();
+    if (!item) continue;
+    lastIngredients.push(item);
+    var li = document.createElement('li');
+    li.style.marginBottom = "2px";
+
+    var checkbox = document.createElement('input');
+    checkbox.type = "checkbox";
+    checkbox.id = "ing" + idx;
+    checkbox.checked = true;
+
+    var label = document.createElement('label');
+    label.htmlFor = "ing" + idx;
+    label.style.marginLeft = "6px";
+    label.style.cursor = "pointer";
+    label.appendChild(document.createTextNode(item));
+
+    li.appendChild(checkbox);
+    li.appendChild(label);
+    ingList.appendChild(li);
+  }
+
+  // Οδηγίες
+  var instructions = card.getAttribute('data-instructions') || '';
+  document.getElementById('modalInstructions').innerText = instructions.trim();
+
+  // Listener για κλείσιμο modal
+  var modalEl = document.getElementById('recipeModal');
+  modalEl.removeEventListener('hidden.bs.modal', handleIngredientsClose);
+  modalEl.addEventListener('hidden.bs.modal', handleIngredientsClose);
+
+  modal.show();
+  
+	  // ➤ Αν είναι σε onboarding και δεν το έχει δει
+	if (!hasSeenRecipeModalTooltip()) {
+	  setTimeout(() => {
+		showRecipeModalTooltip();
+	  }, 300);  // λίγο delay για να φορτωθεί
+	}
+    
+}
+
+function hasSeenRecipeModalTooltip() {
+  return localStorage.getItem('menu_onboarding_seen_modal') === '1';
+}
+
+function setSeenRecipeModalTooltip() {
+  localStorage.setItem('menu_onboarding_seen_modal', '1');
+}
+
+function showRecipeModalTooltip() {
+  const anchor = document.getElementById('modalIngredientsForm');
+  if (!anchor) return;
+
+  const tip = document.createElement('div');
+  tip.className = 'recipeModaltip';
+
+  tip.innerHTML =
+    '<div>' +
+    'Αν σου λείπει σήμερα κάποιο υλικό ξε-τσέκαρέ το, θα το λάβω υπόψιν μου!!' +
+    '<br>' +
+    '<button class="btn btn-primary btn-sm mt-2" id="close-recipe-modal-tooltip">Κατάλαβα!</button>' +
+    '</div>';
+
+	const arrow = document.createElement('div');
+	arrow.className = 'recipeModalarrow';
+	arrow.style.top = '65px';  // τοποθέτηση πάνω από το tooltip (άρα "δείχνει προς τα κάτω")
+	arrow.style.left = '-10px';  // θα το ρυθμίσεις με βάση τη θέση του anchor
+	tip.appendChild(arrow);
+
+  // Υπολόγισε θέση anchor
+  const rect = anchor.getBoundingClientRect();
+  const scrollTop = window.scrollY;
+  const scrollLeft = window.scrollX;
+
+  // Θέση πάνω από το anchor
+  tip.style.top = (scrollTop + rect.top - 30) + 'px';  // 70px πιο πάνω από το στοιχείο
+  tip.style.left = (scrollLeft + rect.left + rect.width / 2) + 'px'; // κέντρο - half width
+
+  document.body.appendChild(tip);
+}
+
+function handleIngredientsClose() {
+  if (!lastIngredients.length) return;
+  var missing = [];
+  for (var idx = 0; idx < lastIngredients.length; idx++) {
+    var cb = document.getElementById('ing' + idx);
+    if (cb && !cb.checked) missing.push(lastIngredients[idx]);
+  }
+  fetch('/save_missing_ingredients', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({missing: missing})
+  }).then(function(r){return r.json();}).then(function(data){
+    if(missing.length) {
+      showAlert('Αποθηκεύτηκε! Για σήμερα σου λείπουν τα υλικά: ' + missing.join(', '),'success',3000,'center');
+    }
+  });
+}
+
+
+
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'close-recipe-modal-tooltip') {
+    const tip = e.target.closest('.recipeModaltip');
+    if (tip) tip.remove();
+    setSeenRecipeModalTooltip();
+  }
+});
+
+/**
+ * Εμφανίζει Bootstrap alert (σαν banner) οπουδήποτε στη σελίδα, για 3''.
+ *
+ * @param {string} message - Το μήνυμα που θες να δείξεις.
+ * @param {string} [type='warning'] - Το είδος του alert (success, danger, info, warning).
+ * @param {number} [duration=3000] - Πόσα ms να μείνει ορατό το alert.
+ * @param {string} [position='top'] - Που να εμφανίζεται ('top', 'center').
+ */
+function showAlert(message, type, duration, position) {
+  type = type || 'warning';
+  duration = duration || 3000;
+  position = position || 'top';
+
+  // Αφαίρεσε τυχόν άλλα alerts για να μη σωρεύονται.
+  var existing = document.querySelectorAll('.custom-js-alert');
+  for (var i = 0; i < existing.length; i++) {
+    existing[i].parentNode.removeChild(existing[i]);
+  }
+
+  var alertDiv = document.createElement('div');
+  alertDiv.className = 'alert alert-' + type + ' alert-dismissible fade show custom-js-alert';
+  alertDiv.role = 'alert';
+  alertDiv.style.position = 'fixed';
+  alertDiv.style.zIndex = 3000;
+  alertDiv.style.left = '50%';
+  alertDiv.style.maxWidth = '400px';
+  alertDiv.style.width = '90vw';
+  alertDiv.style.boxShadow = '0 4px 24px rgba(0,0,0,0.15)';
+  alertDiv.style.textAlign = 'center';
+  alertDiv.style.opacity = '1';
+
+  if (position === 'top') {
+    alertDiv.style.top = '32px';
+    alertDiv.style.transform = 'translateX(-50%)';
+  } else if (position === 'center') {
+    alertDiv.style.top = '50%';
+    alertDiv.style.transform = 'translate(-50%, -60%)';
+  }
+
+  alertDiv.innerHTML =
+    message +
+    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+
+  document.body.appendChild(alertDiv);
+
+  setTimeout(function() {
+    alertDiv.style.opacity = '0';
+    setTimeout(function() {
+      if (alertDiv.parentNode) {
+        alertDiv.parentNode.removeChild(alertDiv);
+      }
+    }, 600);
+  }, duration);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const recipeModalEl = document.getElementById('recipeModal');
+  if (recipeModalEl) {
+    recipeModalEl.addEventListener('hidden.bs.modal', function () {
+      // Αφαίρεση του tooltip αν υπάρχει
+      const tip = document.querySelector('.recipeModaltip');
+      if (tip) tip.remove();
+    });
+  }
+});
+
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  document.addEventListener('touchstart', function (e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+
+  document.addEventListener('touchend', function (e) {
+    touchEndX = e.changedTouches[0].screenX;
+    handleGesture();
+  });
+
+  function handleGesture() {
+    const distance = touchEndX - touchStartX;
+
+    // Αν έγινε swipe από αριστερά προς τα δεξιά με πάνω από 50px απόσταση
+    if (touchStartX < 40 && distance > 50) {
+      const offcanvas = new bootstrap.Offcanvas(document.getElementById('sideMenu'));
+      offcanvas.show();
+    }
+	
+	
+	if (touchStartX > window.innerWidth - 80 && distance < -50) {
+	  const offcanvasEl = document.getElementById('sideMenu');
+	  const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+	  if (offcanvas) offcanvas.hide();
+	}
+  }
+});
+</script>
+
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const bottomNav = document.querySelector('.navbar.fixed-bottom');
+    const container =
+      document.querySelector('.main-welcome-container') ||
+      document.querySelector('.container');
+
+    if (!bottomNav || !container) return;
+
+    const navHeight = bottomNav.offsetHeight;
+    const hasScroll = document.documentElement.scrollHeight > window.innerHeight;
+    const needsPadding = !hasScroll;
+
+    console.log('navHeight =', navHeight);
+    console.log('scrollHeight =', document.documentElement.scrollHeight);
+    console.log('innerHeight =', window.innerHeight);
+    console.log('needsPadding =', needsPadding);
+
+    container.style.paddingBottom = needsPadding
+      ? navHeight + 'px'
+      : '60px';
+  });
+</script>
+
+
+{% block scripts %}{% endblock %}
+
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}")
+      .then(function(reg) {
+        console.log("Service Worker registered: ", reg.scope);
+      })
+      .catch(function(error) {
+        console.error("Service Worker registration failed:", error);
+      });
+  }
+</script>
+
+</body>
+
+</html>
