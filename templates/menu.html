@@ -484,6 +484,20 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+
+document.addEventListener('click', function(e) {
+  const input = e.target.closest('.voice-enabled');
+  if (!input) return;
+
+  // Έλεγχος αν το click ήταν πάνω στο 🎤 (τελευταία 36px δεξιά)
+  const clickX = e.clientX - input.getBoundingClientRect().left;
+  const inputWidth = input.offsetWidth;
+  if (clickX >= inputWidth - 36) {
+    const menuid = input.dataset.menuid;
+    startSpeechForRecipe(menuid);
+  }
+});
+
 function swapDishes(menuIdFrom, menuIdTo) {
   fetch('/swap_menu_entries', {
     method: 'POST',

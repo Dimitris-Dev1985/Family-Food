@@ -97,7 +97,7 @@
 
   <!-- Live Search (σε δική του γραμμή) -->
   <div class="mb-3 d-flex">
-    <input type="text" id="search-term" class="form-control form-control-sm" placeholder="Αναζήτηση... ή πάτα το μικρόφωνο 🎤" oninput="loadFavorites()">
+    <input type="text" id="search-term" class="form-control form-control-sm voice-enabled" placeholder="Αναζήτησε... ή πάτα το μικρόφωνο:" data-voice-target="favorites" oninput="loadFavorites()">
 	<button class="btn btn-outline-secondary btn-sm ms-2" onclick="resetFilters()">
 	  <i class="fa fa-rotate-left"></i>
 	</button>
@@ -282,6 +282,7 @@ function showAddFavorite() {
       '<input type="text"' +
         ' id="fav-input"' +
         ' class="form-control voice-enabled"' +
+		' data-voice-target="recipe"' + 
         ' placeholder="Αναζήτησε... ή πάτα το μικρόφωνο:"' +
         ' autocomplete="off"' +
         ' style="width:100%; margin-top: 15px;">' +
@@ -334,8 +335,6 @@ function showAddFavorite() {
   });
   }
 
-
-
 function addFavorite(recipeId) {
   fetch('/add_favorite_recipe', {
     method: 'POST',
@@ -355,17 +354,60 @@ function addFavorite(recipeId) {
 document.addEventListener('click', function(e) {
   const input = e.target.closest('.voice-enabled');
   if (!input) return;
-
   const clickX = e.clientX - input.getBoundingClientRect().left;
   const inputWidth = input.offsetWidth;
 
   if (clickX >= inputWidth - 36) {
-    startSpeechForFavorites();
+    const target = input.dataset.voiceTarget;
+    switch (target) {
+      case 'recipe':
+        startSpeechForFavorites();
+        break;
+      case 'favorites':
+		startSpeechForSearch();
+        break;
+      default:
+        console.warn('Άγνωστος στόχος φωνής:', target);
+    }
   }
 });
 
+
 function startSpeechForFavorites() {
   const input = document.getElementById("fav-input");
+  if (!input || !('webkitSpeechRecognition' in window)) return;
+
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = 'el-GR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onaudiostart = function() {
+    input.classList.add('listening');
+    input.placeholderBackup = input.placeholder;
+    input.placeholder = "🎙️ Μίλα τώρα...";
+  };
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript.trim();
+    input.value = transcript;
+    input.dispatchEvent(new Event('input'));
+  };
+
+  recognition.onend = function() {
+    input.classList.remove('listening');
+    if (input.placeholderBackup) {
+      input.placeholder = input.placeholderBackup;
+      delete input.placeholderBackup;
+    }
+  };
+
+  recognition.start();
+}
+
+
+function startSpeechForSearch() {
+  const input = document.getElementById("search-term");
   if (!input || !('webkitSpeechRecognition' in window)) return;
 
   const recognition = new webkitSpeechRecognition();
