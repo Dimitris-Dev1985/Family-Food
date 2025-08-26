@@ -183,7 +183,6 @@ def install():
     return render_template("install.html")
 
 @app.route("/welcome")
-@login_required
 def welcome():     
     user, _ = get_user()
     hour = datetime.now().hour
