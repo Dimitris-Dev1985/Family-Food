@@ -4,9 +4,19 @@ from rapidfuzz import fuzz
 from datetime import datetime, timedelta
 from jinja2 import pass_context
 from functools import wraps
+from werkzeug.security import generate_password_hash
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from flask_mail import Mail, Message
 
 app = Flask(__name__)
 app.secret_key = "d7gAq2d9bJz@7qK2kLxw!"
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'dpap.ee@gmail.com'
+app.config['MAIL_PASSWORD'] = 'ednvljshnmwajhus'
+mail = Mail(app)
 
 DB = "family_food_app.db"
 
@@ -102,10 +112,12 @@ def login_required(f):
         return f(*args, **kwargs)
     return wrapped
 
+from werkzeug.security import check_password_hash
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
-        if not get_flashed_messages():  # 👈 αν δεν υπάρχουν flash, άδειασέ το
+        if not get_flashed_messages():
             session.clear()
         return render_template("login.html")
 
@@ -114,37 +126,120 @@ def login():
         conn = sqlite3.connect(DB)
         conn.row_factory = sqlite3.Row
 
+        # ✅ Debug login bypass
         if action == "debug":
             user = conn.execute("SELECT * FROM users ORDER BY id LIMIT 1").fetchone()
             conn.close()
             if user:
-                session["user_id"] = user["id"]                
+                session["user_id"] = user["id"]
                 return redirect(url_for("welcome"))
             else:
                 flash("Δεν βρέθηκε χρήστης για debug login!", "danger")
                 return redirect(url_for("login"))
 
-        # Κανονικό login
+        # ✅ Κανονικό login
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
 
-        # 1. Έλεγξε αν υπάρχει ο χρήστης με το συγκεκριμένο email
-        user_by_email = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        # 1. Βρες τον χρήστη με βάση το email
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        conn.close()
 
-        if not user_by_email:
-            conn.close()
+        if not user:
             flash("Δεν υπάρχει χρήστης με αυτό το email.", "danger")
             return redirect(url_for("login"))
 
-        # 2. Έλεγξε αν το password ταιριάζει
-        user = conn.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password)).fetchone()
-        conn.close()
-        if user:
+        # 2. Έλεγχος κωδικού (hashed)
+        stored_hash = user["password"]  # ή "password_hash" αν το πεδίο λέγεται αλλιώς
+        if check_password_hash(stored_hash, password):
             session["user_id"] = user["id"]
-            return redirect(url_for("welcome"))
+            return redirect(url_for("main"))
         else:
             flash("Λανθασμένος κωδικός!", "danger")
             return redirect(url_for("login"))
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form["email"].strip().lower()
+
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        conn.close()
+
+        if user:
+            s = URLSafeTimedSerializer(app.secret_key)
+            token = s.dumps(user["email"], salt='password-reset')
+            reset_link = url_for('reset_password', token=token, _external=True)
+
+            msg = Message(
+                subject="Επαναφορά Κωδικού – Family Food",
+                sender=("Family Food", app.config['MAIL_USERNAME']),
+                recipients=[email]
+            )
+            msg.body = f"Για να επαναφέρεις τον κωδικό σου, κάνε κλικ στον παρακάτω σύνδεσμο:\n\n{reset_link}\n\nΑν δεν ζήτησες επαναφορά, αγνόησέ το."
+
+            try:
+                mail.send(msg)
+                flash("✅ Σου στείλαμε email με οδηγίες επαναφοράς.", "success")
+            except Exception:
+                flash("❌ Σφάλμα κατά την αποστολή email. Δοκίμασε ξανά.", "danger")
+        else:
+            flash("⚠️ Δεν βρέθηκε λογαριασμός με αυτό το email.", "warning")
+
+        return redirect(url_for("forgot_password"))
+
+    return render_template("forgot_password.html")
+
+
+@app.route("/reset_password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    try:
+        s = URLSafeTimedSerializer(app.secret_key)
+        email = s.loads(token, salt='password-reset', max_age=7200)  # 2 ώρες
+    except SignatureExpired:
+        flash("⏰ Ο σύνδεσμος έληξε. Ζήτησε νέο από τη σελίδα επαναφοράς.", "danger")
+        return redirect(url_for("forgot_password"))
+    except BadSignature:
+        flash("❌ Μη έγκυρος σύνδεσμος επαναφοράς.", "danger")
+        return redirect(url_for("forgot_password"))
+
+    # Αναζητάμε τον χρήστη στη βάση
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    conn.close()
+
+    if not user:
+        flash("Ο λογαριασμός δεν βρέθηκε.", "danger")
+        return redirect(url_for("forgot_password"))
+
+    if request.method == "POST":
+        pwd1 = request.form.get("password", "").strip()
+        pwd2 = request.form.get("password2", "").strip()
+
+        if len(pwd1) < 6:
+            flash("Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες.", "danger")
+            return render_template("reset_password.html")
+
+        if pwd1 != pwd2:
+            flash("Οι κωδικοί δεν ταιριάζουν.", "danger")
+            return render_template("reset_password.html")
+
+        hash = generate_password_hash(pwd1)
+
+        # Ενημέρωση κωδικού στη βάση
+        conn = sqlite3.connect(DB)
+        conn.execute("UPDATE users SET password = ? WHERE email = ?", (hash, email))
+        conn.commit()
+        conn.close()
+
+        flash("✅ Ο κωδικός άλλαξε! Μπορείς να συνδεθείς τώρα.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("reset_password.html")
 
 @app.route('/delete_user_and_data', methods=['POST'])
 def delete_user_and_data():
@@ -234,6 +329,9 @@ def welcome():
         tomorrow_menu_id=tomorrow_menu_id,
     )
 
+@app.route("/main")
+def main():
+    return render_template("main.html")
 
 @app.route('/delete_user_recipe', methods=['POST'])
 def delete_user_recipe():
