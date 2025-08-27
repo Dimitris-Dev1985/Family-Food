@@ -23,6 +23,13 @@ DB = "family_food_app.db"
 WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"]
 default_minutes = 60
 
+@app.route("/")
+def index():
+    if "user_id" in session:
+        return redirect(url_for("main"))
+    else:
+        return redirect(url_for("welcome"))
+
 @app.route("/login/google/callback")
 def google_login_callback():
     if not google.authorized:
@@ -63,10 +70,6 @@ def get_user():
     members = conn.execute("SELECT * FROM family_members WHERE user_id=?", (user_id,)).fetchall()
     conn.close()
     return user, members
-
-@app.route("/")
-def home():
-    return redirect("/login")
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
