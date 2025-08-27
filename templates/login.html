@@ -3,152 +3,221 @@
 {% block content %}
 
 <style>
-.login-container {
-  max-width: 420px;
-  margin: 0 auto;
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1.5px 2.5px rgba(80,130,80,0.05);
-  text-align: center;
-}
-.login-logo {
-  width: 85px;
-  height: 85px;
-  border-radius: 16px;
-  object-fit: cover;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.14);
-}
-.login-title {
-  font-size: 2em;
-  font-weight: 700;
-  color: #218e46;
-  margin-bottom: 8px;
-  font-family: 'Segoe UI', 'Arial', sans-serif;
-  letter-spacing: 0.5px;
-}
-.login-desc {
-  color: #888;
-  font-size: 1.4em;
-  margin-bottom: 25px;
-}
-.login-form label {
-  font-weight: 500;
-  margin-bottom: 5px;
-}
-.login-form input {
-  border-radius: 8px !important;
-  margin-bottom: 16px;
-  font-size: 1em;
-  padding: 9px 11px;
-}
-.btn-login {
-  width: 100%;
-  padding: 10px 0;
-  font-size: 1.1em;
-  font-weight: 600;
-  border-radius: 10px;
-}
-.divider {
-  text-align: center;
-  margin: 20px 0 18px 0;
-  position: relative;
-}
-.divider span {
-  background: #fff;
-  padding: 0 12px;
-  color: #bbb;
-  position: relative;
-  z-index: 1;
-  font-size: 0.97em;
-}
-.divider:before {
-  content: "";
-  display: block;
-  position: absolute;
-  left: 0; right: 0; top: 50%;
-  border-top: 1px solid #eee;
-  z-index: 0;
-}
-.social-btn {
-  width: 100%;
-  margin-bottom: 8px;
-  font-weight: 600;
-  border-radius: 8px;
-  font-size: 1.06em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 0;
-}
-.btn-google {
-  background: #fff;
-  color: #222;
-  border: 1.5px solid #e1e1e1;
-}
-.btn-google img {
-  width: 22px; height: 22px;
-  border-radius: 3px;
-}
-.btn-facebook {
-  background: #1877f2;
-  color: #fff;
-  border: none;
-}
-.btn-debug {
-  background: #fde1ee;
-  color: #c12a6b;
-  border: none;
-  font-size: 0.99em;
-}
-.signup-link {
-  margin-top: 18px;
-  color: #444;
-  font-size: 1.02em;
-}
-.signup-link a {
-  color: #198754;
-  font-weight: 600;
-  text-decoration: none;
-}
-@media (max-width: 520px) {
-  .login-container {
-    padding: 17px 6vw 15px 6vw;
-    margin-top: 0vw;
+  :root {
+    --brand: #218e46;
+    --brand-hover: #1a6e38;
+    --text: #1b1b1b;
+    --text-dim: #666;
+    --surface: #fffaf5;
+    --outline: #ddd;
   }
-}
-</style>
 
-<style>
-.global-login-alert {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -85%)!important;
-  max-width: 400px;
-  width: 90vw;
-  z-index: 2022;
-  border-radius: 12px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.10);
-  text-align: center;
-  opacity: 1;
-  transition: opacity 0.5s;
+  body {
+    background-color: var(--surface);
+    font-family: 'Roboto', sans-serif;
+  }
 
-}
-@media (max-width: 460px) {
-  .global-login-alert {
-    max-width: 95vw;
-    width: 96vw;
+  .login-wrapper {
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px 16px;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    background-color: white;
+    border: 1px solid var(--outline);
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    padding: 32px 24px;
+    text-align: center;
+  }
+
+  .login-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    margin: 0 auto 16px;
+    display: block;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  }
+
+  .app-title {
+    font-size: clamp(3.0rem, 6vw, 3rem);
+    font-weight: 800;
+    color: var(--brand);
+    margin: 0;
+    text-align: center;
+  }
+
+  .tagline {
+    font-size: clamp(1.5rem, 3vw, 1.6rem);
+    font-weight: 500;
+    color: var(--brand);
+    line-height: 1.4;
+    text-align: center;
+    max-width: 360px;
+    margin: 0 0 28px 0;
+  }
+
+  .form-control {
+    font-size: 1rem;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--outline);
+    margin-bottom: 16px;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-control:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 2px rgba(33, 142, 70, 0.15);
+  }
+
+  .btn-login {
+    background-color: var(--brand);
+    color: white;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    width: 100%;
+    margin-top: 6px;
+    transition: background-color 0.2s ease;
+  }
+
+  .btn-login:hover {
+    background-color: var(--brand-hover);
+  }
+
+  .social-btn {
+    width: 100%;
+    margin-bottom: 8px;
+    font-weight: 600;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  .btn-google {
+    background: #fff;
+    color: #333;
+    border: 1.5px solid #e1e1e1;
+  }
+
+  .btn-google img {
+    width: 22px;
+    height: 22px;
+    border-radius: 3px;
+  }
+
+  .btn-facebook {
+    background: #1877f2;
+    color: #fff;
+    border: none;
+  }
+
+  .btn-debug {
+    background: #fde1ee;
+    color: #c12a6b;
+    border: none;
+    font-size: 0.93rem;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 10px 12px;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .text-link {
+    font-size: 0.95rem;
+    margin-top: 1rem;
+  }
+
+  .text-link a {
+    color: var(--brand);
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .text-link a:hover {
+    text-decoration: underline;
+  }
+
+  .divider {
+    margin: 24px 0;
+    position: relative;
+    text-align: center;
+  }
+
+  .divider hr {
+    border-top: 1px solid #ddd;
+  }
+
+  .divider span {
+    position: absolute;
+    background: #fff;
+    padding: 0 12px;
+    color: #999;
+    font-size: 0.9rem;
+    top: -12px;
     left: 50%;
-    top: 40%;
-    transform: translate(-50%, -60%);
+    transform: translateX(-50%);
   }
-}
+
+  .terms {
+    font-size: 0.82rem;
+    line-height: 1.4;
+    margin-top: 24px;
+    color: #777;
+  }
+
+  .terms a {
+    color: var(--brand);
+    text-decoration: none;
+  }
+
+  .terms a:hover {
+    text-decoration: underline;
+  }
+
+  .global-login-alert {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -85%)!important;
+    max-width: 400px;
+    width: 90vw;
+    z-index: 2022;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.10);
+    text-align: center;
+    opacity: 1;
+    transition: opacity 0.5s;
+  }
+
+  @media (max-width: 460px) {
+    .global-login-alert {
+      max-width: 95vw;
+      width: 96vw;
+      top: 40%;
+      transform: translate(-50%, -60%);
+    }
+  }
 </style>
 
 {% block alerts %}{% endblock %}
 
-<!-- Flash Alert (πάνω από το login-container) -->
+<!-- Flash Alert -->
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     <div id="flash-alert" class="alert alert-{{ messages[0][0] }} alert-dismissible fade show global-login-alert" role="alert">
@@ -158,43 +227,49 @@
   {% endif %}
 {% endwith %}
 
-<div class="login-container">
-  <img src="{{ url_for('static', filename='image.png') }}" alt="Family Food" class="login-logo">
-  <div class="login-title">Family Food</div>
-  <div class="login-desc">Η κουζίνα της οικογένειάς σου, στην τσέπη σου 🍽️</div>
+<div class="login-wrapper">
+  <div class="login-card">
+    <img src="{{ url_for('static', filename='image.png') }}" alt="Family Food" class="login-logo">
+    <div class="app-title">Family Food</div>
+    <div class="tagline">Η κουζίνα της οικογένειάς σου, στην τσέπη σου!</div>
 
+    <form method="POST" autocomplete="off">
+      <input type="hidden" name="action" value="login">
+      <input type="email" class="form-control" name="email" placeholder="Email" required autofocus>
+      <input type="password" class="form-control" name="password" placeholder="Κωδικός" required>
+      <button type="submit" class="btn-login">Σύνδεση</button>
+    </form>
 
-  <form class="login-form" method="POST" autocomplete="off">
-    <input type="hidden" name="action" value="login">
-    <div class="text-start">
-      <label for="email">Email</label>
-      <input type="email" class="form-control" id="email" name="email" required placeholder="π.χ. maria@mail.com" autofocus>
+    <div class="text-link">
+      <a href="/forgot-password">Ξέχασα τον κωδικό μου</a>
     </div>
-    <div class="text-start">
-      <label for="password">Κωδικός</label>
-      <input type="password" class="form-control" id="password" name="password" required placeholder="********">
+
+    <div class="text-link">
+      Δεν έχεις λογαριασμό; <a href="{{ url_for('signup') }}">Δημιούργησε έναν!</a>
     </div>
-    <button type="submit" class="btn btn-success btn-login">Σύνδεση</button>
-  </form>
 
-<!--
-  <div class="divider"><span>ή</span></div>
+    <div class="divider">
+      <hr>
+      <span>ή</span>
+    </div>
 
-  <a href="{{ url_for('login') }}" class="btn social-btn btn-google mb-1">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
-    Σύνδεση με Google
-  </a>
-  <button class="btn social-btn btn-facebook mb-1" disabled>
-    <i class="fa fa-facebook"></i> Σύνδεση με Facebook
-  </button>
--->  
-  <form method="POST" style="display:inline;">
-    <input type="hidden" name="action" value="debug">
-    <button type="submit" class="btn social-btn btn-debug mt-1">Debug Login</button>
-  </form>
+    <button class="btn social-btn btn-google" disabled>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
+      Σύνδεση με Google
+    </button>
 
-  <div class="signup-link mt-2">
-    Δεν έχεις λογαριασμό; <a href="{{ url_for('signup') }}">Δημιούργησε έναν!</a>
+    <button class="btn social-btn btn-facebook" disabled>
+      <i class="fa fa-facebook"></i> Σύνδεση με Facebook
+    </button>
+
+    <form method="POST">
+      <input type="hidden" name="action" value="debug">
+      <button type="submit" class="btn-debug">Debug Login</button>
+    </form>
+
+    <div class="terms">
+      Με τη σύνδεση αποδέχεσαι τους <a href="/terms" target="_blank">Όρους Χρήσης και την Πολιτική Απορρήτου</a>.
+    </div>
   </div>
 </div>
 
@@ -204,11 +279,11 @@
 <script>
 sessionStorage.clear();
 window.addEventListener('DOMContentLoaded', function() {
-  var alert = document.getElementById('flash-alert');
+  const alert = document.getElementById('flash-alert');
   if (alert) {
-    setTimeout(function() {
+    setTimeout(() => {
       alert.style.opacity = '0';
-      setTimeout(function() { alert.remove(); }, 600); // μετά transition
+      setTimeout(() => alert.remove(), 600);
     }, 3000);
   }
 });
