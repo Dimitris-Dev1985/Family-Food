@@ -2,6 +2,7 @@ const CACHE_NAME = "family-food-cache-v3";
 const urlsToCache = [
   "/",
   "/welcome",
+  "/login",
   "/static/icon-192.png",
   "/static/icon-512.png",
   "/static/manifest.json"
