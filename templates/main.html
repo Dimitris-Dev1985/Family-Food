@@ -27,10 +27,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 24px 16px;
-    min-height: 100dvh;
+    height: 100dvh;
     box-sizing: border-box;
-    gap: 16px;
     background-color: var(--surface);
   }
 
@@ -39,6 +37,7 @@
     height: 72px;
     border-radius: 16px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    margin-top: 16px;
   }
 
   .chat-intro {
@@ -47,10 +46,11 @@
     color: var(--brand);
     text-align: center;
     max-width: 320px;
-    margin-top: 8px;
+    margin: 12px 0;
   }
 
   .chatbox {
+    flex: 1;
     width: 100%;
     max-width: 480px;
     background-color: white;
@@ -61,12 +61,11 @@
     flex-direction: column;
     gap: 12px;
     overflow-y: auto;
-    max-height: 60dvh;
   }
 
   .chat-bubble {
     padding: 10px 14px;
-    border-radius: 16px;
+    border-radius: 20px;
     font-size: 0.95rem;
     line-height: 1.4;
     max-width: 75%;
@@ -99,22 +98,23 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 8px;
+    margin-top: 4px;
   }
 
   .quick-reply {
-    background-color: #f0f0f0;
+    background-color: #f5f5f5;
     color: #333;
-    padding: 6px 12px;
-    border-radius: 20px;
+    padding: 6px 14px;
+    border-radius: 24px;
     border: 1px solid #ccc;
     font-size: 0.9rem;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
   }
 
   .quick-reply:hover {
     background-color: #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
   }
 
   @keyframes fadeIn {
@@ -128,13 +128,18 @@
     width: 100%;
     max-width: 480px;
     align-items: center;
-    position: relative;
+    padding: 10px 12px;
+    background: #fff;
+    border-top: 1px solid var(--outline);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
   }
 
   .chat-input-row textarea {
     flex: 1;
     padding: 10px 14px;
-    border-radius: 12px;
+    border-radius: 20px;
     border: 1.5px solid var(--outline);
     font-size: 1rem;
     padding-right: 72px;
@@ -161,114 +166,55 @@
     border: none;
     background: none;
     cursor: pointer;
-    padding: 0 8px;
+    padding: 6px;
   }
 
   .mui-icon {
-    font-size: 24px;
+    font-size: 26px;
     color: var(--brand);
   }
   .mui-icon:hover {
     color: var(--brand-hover);
   }
-</style>
 
-<style>
+  /* Dish cards */
   .dish-cards-wrapper {
     display: flex;
     flex-direction: column;
-    padding: 12px 0;
-	flex-wrap: wrap;
     gap: 1rem;
-    justify-content: flex-start;
+    margin-top: 8px;
   }
 
-  .mui-card {
-    border-radius: 16px;
-    padding: 16px;
-    background: #fff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    font-size: 0.9rem;
-	transition: box-shadow 0.3s ease-in-out;
-  }
-
-  .mui-card:hover {
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-  
-  .mui-card h4 {
-    margin: 0 0 6px;
-    font-size: 1.1rem;
-    color: #2e7d32;
-  }
-
-  .mui-card .icon {
-    margin-right: 6px;
-    color: #555;
-  }
-
-  .mui-card p {
-    margin: 4px 0;
-  }
-  
   .dish-card {
-  background-color: var(--input-bg);
-  border: 1px solid var(--outline);
-  border-radius: 12px;
-  padding: 10px 14px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  font-size: 0.92rem;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  animation: fadeIn 0.3s ease-out;
-}
+    background-color: var(--input-bg);
+    border: 1px solid var(--outline);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    font-size: 0.92rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: fadeIn 0.3s ease-out;
+    transition: box-shadow 0.2s ease;
+  }
+  .dish-card:hover {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
 
-.dish-title {
-  font-weight: 500;
-  color: var(--text);
-}
+  .dish-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text);
+  }
 
-.dish-time {
-  color: #777;
-  font-size: 0.85rem;
-}
-
-.dish-link {
-  font-size: 0.85rem;
-  font-weight: 500;
-  background-color: var(--brand);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 8px;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background-color 0.2s ease;
-}
-
-.dish-link:hover {
-  background-color: var(--brand-hover);
-}
-
-
-</style>
-
-<style>
-.badge {
-  margin-left: 0px!important;
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
-
-.dish-card a.btn {
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
+  .badge {
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
 </style>
 
 <div class="chat-screen">
@@ -281,7 +227,7 @@
   <div class="chatbox" id="chatbox">
     <div class="chat-bubble from-ai">👩‍🍳 Πόσο περίπου χρόνο έχεις για μαγείρεμα;</div>
     <div class="quick-replies">
-      <div class="quick-reply" onclick="handlePredefinedChoice('time','Εως 30'')">Εως 30'</div>
+      <div class="quick-reply" onclick="handlePredefinedChoice('time','Εως 30')">Έως 30'</div>
       <div class="quick-reply" onclick="handlePredefinedChoice('time','Έως 1 ώρα')">Έως 1 ώρα</div>
       <div class="quick-reply" onclick="handlePredefinedChoice('time','Πάνω από 1,5 ώρα')">Πάνω από 1,5 ώρα</div>
     </div>
@@ -299,7 +245,6 @@
 </div>
 
 {% endblock %}
-
 
 {% block scripts %}
 
@@ -416,6 +361,10 @@ function updateFiltersFromAIResponse(filters) {
 function handlePredefinedChoice(type, value) {
   renderUserBubble(value);
 
+  // ❌ Εξαφανίζουμε όλα τα quick replies μετά την επιλογή
+  const quickReplies = document.querySelectorAll(".quick-replies");
+  quickReplies.forEach(qr => qr.remove());
+
   if (type === "time") {
     setMaxTime(mapTimeLabelToMinutes(value));
   }
@@ -433,7 +382,10 @@ function handlePredefinedChoice(type, value) {
     callAISuggest();
   } else if (maxTime > 0 && !mainIngredient && type === "time") {
     document.getElementById("typing-indicator")?.remove();
-    renderAIBubble("Τέλεια! Έχεις κάποιο βασικό υλικό στο μυαλό σου; 🍅🥩🐟 Αν όχι δε πειράζει, θα βρούμε μαζί κάτι!", "system");
+    renderAIBubble(
+      "Τέλεια! Έχεις κάποιο βασικό υλικό στο μυαλό σου; 🍅🥩🐟 Αν όχι δε πειράζει, θα βρούμε μαζί κάτι!",
+      "system"
+    );
   }
 }
 
