@@ -298,15 +298,6 @@
   </div>
 </div>
 
-<!--
-{% if session.pop('login_success', None) %}
-  <script type="module">
-    import { trackLoginSuccess } from "{{ url_for('static', filename='js/analytics-events.js') }}";
-    trackLoginSuccess('email');
-  </script>
-{% endif %}
--->
-
 {% endblock %}
 
 
@@ -337,15 +328,14 @@ input.addEventListener("input", function() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
 });
-</script>
 
-<script>
 // ✅ Initialize filters on page load
 function initLocalState() {
   if (!localStorage.getItem(StorageKeys.METHOD_PREFS)) setMethodPrefs(getMethodPrefs());
   if (!localStorage.getItem(StorageKeys.EXCLUDED)) setExcluded([]);
   if (!localStorage.getItem(StorageKeys.MAX_TIME)) setMaxTime(0);
   if (!localStorage.getItem(StorageKeys.MAIN_INGREDIENT)) setMainIngredient("");
+  if (!localStorage.getItem(StorageKeys.AUX_INGREDIENTS)) setAuxIngredient([]);
   console.log("[DEBUG] 🌱 Local state initialized");
 }
 
@@ -363,13 +353,13 @@ function sendMessage() {
   const msg = input.value.trim();
   if (!msg) return;
 
-  handleFreeUserMessage(msg);  // 👈 αφαιρέθηκε το renderUserBubble
+  handleFreeUserMessage(msg);
   input.value = "";
   input.placeholder = originalPlaceholder;
   input.style.height = "auto";
 }
 
-// ✅ Main functions
+// ✅ Render bubbles
 function renderUserBubble(text) {
   const chat = document.getElementById("chatbox");
   const userBubble = document.createElement("div");
@@ -386,17 +376,52 @@ function renderUserBubble(text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
+function renderAIBubble(text, type = "ai") {
+  const chat = document.getElementById("chatbox");
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble from-ai";
+  bubble.innerHTML = `<span class="chat-icon">${type === "system" ? "👨‍🍳" : "🧠"}</span><span>${text}</span>`;
+  chat.appendChild(bubble);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// ✅ Update filters from AI_reply
+function updateFiltersFromAIResponse(filters) {
+  if (!filters || typeof filters !== "object") return;
+
+  const keys = Object.keys(filters);
+  for (let key of keys) {
+    console.log(`[DEBUG] 🔄 Updating filter '${key}' →`, filters[key]);
+    switch (key) {
+      case "max_time":
+        setMaxTime(filters[key]);
+        break;
+      case "main_ingredient":
+        setMainIngredient(filters[key]);
+        break;
+      case "aux_ingredients":
+        setAuxIngredient(filters[key]);
+        break;
+      case "cooking_method":
+        setMethodPrefs(filters[key]);
+        break;
+      case "excluded_keywords":
+        setExcluded(filters[key]);
+        break;
+    }
+  }
+}
+
+// ✅ Predefined choice handler
 function handlePredefinedChoice(type, value) {
   renderUserBubble(value);
 
   if (type === "time") {
     setMaxTime(mapTimeLabelToMinutes(value));
   }
-
   if (type === "exclude_method") {
     setMethodPrefs(getMethodPrefs().filter(m => m !== value.trim()));
   }
-
   if (type === "exclude_ingredient") {
     setExcluded([...getExcluded(), value.toLowerCase()]);
   }
@@ -405,36 +430,33 @@ function handlePredefinedChoice(type, value) {
   const mainIngredient = getMainIngredient();
 
   if (maxTime > 0 && mainIngredient) {
-    handleAISuggestionV2({
-      max_time: maxTime,
-      main_ingredient: mainIngredient,
-      preferredMethod: getMethodPrefs(),
-      excluded: getExcluded(),
-      chef: getPreferredChef()
-    });
-  } 
-  else if (maxTime > 0 && !mainIngredient && type === "time") {
+    callAISuggest();
+  } else if (maxTime > 0 && !mainIngredient && type === "time") {
     document.getElementById("typing-indicator")?.remove();
-    renderAIBubble("Τέλεια! Έχεις κάποιο βασικό υλικό στο μυαλό σου; 🍅🥩🐟 Αν όχι δε πειραζει, θα βρούμε μαζί κάτι!", "system");
+    renderAIBubble("Τέλεια! Έχεις κάποιο βασικό υλικό στο μυαλό σου; 🍅🥩🐟 Αν όχι δε πειράζει, θα βρούμε μαζί κάτι!", "system");
   }
 }
 
+// ✅ Free user message → /ai_reply → update filters → /ai_suggest_dish
 function handleFreeUserMessage(text) {
+  console.log("[DEBUG] 📝 Free user input:", text);
   renderUserBubble(text);
-  console.log("[DEBUG] 📤 Calling /ai_reply with:", {
+
+  const payload = {
     message: text,
-    time: getMaxTime(),
-    ingredient: getMainIngredient()
-  });
+    max_time: getMaxTime(),
+    main_ingredient: getMainIngredient(),
+    aux_ingredients: getAuxIngredient(),
+    preferred_methods: getMethodPrefs(),
+    excluded: getExcluded()
+  };
+
+  console.log("[DEBUG] 📤 Calling /ai_reply with:", payload);
 
   fetch("/ai_reply", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: text,
-      time: getMaxTime(),
-      ingredient: getMainIngredient()
-    })
+    body: JSON.stringify(payload)
   })
     .then(r => r.json())
     .then(data => {
@@ -445,39 +467,16 @@ function handleFreeUserMessage(text) {
         return setTimeout(() => (window.location.href = "/logout"), 2000);
       }
 
-      let suggestionTriggered = false; // 👈 flag
-
       if (data.filters) {
-        if (data.filters.max_time) {
-          setMaxTime(parseInt(data.filters.max_time, 10));
-        }
-        if (data.filters.main_ingredient) {
-          setMainIngredient(data.filters.main_ingredient);
-        }
-        if (data.filters.cooking_method) {
-          setMethodPrefs(data.filters.cooking_method.split(",").map(m => m.trim()));
-        }
-        if (data.filters.exclude_keywords) {
-          setExcluded(data.filters.exclude_keywords);
-        }
-
-        const maxTime = getMaxTime();
-        const mainIngredient = getMainIngredient();
-
-        if (maxTime > 0 && mainIngredient) {
-          handleAISuggestionV2({
-            max_time: maxTime,
-            ingredient: mainIngredient, // 👉 παραμένει όπως το έχεις
-            preferredMethod: getMethodPrefs(),
-            excluded: getExcluded(),
-            chef: getPreferredChef()
-          });
-          suggestionTriggered = true;
-        }
+        updateFiltersFromAIResponse(data.filters);
       }
 
-      // ✅ δείχνουμε το reply μόνο αν δεν έγινε πρόταση
-      if (!suggestionTriggered && data.reply) {
+      // Αν έχουμε πλέον όλα τα φίλτρα → κάνε πρόταση
+      const maxTime = getMaxTime();
+      const mainIngredient = getMainIngredient();
+      if (maxTime > 0 && mainIngredient) {
+        callAISuggest(text);
+      } else if (data.reply) {
         renderAIBubble(data.reply);
       }
     })
@@ -488,34 +487,37 @@ function handleFreeUserMessage(text) {
     });
 }
 
-function handleAISuggestionV2({ max_time, ingredient, preferredMethod, excluded, chef }) {
-  console.log("[DEBUG] 🚀 Calling /ai_suggest_dish with:", {
-    max_time, ingredient, preferredMethod, excluded, chef
-  });
+// ✅ Call /ai_suggest_dish
+function callAISuggest(userMessage = "") {
+  const filters = {
+    max_time: getMaxTime(),
+    main_ingredient: getMainIngredient(),
+    aux_ingredient: getAuxIngredient(),
+    excluded: getExcluded(),
+    preferred_methods: getMethodPrefs(),
+    chef: getPreferredChef()
+  };
+
+  // ➤ Στέλνουμε ΚΑΙ το raw μήνυμα, ώστε να ενεργοποιείται το lexical branch
+  const payload = {
+    step: 3,
+    message: userMessage,
+    ...filters
+  };
+  console.log("[DEBUG] 🚀 Sending payload to /ai_suggest_dish:", payload);
 
   fetch("/ai_suggest_dish", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      step: 3,
-      filters: {
-        max_time,
-        main_ingredient: ingredient,
-        excluded: excluded,
-		preferredMethod: preferredMethod,
-        chef: chef
-      }
-    })
+    body: JSON.stringify(payload)
   })
     .then(r => r.json())
     .then(data => {
       document.getElementById("typing-indicator")?.remove();
 
-      // ✅ ΜΟΝΟ το μήνυμα που έρχεται από το backend
       if (data.message) {
         renderAIBubble(data.message);
       }
-
       if (data.dishes?.length) {
         renderDishCards(data.dishes);
       }
@@ -527,32 +529,15 @@ function handleAISuggestionV2({ max_time, ingredient, preferredMethod, excluded,
     });
 }
 
-function renderAIBubble(text, type = "ai") {
-  const chat = document.getElementById("chatbox");
-  const bubble = document.createElement("div");
-  bubble.className = "chat-bubble from-ai";
-  bubble.innerHTML = `<span class="chat-icon">${type === "system" ? "👨‍🍳" : "🧠"}</span><span>${text}</span>`;
-  chat.appendChild(bubble);
-  chat.scrollTop = chat.scrollHeight;
-}
-
+// ✅ Dish rendering
 function renderDishCards(dishes = []) {
   const chat = document.getElementById("chatbox");
-
   const wrapper = document.createElement("div");
   wrapper.className = "dish-cards-wrapper d-flex flex-column gap-2 mt-2";
 
   dishes.forEach(dish => {
     const card = document.createElement("div");
     card.className = "dish-card p-3";
-    card.style.border = "1px solid var(--outline)";
-    card.style.borderRadius = "12px";
-    card.style.backgroundColor = "var(--input-bg)";
-    card.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)";
-    card.style.fontSize = "0.95rem";
-    card.style.display = "flex";
-    card.style.flexDirection = "column";
-    card.style.gap = "8px";
 
     const title = document.createElement("div");
     title.className = "d-flex align-items-center";
@@ -563,19 +548,14 @@ function renderDishCards(dishes = []) {
     titleText.style.fontWeight = "600";
     titleText.style.fontSize = "1.1rem";
     titleText.style.color = "var(--text)";
-    titleText.style.lineHeight = "1.2";
 
     const favWrapper = document.createElement("span");
     favWrapper.style.cursor = "pointer";
-
-    favWrapper.innerHTML = `
-      <i class="${dish.favorite ? 'fas' : 'far'} fa-heart"
-         style="color: ${dish.favorite ? '#c33' : 'gray'}; font-size: 18px; vertical-align: -2px;"></i>
-    `;
-
+    favWrapper.innerHTML = `<i class="${dish.favorite ? 'fas' : 'far'} fa-heart"
+         style="color: ${dish.favorite ? '#c33' : 'gray'}; font-size: 18px; vertical-align: -2px;"></i>`;
     favWrapper.onclick = function(e) {
       e.stopPropagation();
-      toggleFavorite(favWrapper, dish.id); 
+      toggleFavorite(favWrapper, dish.id);
     };
 
     title.appendChild(titleText);
@@ -599,7 +579,7 @@ function renderDishCards(dishes = []) {
 
     const badgeTag = document.createElement("span");
     badgeTag.className = "badge bg-secondary text-white";
-    badgeTag.innerHTML = `<i class="fa fa-tag"></i> ${dish.tags || "-"}`;
+    badgeTag.innerHTML = `<i class="fa fa-tag"></i> ${dish.ingredients || "-"}`;
 
     badgeRow.appendChild(badgeChef);
     badgeRow.appendChild(badgeTime);
@@ -607,52 +587,10 @@ function renderDishCards(dishes = []) {
     badgeRow.appendChild(badgeTag);
     card.appendChild(badgeRow);
 
-    const linkRow = document.createElement("div");
-    linkRow.style.marginTop = "4px";
-
-    const link = document.createElement("a");
-    link.href = dish.link;
-    link.target = "_blank";
-    link.className = "dish-link";
-    link.textContent = "Δες τη συνταγή ➜";
-
-    // linkRow.appendChild(link);
-
-    card.appendChild(linkRow);
     wrapper.appendChild(card);
   });
-	
+
   chat.appendChild(wrapper);
-
-  const quickReplies = document.createElement("div");
-  quickReplies.className = "quick-replies mt-2";
-
-  const btn1 = document.createElement("button");
-  btn1.className = "quick-reply";
-  btn1.textContent = "Θα μαγειρέψω κάτι από τα παραπάνω";
-  btn1.onclick = function () {
-    quickReplies.remove();
-    renderUserBubble("Θα μαγειρέψω κάτι από τα παραπάνω");
-    document.getElementById("typing-indicator")?.remove();
-  };
-
-  const btn2 = document.createElement("button");
-  btn2.className = "quick-reply";
-  btn2.textContent = "Δείξε μου κάτι άλλο";
-  btn2.onclick = function () {
-    quickReplies.remove();
-    const chat = document.getElementById("chatbox");
-    const userBubble = document.createElement("div");
-    userBubble.className = "chat-bubble from-user";
-    userBubble.textContent = "Δείξε μου κάτι άλλο";
-    chat.appendChild(userBubble);
-    document.getElementById("typing-indicator")?.remove();
-    renderAIBubble("Πες μου τι θα ήθελες να αλλάξουμε στα υλικά, στο χρόνο, ή σε οτιδήποτε άλλο!","system");
-  };
-
-  quickReplies.appendChild(btn1);
-  quickReplies.appendChild(btn2);
-  chat.appendChild(quickReplies);
   chat.scrollTop = chat.scrollHeight;
 }
 
