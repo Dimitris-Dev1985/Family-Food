@@ -1,1 +1,738 @@
+{% extends "base.html" %}
+{% block title %}Τι θα φάμε σήμερα;{% endblock %}
+{% block content %}
 
+<style>
+  :root {
+    --brand: #218e46;
+    --brand-hover: #1a6e38;
+    --text: #1b1b1b;
+    --surface: #fffaf5;
+    --outline: #ddd;
+    --input-bg: #ffffff;
+    --input-bg-focus: #f0fff4;
+    --voice-bg: #ffebee;
+    --voice-color: #c62828;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--surface);
+    font-family: 'Roboto', sans-serif;
+  }
+
+  .chat-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px 16px;
+    min-height: 100dvh;
+    box-sizing: border-box;
+    gap: 16px;
+    background-color: var(--surface);
+  }
+
+  .logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+
+  .chat-intro {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--brand);
+    text-align: center;
+    max-width: 320px;
+    margin-top: 8px;
+  }
+
+  .chatbox {
+    width: 100%;
+    max-width: 480px;
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    max-height: 60dvh;
+  }
+
+  .chat-bubble {
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    max-width: 75%;
+    animation: fadeIn 0.4s ease-out;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  .from-ai {
+    background-color: #eafbe7;
+    color: var(--brand);
+    align-self: flex-start;
+  }
+
+  .from-user {
+    background-color: #d4eaf7;
+    color: #0d5584;
+    align-self: flex-end;
+  }
+
+  .typing-indicator {
+    font-style: italic;
+    color: #999;
+    font-size: 0.9rem;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+
+  .quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .quick-reply {
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .quick-reply:hover {
+    background-color: #e0e0e0;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 480px;
+    align-items: center;
+    position: relative;
+  }
+
+  .chat-input-row textarea {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--outline);
+    font-size: 1rem;
+    padding-right: 72px;
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+    overflow-y: auto;
+    background-color: var(--input-bg);
+    transition: background-color 0.2s ease;
+  }
+
+  .chat-input-row textarea:focus {
+    background-color: var(--input-bg-focus);
+    outline: none;
+  }
+
+  .chat-input-row.voice-active textarea {
+    background-color: var(--voice-bg);
+    color: var(--voice-color);
+    font-weight: 500;
+  }
+
+  .chat-input-row button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0 8px;
+  }
+
+  .mui-icon {
+    font-size: 24px;
+    color: var(--brand);
+  }
+  .mui-icon:hover {
+    color: var(--brand-hover);
+  }
+</style>
+
+<style>
+  .dish-cards-wrapper {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0;
+	flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: flex-start;
+  }
+
+  .mui-card {
+    border-radius: 16px;
+    padding: 16px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    font-size: 0.9rem;
+	transition: box-shadow 0.3s ease-in-out;
+  }
+
+  .mui-card:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .mui-card h4 {
+    margin: 0 0 6px;
+    font-size: 1.1rem;
+    color: #2e7d32;
+  }
+
+  .mui-card .icon {
+    margin-right: 6px;
+    color: #555;
+  }
+
+  .mui-card p {
+    margin: 4px 0;
+  }
+  
+  .dish-card {
+  background-color: var(--input-bg);
+  border: 1px solid var(--outline);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  font-size: 0.92rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.dish-title {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.dish-time {
+  color: #777;
+  font-size: 0.85rem;
+}
+
+.dish-link {
+  font-size: 0.85rem;
+  font-weight: 500;
+  background-color: var(--brand);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.dish-link:hover {
+  background-color: var(--brand-hover);
+}
+
+
+</style>
+
+<style>
+.badge {
+  margin-left: 0px!important;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.dish-card a.btn {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+</style>
+
+<div class="chat-screen">
+  <img src="{{ url_for('static', filename='image.png') }}" alt="Logo" class="logo">
+  <div class="chat-intro">
+    Καλώς ήρθες {{ user_name or '' }}! 👋<br>
+    Πάμε να βρούμε τι θα μαγειρέψουμε;
+  </div>
+
+  <div class="chatbox" id="chatbox">
+    <div class="chat-bubble from-ai">👩‍🍳 Πόσο περίπου χρόνο έχεις για μαγείρεμα;</div>
+    <div class="quick-replies">
+      <div class="quick-reply" onclick="handlePredefinedChoice('time','Εως 30'')">Εως 30'</div>
+      <div class="quick-reply" onclick="handlePredefinedChoice('time','Έως 1 ώρα')">Έως 1 ώρα</div>
+      <div class="quick-reply" onclick="handlePredefinedChoice('time','Πάνω από 1,5 ώρα')">Πάνω από 1,5 ώρα</div>
+    </div>
+  </div>
+
+  <div class="chat-input-row" id="chatInputRow">
+    <textarea id="userInput" placeholder="Πληκτρολόγησε εδώ..."></textarea>
+    <button onclick="sendMessage()">
+      <span class="material-icons mui-icon">send</span>
+    </button>
+    <button onclick="startSpeechRecognition()">
+      <span class="material-icons mui-icon">mic</span>
+    </button>
+  </div>
+</div>
+
+<!--
+{% if session.pop('login_success', None) %}
+  <script type="module">
+    import { trackLoginSuccess } from "{{ url_for('static', filename='js/analytics-events.js') }}";
+    trackLoginSuccess('email');
+  </script>
+{% endif %}
+-->
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script src="/static/js/utils.js"></script>
+
+<script>
+// ✅ CLEAR STATE ON PAGE LOAD
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("[DEBUG] 🔥 Πλήρης καθαρισμός localStorage");
+  localStorage.clear();
+  initLocalState();
+});
+
+const input = document.getElementById("userInput");
+const inputRow = document.getElementById("chatInputRow");
+const originalPlaceholder = input.placeholder;
+			  
+input.addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+input.addEventListener("input", function() {
+  input.style.height = "auto";
+  input.style.height = input.scrollHeight + "px";
+});
+</script>
+
+<script>
+// ✅ Initialize filters on page load
+function initLocalState() {
+  if (!localStorage.getItem(StorageKeys.METHOD_PREFS)) setMethodPrefs(getMethodPrefs());
+  if (!localStorage.getItem(StorageKeys.EXCLUDED)) setExcluded([]);
+  if (!localStorage.getItem(StorageKeys.MAX_TIME)) setMaxTime(0);
+  if (!localStorage.getItem(StorageKeys.MAIN_INGREDIENT)) setMainIngredient("");
+  console.log("[DEBUG] 🌱 Local state initialized");
+}
+
+// ✅ Time mapping helper
+function mapTimeLabelToMinutes(label) {
+  const map = {
+    "Εως 30'": 30,
+    "Έως 1 ώρα": 60,
+    "Πάνω από 1,5 ώρα": 200
+  };
+  return map[label] || 90;
+}
+
+function sendMessage() {
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  handleFreeUserMessage(msg);  // 👈 αφαιρέθηκε το renderUserBubble
+  input.value = "";
+  input.placeholder = originalPlaceholder;
+  input.style.height = "auto";
+}
+
+// ✅ Main functions
+function renderUserBubble(text) {
+  const chat = document.getElementById("chatbox");
+  const userBubble = document.createElement("div");
+  userBubble.className = "chat-bubble from-user";
+  userBubble.textContent = text;
+  chat.appendChild(userBubble);
+  chat.scrollTop = chat.scrollHeight;
+
+  const typing = document.createElement("div");
+  typing.className = "typing-indicator";
+  typing.textContent = "Family Food πληκτρολογεί...";
+  typing.id = "typing-indicator";
+  chat.appendChild(typing);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function handlePredefinedChoice(type, value) {
+  renderUserBubble(value);
+
+  if (type === "time") {
+    setMaxTime(mapTimeLabelToMinutes(value));
+  }
+
+  if (type === "exclude_method") {
+    setMethodPrefs(getMethodPrefs().filter(m => m !== value.trim()));
+  }
+
+  if (type === "exclude_ingredient") {
+    setExcluded([...getExcluded(), value.toLowerCase()]);
+  }
+
+  const maxTime = getMaxTime();
+  const mainIngredient = getMainIngredient();
+
+  if (maxTime > 0 && mainIngredient) {
+    handleAISuggestionV2({
+      max_time: maxTime,
+      main_ingredient: mainIngredient,
+      preferredMethod: getMethodPrefs(),
+      excluded: getExcluded(),
+      chef: getPreferredChef()
+    });
+  } 
+  else if (maxTime > 0 && !mainIngredient && type === "time") {
+    document.getElementById("typing-indicator")?.remove();
+    renderAIBubble("Τέλεια! Έχεις κάποιο βασικό υλικό στο μυαλό σου; 🍅🥩🐟 Αν όχι δε πειραζει, θα βρούμε μαζί κάτι!", "system");
+  }
+}
+
+function handleFreeUserMessage(text) {
+  renderUserBubble(text);
+  console.log("[DEBUG] 📤 Calling /ai_reply with:", {
+    message: text,
+    time: getMaxTime(),
+    ingredient: getMainIngredient()
+  });
+
+  fetch("/ai_reply", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: text,
+      time: getMaxTime(),
+      ingredient: getMainIngredient()
+    })
+  })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("typing-indicator")?.remove();
+
+      if (data.logout) {
+        renderAIBubble("Η συνεδρία τερματίστηκε για λόγους ασφαλείας.", "system");
+        return setTimeout(() => (window.location.href = "/logout"), 2000);
+      }
+
+      let suggestionTriggered = false; // 👈 flag
+
+      if (data.filters) {
+        if (data.filters.max_time) {
+          setMaxTime(parseInt(data.filters.max_time, 10));
+        }
+        if (data.filters.main_ingredient) {
+          setMainIngredient(data.filters.main_ingredient);
+        }
+        if (data.filters.cooking_method) {
+          setMethodPrefs(data.filters.cooking_method.split(",").map(m => m.trim()));
+        }
+        if (data.filters.exclude_keywords) {
+          setExcluded(data.filters.exclude_keywords);
+        }
+
+        const maxTime = getMaxTime();
+        const mainIngredient = getMainIngredient();
+
+        if (maxTime > 0 && mainIngredient) {
+          handleAISuggestionV2({
+            max_time: maxTime,
+            ingredient: mainIngredient, // 👉 παραμένει όπως το έχεις
+            preferredMethod: getMethodPrefs(),
+            excluded: getExcluded(),
+            chef: getPreferredChef()
+          });
+          suggestionTriggered = true;
+        }
+      }
+
+      // ✅ δείχνουμε το reply μόνο αν δεν έγινε πρόταση
+      if (!suggestionTriggered && data.reply) {
+        renderAIBubble(data.reply);
+      }
+    })
+    .catch(err => {
+      console.error("[DEBUG] ❌ AI error:", err);
+      document.getElementById("typing-indicator")?.remove();
+      renderAIBubble("⚠️ Κάτι πήγε στραβά. Προσπάθησε ξανά.", "system");
+    });
+}
+
+function handleAISuggestionV2({ max_time, ingredient, preferredMethod, excluded, chef }) {
+  console.log("[DEBUG] 🚀 Calling /ai_suggest_dish with:", {
+    max_time, ingredient, preferredMethod, excluded, chef
+  });
+
+  fetch("/ai_suggest_dish", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      step: 3,
+      filters: {
+        max_time,
+        main_ingredient: ingredient,
+        excluded: excluded,
+		preferredMethod: preferredMethod,
+        chef: chef
+      }
+    })
+  })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("typing-indicator")?.remove();
+
+      // ✅ ΜΟΝΟ το μήνυμα που έρχεται από το backend
+      if (data.message) {
+        renderAIBubble(data.message);
+      }
+
+      if (data.dishes?.length) {
+        renderDishCards(data.dishes);
+      }
+    })
+    .catch(err => {
+      console.error("[DEBUG] ❌ Suggestion error:", err);
+      document.getElementById("typing-indicator")?.remove();
+      renderAIBubble("⚠️ Κάτι πήγε στραβά στην πρόταση.", "system");
+    });
+}
+
+function renderAIBubble(text, type = "ai") {
+  const chat = document.getElementById("chatbox");
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble from-ai";
+  bubble.innerHTML = `<span class="chat-icon">${type === "system" ? "👨‍🍳" : "🧠"}</span><span>${text}</span>`;
+  chat.appendChild(bubble);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function renderDishCards(dishes = []) {
+  const chat = document.getElementById("chatbox");
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "dish-cards-wrapper d-flex flex-column gap-2 mt-2";
+
+  dishes.forEach(dish => {
+    const card = document.createElement("div");
+    card.className = "dish-card p-3";
+    card.style.border = "1px solid var(--outline)";
+    card.style.borderRadius = "12px";
+    card.style.backgroundColor = "var(--input-bg)";
+    card.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)";
+    card.style.fontSize = "0.95rem";
+    card.style.display = "flex";
+    card.style.flexDirection = "column";
+    card.style.gap = "8px";
+
+    const title = document.createElement("div");
+    title.className = "d-flex align-items-center";
+    title.style.gap = "8px";
+
+    const titleText = document.createElement("span");
+    titleText.textContent = dish.title;
+    titleText.style.fontWeight = "600";
+    titleText.style.fontSize = "1.1rem";
+    titleText.style.color = "var(--text)";
+    titleText.style.lineHeight = "1.2";
+
+    const favWrapper = document.createElement("span");
+    favWrapper.style.cursor = "pointer";
+
+    favWrapper.innerHTML = `
+      <i class="${dish.favorite ? 'fas' : 'far'} fa-heart"
+         style="color: ${dish.favorite ? '#c33' : 'gray'}; font-size: 18px; vertical-align: -2px;"></i>
+    `;
+
+    favWrapper.onclick = function(e) {
+      e.stopPropagation();
+      toggleFavorite(favWrapper, dish.id); 
+    };
+
+    title.appendChild(titleText);
+    title.appendChild(favWrapper);
+    card.appendChild(title);
+
+    const badgeRow = document.createElement("div");
+    badgeRow.className = "d-flex flex-wrap align-items-center gap-2";
+
+    const badgeChef = document.createElement("span");
+    badgeChef.className = "badge bg-info text-dark";
+    badgeChef.innerHTML = `<i class="fa fa-user"></i> ${dish.chef || "-"}`;
+
+    const badgeTime = document.createElement("span");
+    badgeTime.className = "badge bg-success text-white";
+    badgeTime.innerHTML = `<i class="fa fa-clock"></i> ${dish.total_time || "-"}'`;
+
+    const badgeMethod = document.createElement("span");
+    badgeMethod.className = "badge bg-warning text-dark";
+    badgeMethod.innerHTML = `<i class="fa fa-fire"></i> ${dish.method || "-"}`;
+
+    const badgeTag = document.createElement("span");
+    badgeTag.className = "badge bg-secondary text-white";
+    badgeTag.innerHTML = `<i class="fa fa-tag"></i> ${dish.tags || "-"}`;
+
+    badgeRow.appendChild(badgeChef);
+    badgeRow.appendChild(badgeTime);
+    badgeRow.appendChild(badgeMethod);
+    badgeRow.appendChild(badgeTag);
+    card.appendChild(badgeRow);
+
+    const linkRow = document.createElement("div");
+    linkRow.style.marginTop = "4px";
+
+    const link = document.createElement("a");
+    link.href = dish.link;
+    link.target = "_blank";
+    link.className = "dish-link";
+    link.textContent = "Δες τη συνταγή ➜";
+
+    // linkRow.appendChild(link);
+
+    card.appendChild(linkRow);
+    wrapper.appendChild(card);
+  });
+	
+  chat.appendChild(wrapper);
+
+  const quickReplies = document.createElement("div");
+  quickReplies.className = "quick-replies mt-2";
+
+  const btn1 = document.createElement("button");
+  btn1.className = "quick-reply";
+  btn1.textContent = "Θα μαγειρέψω κάτι από τα παραπάνω";
+  btn1.onclick = function () {
+    quickReplies.remove();
+    renderUserBubble("Θα μαγειρέψω κάτι από τα παραπάνω");
+    document.getElementById("typing-indicator")?.remove();
+  };
+
+  const btn2 = document.createElement("button");
+  btn2.className = "quick-reply";
+  btn2.textContent = "Δείξε μου κάτι άλλο";
+  btn2.onclick = function () {
+    quickReplies.remove();
+    const chat = document.getElementById("chatbox");
+    const userBubble = document.createElement("div");
+    userBubble.className = "chat-bubble from-user";
+    userBubble.textContent = "Δείξε μου κάτι άλλο";
+    chat.appendChild(userBubble);
+    document.getElementById("typing-indicator")?.remove();
+    renderAIBubble("Πες μου τι θα ήθελες να αλλάξουμε στα υλικά, στο χρόνο, ή σε οτιδήποτε άλλο!","system");
+  };
+
+  quickReplies.appendChild(btn1);
+  quickReplies.appendChild(btn2);
+  chat.appendChild(quickReplies);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function getPreferredChef() {
+  return localStorage.getItem("preferred_chef") || "";
+}
+</script>
+
+<!--Speech Regognition-->
+<script>
+function startSpeechRecognition() {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert("Ο browser σου δεν υποστηρίζει φωνητική αναγνώριση.");
+      return;
+    }
+
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = 'el-GR';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    input.placeholder = "🎙️ Σε ακούω...";
+    inputRow.classList.add("voice-active");
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript.trim();
+      input.value = transcript;
+      input.dispatchEvent(new Event("input"));
+      resetInputUI();
+    };
+
+    recognition.onerror = function(event) {
+      alert("Σφάλμα μικροφώνου: " + event.error);
+      resetInputUI();
+    };
+
+    recognition.onend = function() {
+      resetInputUI();
+    };
+
+    recognition.start();
+  }
+
+function resetInputUI() {
+    input.placeholder = originalPlaceholder;
+    inputRow.classList.remove("voice-active");
+  }
+
+</script>
+
+<!--Favorites-->
+<script>
+function toggleFavorite(wrapper, recipe_id) {
+  fetch('/toggle_favorite_recipe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe_id: recipe_id })
+  })
+  .then(r => r.json())
+  .then(data => {
+    const isAdded = data.status === "added";
+
+    // ✨ Επαναφέρουμε το περιεχόμενο του wrapper
+    wrapper.innerHTML = `
+      <i class="${isAdded ? 'fas' : 'far'} fa-heart"
+         style="color: ${isAdded ? '#c33' : 'gray'}; font-size: 18px; vertical-align: -2px; cursor: pointer;"></i>
+    `;
+
+    // ✨ ξαναδένουμε το event handler στο νέο icon
+    const icon = wrapper.querySelector("i");
+    if (icon) {
+      icon.onclick = function(e) {
+        e.stopPropagation();
+        toggleFavorite(wrapper, recipe_id);
+      };
+    } else {
+      console.warn("⚠️ Δεν βρέθηκε icon για dish id:", recipe_id);
+    }
+  });
+}
+</script>
+
+{% endblock %}
