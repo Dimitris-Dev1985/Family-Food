@@ -8,7 +8,7 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask_mail import Mail, Message
-
+from stopwords_gr import RAW_STOPWORDS
 
 app = Flask(__name__)
 app.secret_key = "d7gAq2d9bJz@7qK2kLxw!"
