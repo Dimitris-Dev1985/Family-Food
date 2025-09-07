@@ -37,17 +37,6 @@
 <link rel="stylesheet" href="/static/styles.css">
 
 
-<!-- redirevt για firebase
-<script>
-  (function () {
-    const url = new URL(window.location.href);
-    if (!url.searchParams.has('firebase_debug')) {
-      url.searchParams.set('firebase_debug', '1');
-      window.location.replace(url.href);
-    }
-  })();
-</script>
---> 
   
 {% block head %}{% endblock %}
 
@@ -66,52 +55,6 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 {% block scripts %}{% endblock %}
-
-<!--
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-  import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
-	
-  const firebaseConfig = {
-    apiKey: "AIzaSyDApy1YtO0o2sDMPSnZm05PGLy7wvtgnrw",
-    authDomain: "familyfood-44e80.firebaseapp.com",
-    projectId: "familyfood-44e80",
-    storageBucket: "familyfood-44e80.firebasestorage.app",
-    messagingSenderId: "1070943126850",
-    appId: "1:1070943126850:web:4a95ca8f6884cb0985b4db",
-    measurementId: "G-VV5JDG9SP1"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-
-</script>
-
- Firebase Analytics with gtag.js 
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-VV5JDG9SP1"></script>
-
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-
-  // Init GA4 with Debug mode enabled
-  gtag('js', new Date());
-  gtag('config', 'G-VV5JDG9SP1', {
-    debug_mode: true // Ενεργοποιεί DebugView για localhost/dev
-  });
-</script>
--->
-
-<!-- Στείλε manual page_view με module 
-<script type="module">
-  import { trackEvent } from "{{ url_for('static', filename='js/analytics-events.js') }}";
-
-  trackEvent('page_view_manual', {
-    page: window.location.pathname,
-    title: document.title
-  });
-</script>
--->
 
 </body>
 
