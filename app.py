@@ -24,7 +24,8 @@ DB = "family_food_app.db"
 
 WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"]
 COOKING_METHODS = ['Φούρνος','Κατσαρόλα','Χύτρα','Τηγάνι','Σχάρα','Air-fryer']
-MAIN_CATEGORIES = ['Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα']
+#MAIN_CATEGORIES = ['Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα']
+MAIN_INGREDIENTS = []
 default_minutes = 60
 
 load_dotenv()
@@ -49,32 +50,15 @@ def normalize(text):
         if unicodedata.category(c) != "Mn"
     ).lower().strip()
                                                                                                          
-def load_main_ingredients():
-    """Διαβάζει όλα τα διαφορετικά main_ingredients από DB"""
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT DISTINCT main_ingredient
-        FROM recipes
-        WHERE main_ingredient IS NOT NULL
-          AND TRIM(main_ingredient) <> ''
-    """)
-    ingredients = [normalize(row["main_ingredient"]) for row in cur.fetchall()]
-    conn.close()
-#    print("[DEBUG] MAIN_INGREDIENTS loaded:", ingredients)
-    return ingredients
-
-def build_system_prompt(ingredients):
+def build_system_prompt():
     """Χτίζει το system prompt με βάση τα διαθέσιμα ingredients"""
-    ingredients_hint = ", ".join(ingredients)
     return (
         "You are a helpful kitchen assistant that helps tired parents decide what to cook.\n"
         "Always reply in Greek, with a warm and casual tone.\n"
 
         "Your ONLY task is to manage and update these 5 fields:\n"
         "- max_time (integer minutes) - είναι ο χρόνος που έχει στη διάθεσή του ο χρήστης για μαγείρεμα (απαραίτητο να υπάρχει πάντα)\n"
-        f"- main_ingredient (string) - είναι το βασικό υλικό που θέλει να χρησιμοποιήσει ο χρήστης. Θα το βρείτε ΜΑΖΙ. Κάποιες τιμές που μπορεί να πάρει: {ingredients_hint}\n"
+        "- main_ingredient (string) - είναι το βασικό υλικό που θέλει να χρησιμοποιήσει ο χρήστης. Θα το βρείτε ΜΑΖΙ.\n"
         "- aux_ingredients (array) - είναι τα επιπλέον βοηθητικά υλικά που θέλει ο χρήστης να έχει η συνταγή (προσθέσεις ή αφαιρέσεις)\n"
         "- cooking_method (array) - είναι λίστα προκαθορισμένων μεθόδων μαγειρέματος που μπορεί να χρειαστεί να επεξεργαστείς (προσθέσεις ή αφαιρέσεις)\n"
         "- excluded_keywords (array) - είναι λίστα με λέξεις που μπορεί να χρειαστεί να επεξεργαστείς (προσθέσεις ή αφαιρέσεις)\n\n"
@@ -108,12 +92,10 @@ def build_system_prompt(ingredients):
     )
 
 
-
 # 🔹 Global variables
 COOKING_METHODS = ['Φούρνος','Κατσαρόλα','Χύτρα','Τηγάνι','Σχάρα','Air-fryer']
 NORMALIZED_METHODS = { normalize(m): m for m in COOKING_METHODS }
-MAIN_INGREDIENTS = load_main_ingredients()
-SYSTEM_PROMPT = build_system_prompt(MAIN_INGREDIENTS)
+SYSTEM_PROMPT = build_system_prompt()
 
 @app.route("/test_openai")
 def test_openai():
@@ -146,6 +128,41 @@ def ai_reply_test():
 @app.route("/test_ai")
 def test_ai():
     return render_template("test_ai.html")
+
+@app.route("/recipe_page")
+def recipe_page():
+    return render_template("recipe_page.html")
+
+
+@app.route("/get_main_tags")
+def get_main_tags():
+    category = request.args.get("category")
+    print("[DEBUG] 🔍 GET /get_main_tags called with category =", category)
+
+    if not category:
+        print("[WARN] ❗ No category provided")
+        return jsonify({"tags": []}), 400
+
+    try:
+        conn = sqlite3.connect(DB)
+        c = conn.cursor()
+        c.execute("""
+            SELECT DISTINCT main_dish_tag
+            FROM recipes
+            WHERE dish_category LIKE ?
+              AND main_dish_tag IS NOT NULL
+              AND main_dish_tag != ''
+        """, (f"%{category}%",))
+        rows = c.fetchall()
+        conn.close()
+
+        tags = sorted(set(r[0].strip() for r in rows if r[0] and r[0].strip()))
+#        print(f"[DEBUG] ✅ Found {len(tags)} tags for category '{category}':", tags)
+        return jsonify({"tags": tags})
+    
+    except Exception as e:
+        print("[ERROR] ❌ Failed to fetch main tags:", e)
+        return jsonify({"tags": []}), 500
 
 @app.route("/ai_reply", methods=["POST"])
 def ai_reply_v3():
@@ -501,7 +518,7 @@ def ai_suggest_dish():
         print("\n========== /ai_suggest_dish CALLED ==========")
         data = request.get_json() or {}
         print("[INPUT] Raw:", data)
-
+        step = data.get("step")
         user_message = clean_message(data.get("message", "") or "")
         print("[DEBUG] 🧹 Cleaned user input:", user_message)
 
@@ -527,7 +544,7 @@ def ai_suggest_dish():
         if user_message:
             print("[DEBUG] ========== Branch 1 ==========")
             candidates = conn.execute("""
-                SELECT recipes.id, recipes.title,
+                SELECT recipes.*, 
                        CASE WHEN fav.recipe_id IS NOT NULL THEN 1 ELSE 0 END as is_favorite
                 FROM recipes
                 LEFT JOIN favorite_recipes fav 
@@ -539,38 +556,49 @@ def ai_suggest_dish():
                 rid, raw_title, fav_flag = row["id"], row["title"], row["is_favorite"]
                 score = fuzz.token_set_ratio(user_message, preprocess_title(raw_title))
                 if score >= 80:
-                    matches.append((rid, score, fav_flag, raw_title))
+                    matches.append((row, score, fav_flag, raw_title))
 
             if matches:
+                # Προτεραιότητα: 1) αγαπημένα, 2) score
                 matches.sort(key=lambda x: (x[2], x[1]), reverse=True)
 
                 print("[DEBUG] 📊 Branch1 match details:")
-                for rid, score, fav, raw_title in matches:
+                for row, score, fav, raw_title in matches:
                     fav_mark = "🍀" if fav else "—"
                     print(f"    {raw_title} | score={score:.1f} | favorite={fav_mark}")
 
-                matched_ids = [m[0] for m in matches]
-                rows = conn.execute(
-                    "SELECT * FROM recipes WHERE id IN (%s)" % ",".join("?"*len(matched_ids)),
-                    matched_ids
-                ).fetchall()
-                row_map = {r["id"]: r for r in rows}
-                dishes_branch1 = [row_map[mid] for mid in matched_ids if mid in row_map]
+                matched_ids = [m[0]["id"] for m in matches]
+                # Δεν χρειάζεται δεύτερο query!
+                row_map = {row["id"]: row for row, _, _, _ in matches}
+
+                # ➤ Φιλτράρουμε να μην ξαναπροταθούν ήδη προτεινόμενα πιάτα
+                dishes_branch1 = [
+                    row_map[mid] for mid in matched_ids
+                    if mid in row_map and mid not in seen_ids and mid not in already_suggested
+                ]
 
                 print(f"[DEBUG] 🎯 Branch1 ordered return ({len(dishes_branch1)} dishes):",
                       [d["title"] for d in dishes_branch1])
 
-                final_dishes.extend(dishes_branch1)
-                seen_ids.update(matched_ids)
-                session["suggested_dish_ids"] = already_suggested + [d["id"] for d in dishes_branch1]
+                conn.close()
+                step = data.get("step")
+                print(f"[DEBUG] ✅ Final returned from Branch1 (step={step})")
 
-                if len(dishes_branch1) >= 3:
-                    conn.close()
-                    print("[DEBUG] ✅ Final returned from Branch1 only")
+                if step == 2:
+                    # Επιστρέφουμε ΟΛΑ τα matches
+                    session["suggested_dish_ids"] = already_suggested + [d["id"] for d in dishes_branch1]
                     return jsonify({
                         "message": random.choice(suggestion_messages),
                         "dishes": [dict(d) for d in dishes_branch1]
                     })
+
+                # Κανονικά επιστρέφουμε max 3
+                top_dishes = dishes_branch1[:3]
+                session["suggested_dish_ids"] = already_suggested + [d["id"] for d in top_dishes]
+                return jsonify({
+                    "message": random.choice(suggestion_messages),
+                    "dishes": [dict(d) for d in top_dishes]
+                })
             else:
                 print("[DEBUG] ❌ Branch1 no strong matches")
 
@@ -599,8 +627,9 @@ def ai_suggest_dish():
                 print("[WARN] Invalid max_time:", e)
 
         if main_ingredient:
-            q += " AND (remove_tonos(main_ingredient) LIKE ?)"
-            params.append(f"%{remove_tonos(main_ingredient)}%")
+            safe_ingr = remove_tonos(main_ingredient).lower().strip()
+            q += " AND (',' || LOWER(remove_tonos(ingredients)) || ',' LIKE ?)"
+            params.append(f"%,{safe_ingr},%")
 
         if excluded:
             for item in excluded:
