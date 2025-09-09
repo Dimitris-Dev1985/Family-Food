@@ -6,379 +6,301 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <style>
-    :root {
-      --brand: #218e46;
-      --brand-hover: #1a6e38;
-      --surface: #fffaf5;
-      --text: #1b1b1b;
-      --text-dim: #666;
-      --outline: #ddd;
-      --bg-badge: #f0f9f2;
-      --servings-bg: #fff;
-      --servings-border: #e2e3e4;
-      --pink: #ef2d6a;
-      --time-bg: #f4f7f6;
-      --shadow: 0 2px 14px rgba(33,142,70,0.08);
-    }
-    body {
-      background: var(--surface);
-      color: var(--text);
-      font-family: 'Roboto', sans-serif;
-      margin: 0; padding: 0;
-    }
-    .recipe-topbar {
-      position: sticky; top: 0; left: 0; right: 0; z-index: 99;
-      background: #fff;
-      border-bottom: 1.5px solid var(--outline);
-      min-height: 54px; height: 54px;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 10px 0 6px;
-      box-shadow: 0 1px 8px rgba(33,142,70,0.05);
-      transition: box-shadow 0.16s;
-    }
-    .recipe-topbar .icon-btn {
-      background: none; color: var(--brand);
-      width: 38px; height: 38px; font-size: 1.32rem;
-      border-radius: 50%; margin: 0;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.13s;
-      border: none; cursor: pointer;
-    }
-    .recipe-topbar .icon-btn:active { background: #f4f4f4; }
-    .topbar-actions { display: flex; align-items: center; gap: 7px; }
-    .topbar-title {
-      font-size: 1.13rem; font-weight: 700; color: var(--text);
-      letter-spacing: -0.2px; white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
-      margin-left: 7px; opacity: 0; pointer-events: none;
-      transition: opacity 0.23s; flex: 1; text-align: left;
-    }
-    .recipe-topbar.show-compact-title .topbar-title { opacity: 1; pointer-events: auto; }
-    .recipe-title-main {
-      font-size: 2.08rem; font-weight: 900; color: var(--text);
-      margin: 18px 0 0 0; padding: 0 24px 0 24px;
-      letter-spacing: -1px; line-height: 1.1; transition: opacity 0.2s;
-    }
-    .hide-main-title { opacity: 0; pointer-events: none; height: 0; margin: 0; padding: 0; }
-    .recipe-description-main {
-      color: var(--text-dim); font-size: 1.07rem; padding: 0 24px 10px 24px;
-      line-height: 1.55;
-    }
-    .recipe-hero {
-      width: 100vw; max-width: 600px; margin: 0 auto 0 auto;
-      aspect-ratio: 1.1/1; background: #eee;
-      border-bottom-left-radius: 2.2rem; border-bottom-right-radius: 2.2rem;
-      overflow: hidden; display: flex; align-items: flex-end; justify-content: center; position: relative;
-    }
-    .recipe-hero img {
-      width: 100%; height: 100%; object-fit: cover;
-      border-bottom-left-radius: 2.2rem; border-bottom-right-radius: 2.2rem; min-height: 220px;
-    }
-    .hero-play-btn {
-      position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
-      background: var(--pink); color: #fff; border-radius: 50%;
-      width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;
-      font-size: 2.1rem; box-shadow: 0 3px 16px rgba(0,0,0,0.13);
-      cursor: pointer; border: none; z-index: 1; opacity: 0.95;
-      transition: background 0.13s;
-    }
-    .hero-play-btn:active { background: #de2861; }
-    .recipe-info-badges {
-      margin: 15px 0 8px 0; display: flex; gap: 9px;
-      flex-wrap: wrap; align-items: center; padding: 0 20px;
-    }
-    .info-badge {
-      background: var(--bg-badge); color: var(--brand-hover);
-      border-radius: 16px; font-size: 0.99rem; font-weight: 500;
-      padding: 7px 13px 7px 11px; display: flex; align-items: center; gap: 5px;
-    }
-    .info-badge i { font-size: 1.06em; opacity: 0.86; }
-    .recipe-chef {
-      color: var(--text-dim); font-size: 1.01rem; font-weight: 500;
-      margin-top: 2px; margin-bottom: 7px; padding: 0 20px;
-    }
+  
 
-    /* -------- INGREDIENTS -------- */
-    .ingredients-card {
-      background: #fff; border-radius: 20px; box-shadow: var(--shadow);
-      padding: 18px 12px 12px 12px; margin: 18px 13px 13px 13px; max-width: 560px;
-    }
-    .ingredients-title-row {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; margin-bottom: 6px;
-    }
-    .ingredients-title-col {
-      display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-    }
-    .ingredients-title {
-      font-size: 1.13rem; font-weight: 700; color: var(--brand-hover);
-      letter-spacing: -0.3px; margin-bottom: 2px;
-    }
-    .servings-cookpad-row {
-      display: flex; align-items: center; gap: 11px; margin-top: 1px;
-    }
-    .servings-user-icon {
-      font-size: 1em; margin-right: 4px;
-    }
-    .servings-label {
-      font-size: 0.8em;
-      font-weight: 500; margin-right: 1px;
-    }
-    .servings-tasty-box {
-      display: flex; align-items: center; background: var(--servings-bg);
-      border: 1.5px solid var(--servings-border); border-radius: 13px;
-      gap: 8px; font-size: 1.08rem; font-weight: 500; padding: 3.5px 9px 3.5px 9px;
-    }
-    .servings-btn {
-      background: none; border: none; color: var(--brand-hover);
-      font-size: 1.28em; font-weight: bold;
-      width: 30px; height: 30px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: background 0.13s;
-    }
-    .servings-btn:active { background: #f4f4f4; }
-    .servings-qty {
-      font-size: 1.10em; font-weight: bold; min-width: 24px; text-align: center; color: var(--text);
-    }
-    .servings-unit {
-      color: var(--text-dim); font-size: 0.99em; margin-left: 1px;
-    }
-    .ingredients-list {
-      list-style: none; padding: 0; margin: 0; font-size: 1.05rem;
-    }
-    .ingredients-list li {
-      margin-bottom: 8px; display: flex; align-items: center; min-height: 27px; gap: 8px;
-    }
-    .ingredient-checkbox {
-      accent-color: var(--brand); width: 1.17em; height: 1.17em; margin-right: 2px;
-      cursor: pointer;
-    }
-    .ingredient-fulltext { color: var(--text); }
+<!-- =================== Design Tokens =================== -->
+<style>
+  :root {
+    --brand: #218e46;
+    --brand-hover: #1a6e38;
+    --surface: #fffaf5;
+    --text: #1b1b1b;
+    --text-dim: #666;
+    --outline: #ddd;
+    --bg-badge: #f0f9f2;
+    --servings-bg: #fff;
+    --servings-border: #e2e3e4;
+    --pink: #ef2d6a;
+    --time-bg: #f4f7f6;
+    --shadow: 0 2px 14px rgba(33,142,70,0.08);
+  }
+  body {
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Roboto', sans-serif;
+    margin: 0; padding: 0;
+  }
+</style>
 
-    /* -------- INSTRUCTIONS -------- */
-    .instructions-card {
-      background: #fff; border-radius: 20px; box-shadow: var(--shadow);
-      padding: 18px 14px 13px 14px; margin: 17px 13px 0 13px; max-width: 560px;
-    }
-	
-	.instructions-time-badge {
-	  background: #e8f7eb;
-	  color: var(--brand-hover);
-	  border-radius: 15px;
-	  font-size: 1.02rem;
-	  font-weight: 600;
-	  padding: 8px 18px 8px 14px;
-	  display: flex;
-	  align-items: center;
-	  gap: 8px;
-	  border: 1.2px solid #e5eee5;
-	  margin-bottom: 10px;
-	  margin-top: 2px;
-	  width: fit-content;
-	}
+<!-- =================== Topbar =================== -->
+<style>
+  .recipe-topbar {
+    position: sticky; top: 0; left: 0; right: 0; z-index: 99;
+    background: #fff;
+    border-bottom: 1.5px solid var(--outline);
+    min-height: 54px; height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 10px 0 6px;
+    box-shadow: 0 1px 8px rgba(33,142,70,0.05);
+    transition: box-shadow 0.16s;
+  }
+  .recipe-topbar .icon-btn {
+    width: 38px; height: 38px; margin: 0;
+    border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    background: none; color: var(--brand);
+    font-size: 1.32rem; cursor: pointer;
+    transition: background 0.13s;
+  }
+  .recipe-topbar .icon-btn:active { background: #f4f4f4; }
+  .topbar-actions { display: flex; align-items: center; gap: 7px; }
+  .topbar-title {
+    flex: 1;
+    margin-left: 7px;
+    font-size: 1.13rem; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.23s;
+    text-align: left;
+  }
+  .recipe-topbar.show-compact-title .topbar-title { opacity: 1; pointer-events: auto; }
+</style>
 
-	.instructions-time-badge i {
-	  font-size: 1.13em;
-	  opacity: 0.84;
-	  margin-right: 4px;
-	}
+<!-- =================== Titles & Description =================== -->
+<style>
+  .recipe-title-main {
+    font-size: 2.08rem; font-weight: 900; color: var(--text);
+    margin: 18px 0 0 0; padding: 0 24px;
+    letter-spacing: -1px; line-height: 1.1;
+    transition: opacity 0.2s;
+  }
+  .hide-main-title { opacity: 0; pointer-events: none; height: 0; margin: 0; padding: 0; }
+  .recipe-description-main {
+    color: var(--text-dim); font-size: 1.07rem; line-height: 1.55;
+    padding: 0 24px 10px 24px;
+  }
+</style>
 
-    .instructions-times-row {
-      display: flex; gap: 11px; align-items: center; margin-bottom: 8px; justify-content: flex-start;
-    }
-    .time-badge {
-      background: var(--time-bg); color: var(--brand-hover); border-radius: 15px;
-      font-size: 0.97rem; font-weight: 600; padding: 6px 13px 6px 11px;
-      display: flex; align-items: center; gap: 4px; border: 1.2px solid #e5eee5;
-    }
-    .time-badge i { font-size: 1.10em; opacity: 0.82; }
-    .instructions-title {
-      font-size: 1.11rem; font-weight: 700; color: var(--brand-hover);
-      margin-bottom: 10px; margin-top: 20px;
-    }
-    .instructions-list {
-      list-style: decimal inside; margin: 0 0 0 0px; padding: 0;
-      color: var(--text); font-size: 1.04rem;
-    }
-    .instructions-list li {
-      margin-bottom: 7px; line-height: 1.58; padding-left: 1px;
-    }
+<!-- =================== Hero =================== -->
+<style>
+  .recipe-hero {
+    width: 100vw; max-width: 600px; margin: 0 auto;
+    aspect-ratio: 1.1/1;
+    border-bottom-left-radius: 2.2rem; border-bottom-right-radius: 2.2rem;
+    background: #eee; overflow: hidden;
+    display: flex; align-items: flex-end; justify-content: center;
+    position: relative;
+  }
+  .recipe-hero img {
+    width: 100%; height: 100%; min-height: 220px;
+    object-fit: cover;
+    border-bottom-left-radius: 2.2rem; border-bottom-right-radius: 2.2rem;
+  }
+  .hero-play-btn {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: 58px; height: 58px;
+    border-radius: 50%; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.1rem;
+    background: var(--pink); color: #fff;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.13);
+    opacity: 0.95; z-index: 1;
+    transition: background 0.13s;
+  }
+  .hero-play-btn:active { background: #de2861; }
+</style>
 
-    /* -------- SIMILAR RECIPES -------- */
-    .similar-card {
-      background: #fff; border-radius: 18px; box-shadow: var(--shadow);
-      margin: 21px 12px 34px 12px; padding: 18px 13px 11px 13px; max-width: 560px;
-      overflow: hidden;
-    }
-	.similar-title-row {
-	  display: flex;
-	  align-items: center;
-	  justify-content: space-between;
-	  margin-bottom: 8px;
-	}
-    .similar-title {
-      font-size: 1.12rem; font-weight: 700; color: var(--brand-hover);
-      letter-spacing: -0.3px;
-    }
-    .similar-swiper {
-      display: flex; align-items: center; gap: 9px; overflow-x: auto; scroll-snap-type: x mandatory;
-    }
-	
-	.similar-btns-row {
-	  display: flex;
-	  align-items: center;
-	  gap: 2px;      /* Λιγότερο κενό μεταξύ τους */
-	}
+<!-- =================== Info Badges & Chef =================== -->
+<style>
+  .recipe-info-badges {
+    margin: 15px 0 8px 0; padding: 0 20px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 9px;
+  }
+  .info-badge {
+    padding: 7px 13px 7px 11px;
+    border-radius: 16px;
+    font-size: 0.99rem; font-weight: 500;
+    display: flex; align-items: center; gap: 5px;
+    background: var(--bg-badge); color: var(--brand-hover);
+  }
+  .info-badge i { font-size: 1.06em; opacity: 0.86; }
+  .recipe-chef {
+    margin: 2px 0 7px 0; padding: 0 20px;
+    color: var(--text-dim);
+    font-size: 1.01rem; font-weight: 500;
+  }
+</style>
 
-	.similar-btn {
-	  background: var(--surface);
-	  color: var(--brand-hover);
-	  border: 1.4px solid var(--outline);
-	  border-radius: 50%;
-	  width: 34px;
-	  height: 34px;
-	  display: flex;
-	  align-items: center;
-	  justify-content: center;
-	  font-size: 1.11rem;
-	  cursor: pointer;
-	  transition: background 0.13s;
-	  margin-bottom: 0;   /* Καθόλου περιττό margin */
-	  box-shadow: none;
-	}
+<!-- =================== Ingredients =================== -->
+<style>
+  .ingredients-card {
+    max-width: 560px;
+    padding: 18px 12px 12px 12px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: var(--shadow);
+  }
+  .ingredients-title-row,
+  .ingredients-header-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 7px;
+  }
+  .ingredients-title-col { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .ingredients-title {
+    display: flex; align-items: center; gap: 7px;
+    margin-bottom: 2px;
+    font-size: 1.15rem; font-weight: 800;
+    color: var(--brand-hover); letter-spacing: -0.3px;
+  }
+  .ingredients-title i { font-size: 1.09em; margin-left: 2px; }
+  .servings-cookpad-row { display: flex; align-items: center; gap: 11px; margin-top: 1px; }
+  .servings-user-icon { font-size: 1em; margin-right: 4px; }
+  .servings-label { font-size: 0.8em; font-weight: 500; margin-right: 1px; }
+  .servings-tasty-box {
+    display: flex; align-items: center; gap: 8px;
+    padding: 3.5px 10px;
+    border: 1.5px solid var(--servings-border); border-radius: 13px;
+    background: var(--servings-bg);
+    font-size: 1.08rem; font-weight: 500;
+  }
+  .servings-btn {
+    width: 30px; height: 30px; margin: 0;
+    border-radius: 50%; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    background: none; color: var(--brand-hover);
+    font-size: 1.28em; font-weight: bold;
+    transition: background 0.13s;
+  }
+  .servings-btn:active { background: #f4f4f4; }
+  .servings-qty {
+    min-width: 24px; text-align: center;
+    font-size: 1.1em; font-weight: bold;
+    color: var(--text);
+  }
+  .servings-unit { font-size: 0.99em; color: var(--text-dim); margin-left: 1px; }
+  .ingredients-list {
+    list-style: none; margin: 0; padding: 0;
+    font-size: 1.05rem;
+  }
+  .ingredients-list li {
+    display: flex; align-items: center; gap: 8px;
+    min-height: 27px; margin-bottom: 8px;
+  }
+  .ingredient-checkbox {
+    width: 1.17em; height: 1.17em; margin-right: 2px;
+    accent-color: var(--brand); cursor: pointer;
+  }
+  .ingredient-qty { color: var(--brand); font-weight: 600; margin-right: 2px; }
+  .ingredient-fulltext { color: var(--text); }
+</style>
 
-	.similar-btn:active {
-	  background: #f6f6f6;
-	}
+<!-- =================== Instructions =================== -->
+<style>
+  .instructions-card {
+    max-width: 560px; margin: 17px 13px 0 13px;
+    padding: 18px 14px 13px 14px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: var(--shadow);
+  }
+  .instructions-time-badge {
+    width: fit-content;
+    margin: 2px 0 10px 0;
+    padding: 8px 18px 8px 14px;
+    border: 1.2px solid #e5eee5; border-radius: 15px;
+    background: #e8f7eb; color: var(--brand-hover);
+    font-size: 1.02rem; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .instructions-time-badge i { font-size: 1.13em; margin-right: 4px; opacity: 0.84; }
+  .instructions-times-row {
+    display: flex; align-items: center; justify-content: flex-start;
+    gap: 11px; margin-bottom: 8px;
+  }
+  .time-badge {
+    padding: 6px 13px 6px 11px;
+    border: 1.2px solid #e5eee5; border-radius: 15px;
+    background: var(--time-bg); color: var(--brand-hover);
+    font-size: 0.97rem; font-weight: 600;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .time-badge i { font-size: 1.1em; opacity: 0.82; }
+  .instructions-title {
+    margin: 20px 0 10px 0;
+    font-size: 1.11rem; font-weight: 700; color: var(--brand-hover);
+  }
+  .instructions-list {
+    list-style: decimal inside;
+    margin: 0; padding: 0;
+    color: var(--text);
+    font-size: 1.04rem;
+  }
+  .instructions-list li { margin-bottom: 7px; line-height: 1.58; padding-left: 1px; }
+</style>
 
-    .similar-card-item {
-      min-width: 132px; max-width: 155px;
-      background: #fcfcfc; border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(33,142,70,0.06);
-      padding: 9px 7px 10px 7px; margin-right: 2px;
-      scroll-snap-align: start;
-      display: flex; flex-direction: column; align-items: center; cursor: pointer;
-      border: 1.4px solid #eee;
-      transition: border-color 0.13s;
-    }
-    .similar-card-item:hover { border-color: var(--brand-hover); }
-    .similar-card-item img {
-      width: 92px; height: 62px; object-fit: cover; border-radius: 11px; margin-bottom: 7px;
-    }
-    .similar-card-item-title {
-      font-size: 0.96em; font-weight: 600; text-align: center; color: var(--text);
-      line-height: 1.25; margin-bottom: 4px; white-space: normal;
-      max-width: 120px; overflow: hidden; text-overflow: ellipsis;
-    }
-    .similar-card-item-chef {
-      color: var(--text-dim); font-size: 0.88em; font-weight: 500;
-    }
+<!-- =================== Similar Recipes =================== -->
+<style>
+  .similar-card {
+    max-width: 560px; margin: 21px 12px 34px 12px;
+    padding: 18px 13px 11px 13px;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .similar-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .similar-title { font-size: 1.12rem; font-weight: 700; color: var(--brand-hover); letter-spacing: -0.3px; }
+  .similar-swiper { display: flex; align-items: center; gap: 9px; overflow-x: auto; scroll-snap-type: x mandatory; }
+  .similar-btns-row { display: flex; align-items: center; gap: 2px; }
+  .similar-btn {
+    width: 34px; height: 34px; margin: 0;
+    border-radius: 50%; border: 1.4px solid var(--outline); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface); color: var(--brand-hover);
+    font-size: 1.11rem;
+    transition: background 0.13s;
+    box-shadow: none;
+  }
+  .similar-btn:active { background: #f6f6f6; }
+  .similar-card-item {
+    min-width: 132px; max-width: 155px; margin-right: 2px;
+    padding: 9px 7px 10px 7px;
+    border-radius: 16px; border: 1.4px solid #eee;
+    background: #fcfcfc;
+    display: flex; flex-direction: column; align-items: center; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(33,142,70,0.06);
+    scroll-snap-align: start;
+    transition: border-color 0.13s;
+  }
+  .similar-card-item:hover { border-color: var(--brand-hover); }
+  .similar-card-item img {
+    width: 92px; height: 62px; margin-bottom: 7px;
+    border-radius: 11px;
+    object-fit: cover;
+  }
+  .similar-card-item-title {
+    max-width: 120px; margin-bottom: 4px;
+    font-size: 0.96em; font-weight: 600; line-height: 1.25;
+    text-align: center; color: var(--text);
+    white-space: normal; overflow: hidden; text-overflow: ellipsis;
+  }
+  .similar-card-item-chef { font-size: 0.88em; font-weight: 500; color: var(--text-dim); }
+</style>
 
-    @media (max-width: 600px) {
-      .recipe-hero { max-width: 100vw; border-radius: 0 0 18px 18px; }
-      .recipe-hero img { border-radius: 0 0 18px 18px; }
-      .ingredients-card, .instructions-card, .similar-card { margin-left: 2vw; margin-right: 2vw; }
-      .recipe-title-main, .recipe-description-main { padding-left: 15px; padding-right: 15px; }
-      .recipe-info-badges, .recipe-chef { padding-left: 10px; padding-right: 10px; }
-    }
-	
-	
-.ingredients-card {
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: var(--shadow);
-  padding: 18px 14px 12px 14px;
-  margin: 18px 13px 13px 13px;
-  max-width: 560px;
-}
-.ingredients-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 7px;
-  margin-top: 2px;
-}
-.ingredients-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--brand-hover);
-  letter-spacing: -0.3px;
-  margin-bottom: 1px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.ingredients-title i {
-  font-size: 1.09em;
-  margin-left: 2px;
-}
-.servings-tasty-box {
-  display: flex;
-  align-items: center;
-  background: var(--servings-bg);
-  border: 1.5px solid var(--servings-border);
-  border-radius: 13px;
-  gap: 8px;
-  font-size: 1.08rem;
-  font-weight: 500;
-  padding: 3.5px 10px;
-}
-.servings-btn {
-  background: none;
-  border: none;
-  color: var(--brand-hover);
-  font-size: 1.28em;
-  font-weight: bold;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.13s;
-}
-.servings-btn:active { background: #f4f4f4; }
-.servings-qty {
-  font-size: 1.10em;
-  font-weight: bold;
-  min-width: 24px;
-  text-align: center;
-  color: var(--text);
-}
-.ingredients-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 1.05rem;
-}
-.ingredients-list li {
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  min-height: 27px;
-  gap: 8px;
-}
-.ingredient-checkbox {
-  accent-color: var(--brand);
-  width: 1.17em;
-  height: 1.17em;
-  margin-right: 2px;
-  cursor: pointer;
-}
-.ingredient-qty {
-  color: var(--brand);
-  font-weight: 600;
-  margin-right: 2px;
-}
-.ingredient-fulltext { color: var(--text); }
+<!-- =================== Responsive =================== -->
+<style>
+  @media (max-width: 600px) {
+    .recipe-hero { max-width: 100vw; border-radius: 0 0 18px 18px; }
+    .recipe-hero img { border-radius: 0 0 18px 18px; }
+    .ingredients-card, .instructions-card, .similar-card { margin-left: 2vw; margin-right: 2vw; }
+    .recipe-title-main, .recipe-description-main { padding-left: 15px; padding-right: 15px; }
+    .recipe-info-badges, .recipe-chef { padding-left: 10px; padding-right: 10px; }
+  }
+</style>
 
-	
-	
-	
-  </style>
+
+
 </head>
 <body>
   <!-- Sticky Top Bar -->
