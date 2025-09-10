@@ -1,12 +1,9 @@
-<!DOCTYPE html>
-<html lang="el">
-<head>
-  <meta charset="UTF-8">
-  <title>Λεπτομέρειες Συνταγής • Family Food</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  
+{% extends "base.html" %}
+{% block title %}{{ recipe.title }} • Family Food{% endblock %}
+{% block content %}
+
+
+
 
 <!-- =================== Design Tokens =================== -->
 <style>
@@ -57,7 +54,7 @@
   .topbar-title {
     flex: 1;
     margin-left: 7px;
-    font-size: 1.13rem; font-weight: 700; color: var(--text);
+    font-size: 1.2rem; font-weight: 700; color: var(--text);
     letter-spacing: -0.2px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     opacity: 0; pointer-events: none;
@@ -109,6 +106,7 @@
     transition: background 0.13s;
   }
   .hero-play-btn:active { background: #de2861; }
+  .hero-play-btn:hover { background: #43b96a; color: #fff; }
 </style>
 
 <!-- =================== Info Badges & Chef =================== -->
@@ -222,7 +220,7 @@
     padding: 6px 13px 6px 11px;
     border: 1.2px solid #e5eee5; border-radius: 15px;
     background: var(--time-bg); color: var(--brand-hover);
-    font-size: 0.97rem; font-weight: 600;
+    font-size: 0.98rem; font-weight: 600;
     display: flex; align-items: center; gap: 4px;
   }
   .time-badge i { font-size: 1.1em; opacity: 0.82; }
@@ -264,18 +262,22 @@
   }
   .similar-btn:active { background: #f6f6f6; }
   .similar-card-item {
+    height: 170px;        /* ή όσο σου ταιριάζει */
+    min-height: 170px;
+    max-height: 170px;
     min-width: 132px; max-width: 155px; margin-right: 2px;
-    padding: 9px 7px 10px 7px;
+    padding: 9px 7px 5px 7px;
     border-radius: 16px; border: 1.4px solid #eee;
     background: #fcfcfc;
     display: flex; flex-direction: column; align-items: center; cursor: pointer;
-    box-shadow: 0 2px 8px rgba(33,142,70,0.06);
+    justify-content: center;
+	box-shadow: 0 2px 8px rgba(33,142,70,0.06);
     scroll-snap-align: start;
     transition: border-color 0.13s;
   }
   .similar-card-item:hover { border-color: var(--brand-hover); }
   .similar-card-item img {
-    width: 92px; height: 62px; margin-bottom: 7px;
+    width: 70px; height: 70px; margin-bottom: 7px;
     border-radius: 11px;
     object-fit: cover;
   }
@@ -285,7 +287,7 @@
     text-align: center; color: var(--text);
     white-space: normal; overflow: hidden; text-overflow: ellipsis;
   }
-  .similar-card-item-chef { font-size: 0.88em; font-weight: 500; color: var(--text-dim); }
+  .similar-card-item-chef { font-size: 0.88em; font-weight: 500; color: var(--text-dim); text-align: center; }
 </style>
 
 <!-- =================== Responsive =================== -->
@@ -300,140 +302,107 @@
 </style>
 
 
-
-</head>
-<body>
   <!-- Sticky Top Bar -->
   <div class="recipe-topbar" id="topBar">
-    <button class="icon-btn" title="Πίσω"><i class="fa fa-arrow-left"></i></button>
-    <div class="topbar-title" id="compactTitle">Ομελέτα φούρνου με λαχανικά</div>
-    <div class="topbar-actions">
-      <button class="icon-btn" title="Κοινοποίηση"><i class="fa fa-share-alt"></i></button>
-      <button class="icon-btn" title="Αγαπημένο"><i class="fa fa-heart"></i></button>
-    </div>
+    <button class="icon-btn" id="backBtn"><i class="fa fa-arrow-left"></i></button>
+    <div class="topbar-title" id="compactTitle">{{ recipe.title }}</div>
+	<div class="topbar-actions">
+	  <button class="icon-btn" title="Κοινοποίηση"><i class="fa fa-share-alt"></i></button>
+		<button class="icon-btn" title="Αγαπημένο" id="favBtnTopBar">
+		  <i class="{{ 'fas' if is_favorite else 'far' }} fa-heart"></i>
+		</button>
+	</div>
   </div>
 
-  <!-- Main Title (πάντα κάτω από το topbar) -->
-  <div class="recipe-title-main" id="mainTitle">Ομελέτα φούρνου με λαχανικά</div>
+  <!-- Main Title -->
+  <div class="recipe-title-main" id="mainTitle">{{ recipe.title }}</div>
+  <div class="recipe-description-main">{{ recipe.description }}</div>
 
-  <div class="recipe-description-main">
-    Μια υγιεινή, νόστιμη ομελέτα για όλη την οικογένεια, έτοιμη σε λιγότερο από μία ώρα!
-  </div>
-
-  <!-- Hero image -->
+  <!-- Hero -->
   <div class="recipe-hero">
-    <img src="https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&w=900&h=600&fit=crop" alt="Ομελέτα φούρνου">
-    <button class="hero-play-btn" id="playBtn" title="Δες τη συνταγή!"><i class="fa fa-play"></i></button>
+    <img src="{{ image_url }}" alt="{{ recipe.title }}">
+    {% if recipe.url %}
+		<a href="{{ recipe.url }}" target="_blank" class="hero-play-btn">
+		  <i class="fa fa-play"></i>
+		</a>
+	{% endif %}
   </div>
 
+  <!-- Info badges -->
   <div class="recipe-info-badges">
-    <span class="info-badge"><i class="fa fa-clock"></i> 45'</span>
-    <span class="info-badge"><i class="fa fa-fire"></i> Φούρνος</span>
-    <span class="info-badge"><i class="fa fa-utensils"></i> Brunch</span>
-    <span class="info-badge"><i class="fa fa-user"></i> Άκης Πετρετζίκης</span>
-  </div>
-  <div class="recipe-chef">
-    Από τον Άκη Πετρετζίκη • <span>Χωρίς γλουτένη</span>
+    {% if recipe.total_time %}<span class="info-badge"><i class="fa fa-clock"></i> {{ recipe.total_time }}′</span>{% endif %}
+    {% if recipe.method %}<span class="info-badge"><i class="fa fa-fire"></i> {{ recipe.method }}</span>{% endif %}
+    {% if recipe.dish_category %}<span class="info-badge"><i class="fa fa-utensils"></i> {{ recipe.dish_category }}</span>{% endif %}
+    {% if recipe.chef %}<span class="info-badge"><i class="fa fa-user"></i> {{ recipe.chef }}</span>{% endif %}
   </div>
 
-  <!-- INGREDIENTS: Cookpad-style -->
+  <!-- Ingredients -->
   <div class="ingredients-card">
-	  <div class="ingredients-header-row">
-		<div class="ingredients-title">
-		  Υλικά για <span id="servingsVal">4 </span> <i class="fa fa-user"></i>
-		</div>
-		<div class="servings-tasty-box">
-		  <button class="servings-btn" id="btnMinus"><i class="fa fa-minus"></i></button>
-		  <span class="servings-qty" id="servingsQty">4</span>
-		  <button class="servings-btn" id="btnPlus"><i class="fa fa-plus"></i></button>
-		</div>
-	  </div>
-	  <ul class="ingredients-list">
-		<li>
-		  <input type="checkbox" class="ingredient-checkbox">
-		  <span class="ingredient-qty">6</span> <span class="ingredient-fulltext">αυγά</span>
-		</li>
-		<li>
-		  <input type="checkbox" class="ingredient-checkbox">
-		  <span class="ingredient-qty">2</span> <span class="ingredient-fulltext">καρότα, τριμμένα</span>
-		</li>
-		<li>
-		  <input type="checkbox" class="ingredient-checkbox">
-		  <span class="ingredient-qty">1</span> <span class="ingredient-fulltext">κολοκυθάκι, τριμμένο</span>
-		</li>
-		<li>
-		  <input type="checkbox" class="ingredient-checkbox">
-		  <span class="ingredient-qty">1/2 φλ.</span> <span class="ingredient-fulltext">γάλα</span>
-		</li>
-		<li>
-		  <input type="checkbox" class="ingredient-checkbox">
-		  <span class="ingredient-qty">2 κ.σ.</span> <span class="ingredient-fulltext">ελαιόλαδο</span>
-		</li>
-		<li>
-		  <input type="checkbox" class="ingredient-checkbox">
-		  <span class="ingredient-qty">1/2 κ.γ.</span> <span class="ingredient-fulltext">αλάτι</span>
-		</li>
-		<li>
-		  <input type="checkbox" class="ingredient-checkbox">
-		  <span class="ingredient-fulltext">πιπέρι</span>
-		</li>
-	  </ul>
-	</div>
-
-  <!-- INSTRUCTIONS -->
-  <div class="instructions-card">
-	<div class="instructions-time-badge">
-	  <i class="fa fa-hourglass-half"></i>
-	  <b>Προετοιμασία:</b> 10′ &nbsp;|&nbsp; <b>Μαγείρεμα:</b> 35′
-	</div>
-
-    <div class="instructions-title">Οδηγίες</div>
-    <ol class="instructions-list">
-      <li>Προθερμαίνουμε τον φούρνο στους 180°C.</li>
-      <li>Χτυπάμε τα αυγά με το γάλα, το ελαιόλαδο, το αλάτι και το πιπέρι.</li>
-      <li>Προσθέτουμε τα τριμμένα λαχανικά και ανακατεύουμε καλά.</li>
-      <li>Βάζουμε το μείγμα σε λαδωμένο ταψί και ψήνουμε για 35-40 λεπτά μέχρι να ροδίσει.</li>
-      <li>Αφήνουμε να κρυώσει ελαφρώς, κόβουμε σε κομμάτια και σερβίρουμε.</li>
-    </ol>
-  </div>
-
-  <!-- SIMILAR RECIPES CARD -->
-  <div class="similar-card">
-	<div class="similar-title-row">
-	  <span class="similar-title"><i class="fa fa-sync"></i> Παρόμοιες συνταγές</span>
-	  <div class="similar-btns-row">
-		<button class="similar-btn" id="similarPrev"><i class="fa fa-chevron-left"></i></button>
-		<button class="similar-btn" id="similarNext"><i class="fa fa-chevron-right"></i></button>
-	  </div>
-	</div>
-
-    <div class="similar-swiper" id="similarSwiper">
-      <div class="similar-card-item">
-        <img src="https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?auto=compress&w=200&h=120&fit=crop" alt="">
-        <div class="similar-card-item-title">Frittata λαχανικών</div>
-        <div class="similar-card-item-chef">Άκης Πετρετζίκης</div>
+    <div class="ingredients-header-row">
+      <div class="ingredients-title">
+        Υλικά για <span id="servingsVal">{{ recipe.servings or 4 }}</span> <i class="fa fa-user"></i>
       </div>
-      <div class="similar-card-item">
-        <img src="https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&w=200&h=120&fit=crop" alt="">
-        <div class="similar-card-item-title">Στραπατσάδα</div>
-        <div class="similar-card-item-chef">Αργυρώ Μπαρμπαρίγου</div>
-      </div>
-      <div class="similar-card-item">
-        <img src="https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&w=200&h=120&fit=crop" alt="">
-        <div class="similar-card-item-title">Ομελέτα με πατάτες</div>
-        <div class="similar-card-item-chef">Βασίλης Καλλίδης</div>
-      </div>
-      <div class="similar-card-item">
-        <img src="https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&w=200&h=120&fit=crop" alt="">
-        <div class="similar-card-item-title">Ομελέτα με σπανάκι</div>
-        <div class="similar-card-item-chef">Άκης Πετρετζίκης</div>
+      <div class="servings-tasty-box">
+        <button class="servings-btn" id="btnMinus"><i class="fa fa-minus"></i></button>
+        <span class="servings-qty" id="servingsQty">{{ recipe.servings or 4 }}</span>
+        <button class="servings-btn" id="btnPlus"><i class="fa fa-plus"></i></button>
       </div>
     </div>
+	<ul class="ingredients-list">
+	  {% for ing in ingredients %}
+	  <li>
+		<input type="checkbox" class="ingredient-checkbox">
+		<span class="ingredient-fulltext">{{ ing }}</span>
+	  </li>
+	  {% endfor %}
+	</ul>
   </div>
 
-  <!-- JS για compact title, play button, similar carousel -->
-<script>
+  <!-- Instructions -->
+  <div class="instructions-card">
   
+	<div class="instructions-time-badge">
+	  <span title="Χρόνος προετοιμασίας">
+		<i class="fa fa-clock"></i>
+		<b>Προετοιμασία:</b> {{ recipe.prep_time }}′
+	  </span>
+	  &nbsp;|&nbsp;
+	  <span title="Χρόνος μαγειρέματος">
+		<i class="fa fa-fire"></i>
+		<b>Μαγείρεμα:</b> {{ recipe.cook_time }}′
+	  </span>
+	</div>
+
+  
+    <div class="instructions-title">Οδηγίες</div>
+	<ol class="instructions-list">
+	  {% for step in instructions %}
+	  <li>{{ step }}</li>
+	  {% endfor %}
+	</ol>
+  </div>
+
+<!-- Similar recipes -->
+<div class="similar-card">
+  <div class="similar-title-row">
+    <span class="similar-title">Παρόμοιες συνταγές</span>
+    <button class="similar-btn" id="refreshSimilar"><i class="fa fa-refresh"></i></button>
+  </div>
+  <div class="similar-swiper" id="similarSwiper">
+    <!-- γεμίζει με JS -->
+  </div>
+</div>
+
+<script>
+  const RECIPE_ID = {{ recipe.id }};
+</script>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script> 
+
 let servings = 4;
 function updateServings(val) {
   servings = val;
@@ -447,6 +416,20 @@ document.getElementById('btnMinus').onclick = function() {
 document.getElementById('btnPlus').onclick = function() {
   if (servings < 16) updateServings(servings + 1);
 };
+document.getElementById('backBtn').onclick = function() {
+  window.location.href = '/main';
+};
+
+document.addEventListener("DOMContentLoaded", function() {
+  var favBtn = document.getElementById('favBtnTopBar');
+  if (favBtn) {
+    favBtn.onclick = function(e) {
+      e.stopPropagation();
+      // Το wrapper εδώ είναι το ίδιο το button (ή το εσωτερικό <i>)
+      toggleFavorite(favBtn, RECIPE_ID);
+    };
+  }
+});
 
   
 // Compact title logic
@@ -469,15 +452,100 @@ window.addEventListener('scroll', function() {
 });
 
 
-    // Play button: άνοιγμα συνταγής (url)
-    document.getElementById('playBtn').onclick = function() {
-      window.open('https://www.argiro.gr/recipe/mpiftekia-kotopoulou/', '_blank');
-    };
+// Play button: άνοιγμα συνταγής (url)
+document.getElementById('playBtn').onclick = function() {
+  window.open('https://www.argiro.gr/recipe/mpiftekia-kotopoulou/', '_blank');
+};
 
-    // Similar recipes "carousel" logic (basic horizontal scroll)
-    const swiper = document.getElementById('similarSwiper');
-    document.getElementById('similarPrev').onclick = () => { swiper.scrollBy({left: -155, behavior: 'smooth'}); };
-    document.getElementById('similarNext').onclick = () => { swiper.scrollBy({left: +155, behavior: 'smooth'}); };
+// Similar recipes "carousel" logic (basic horizontal scroll)
+const swiper = document.getElementById('similarSwiper');
+document.getElementById('similarPrev').onclick = () => { swiper.scrollBy({left: -155, behavior: 'smooth'}); };
+document.getElementById('similarNext').onclick = () => { swiper.scrollBy({left: +155, behavior: 'smooth'}); };
 </script>
-</body>
-</html>
+
+<script>
+async function loadSimilar(recipeId) {
+  try {
+    const res = await fetch(`/api/similar?recipe_id=${recipeId}`);
+    const data = await res.json();
+    const swiper = document.getElementById('similarSwiper');
+    swiper.innerHTML = '';
+
+	if (data.success && data.recipes.length > 0) {
+	  data.recipes.forEach(function(r) {
+		var item = document.createElement('div');
+		item.className = 'similar-card-item';
+		item.onclick = function() { window.location = '/recipe_page/' + r.id; };
+
+		var html = ''
+		  + '<img src="' + r.image_url + '" alt="' + r.title + '">'
+		  + '<div class="similar-card-item-title">' + r.title + '</div>';
+
+		if (r.chef) {
+		  html += '<div class="similar-card-item-chef">' + r.chef + '</div>';
+		}
+
+		item.innerHTML = html;
+		swiper.appendChild(item);
+	  });
+	} else {
+	  swiper.innerHTML = '<p style="color:#666;">Δεν βρέθηκαν παρόμοιες συνταγές.</p>';
+	}
+
+  } catch (err) {
+    console.error("[ERROR] Failed to load similar recipes:", err);
+  }
+}
+
+// Αρχικό φόρτωμα
+loadSimilar({{ recipe.id }});
+
+// Refresh button
+document.getElementById('refreshSimilar').onclick = () => loadSimilar({{ recipe.id }});
+</script>
+
+<script>
+function toggleFavorite(wrapper, recipe_id) {
+  fetch('/toggle_favorite_recipe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe_id: recipe_id })
+  })
+  .then(r => r.json())
+  .then(data => {
+    const isAdded = data.status === "added";
+    // Ενημέρωσε το εικονίδιο
+    wrapper.innerHTML =
+      '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color:' + (isAdded ? '#218e46' : '#218e46') + ';font-size:18px;vertical-align:-2px;cursor:pointer;"></i>';
+
+    // Ξαναδέσε το click event (γιατί αντικατέστησες το innerHTML!)
+    const icon = wrapper.querySelector("i");
+    if (icon) {
+      icon.onclick = function(e) {
+        e.stopPropagation();
+        toggleFavorite(wrapper, recipe_id);
+      };
+    }
+  });
+}
+</script>
+
+<script>
+document.querySelectorAll('.ingredients-list .ingredient-fulltext').forEach(span => {
+  let txt = span.textContent.trim();
+  console.log('[DEBUG] Επεξεργασία:', txt);
+  // Regex: Πιάνει ποσότητα + υλικό
+  let m = txt.match(/^([0-9½¼¾\-\/\.\s\w]+)\s+(.*)$/);
+  if (m) {
+    console.log('[DEBUG] Βρέθηκε ποσότητα:', m[1], '| Υλικό:', m[2]);
+    span.innerHTML =
+      '<span class="ingredient-qty">' + m[1].trim() + '</span> ' +
+      '<span class="ingredient-fulltext">' + m[2].trim() + '</span>';
+  } else {
+    console.log('[DEBUG] Δεν βρέθηκε ποσότητα, όλο ως υλικό:', txt);
+    span.innerHTML = '<span class="ingredient-fulltext">' + txt + '</span>';
+  }
+});
+</script>
+
+{% endblock %}

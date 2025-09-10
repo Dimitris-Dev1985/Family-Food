@@ -54,7 +54,7 @@
   .topbar-title {
     flex: 1;
     margin-left: 7px;
-    font-size: 1.13rem; font-weight: 700;
+    font-size: 1.2rem; font-weight: 700;
     color: var(--text);
     letter-spacing: -0.2px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -103,7 +103,7 @@
   .chat-intro {
     margin: 0 0 0 0;
     padding-bottom: 2px;
-    font-size: 1.13rem; font-weight: 600;
+    font-size: 1.7rem; font-weight: 600;
     color: var(--brand-hover);
     text-align: center;
   }
@@ -154,7 +154,7 @@
   .quick-reply {
     padding: 7px 16px;
     border-radius: 24px; border: none;
-    font-size: 0.97rem; font-weight: 500;
+    font-size: 0.98rem; font-weight: 500;
     white-space: nowrap; cursor: pointer;
     background: var(--surface); color: var(--brand-hover);
     box-shadow: 0 1px 4px rgba(33,142,70,0.04);
@@ -273,7 +273,7 @@
         Πάμε να βρούμε τι θα μαγειρέψουμε;<br>
       </div>
       <div class="chatbox" id="chatbox">
-        <div class="chat-bubble from-ai">👩‍🍳 Πόσο περίπου χρόνο έχεις για μαγείρεμα;</div>
+        <div class="chat-bubble from-ai">👩‍🍳 Περίπου πόσο χρόνο έχεις για μαγείρεμα;</div>
         <div class="quick-replies">
           <button class="quick-reply" onclick="handlePredefinedChoice('time','Έως 30λ.')">Έως 30'</button>
           <button class="quick-reply" onclick="handlePredefinedChoice('time','Έως 1 ώρα')">Έως 1 ώρα</button>
@@ -412,10 +412,8 @@ function adjustChatboxPosition() {
   // Αν το card "φουσκώσει" πάνω από το 80% του hero, να ανέβει!
   if (cardHeight > heroHeight * 0.85) {
     chatboxCard.classList.add('cover-hero');
-    console.log('add cover-hero');
   } else {
     chatboxCard.classList.remove('cover-hero');
-    console.log('remove cover-hero');
   }
 }
 
@@ -587,7 +585,7 @@ function handlePredefinedChoice(type, value) {
     callAISuggest("", 1);
   } else if (maxTime > 0 && !mainIngredient && type === "time") {
     document.getElementById("typing-indicator")?.remove();
-    renderAIBubble("Τι τραβάει η όρεξή σου για σήμερα;", "system");
+    renderAIBubble("Τι θα ήθελες να δούμε για σήμερα; Επίλεξε μια κατηγορία για να ξεκινήσουμε!", "system");
 
 	setTimeout(() => {
 	  renderQuickReplyOptions(
@@ -623,12 +621,12 @@ function renderQuickReplyOptions(options = []) {
           .then(data => {
             document.getElementById("typing-indicator")?.remove();
             if (data.tags && data.tags.length > 0) {
-              renderAIBubble("Θέλεις κάτι από τα παρακάτω;", "system");
+              renderAIBubble("Τι θα έλεγες για κάτι σε..", "system");
               const tagOptions = data.tags.map(tag => ({
                 label: tag,
                 action: "set_main_ingredient_from_tag"
               }));
-              tagOptions.push({ label: "Κάτι άλλο", action: "ask_alt_from_category" });
+              tagOptions.push({ label: "Δείξε μου κάτι άλλο", action: "ask_alt_from_category" });
               setTimeout(() => {
 				renderQuickReplyOptions(tagOptions);
 			  }, 500);
@@ -658,12 +656,26 @@ function renderQuickReplyOptions(options = []) {
         setTimeout(() => {
 			renderQuickReplyOptions([
 			  { label: `Παραμένω σε ${selectedCategory}`, action: "stay_in_category" },
-			  { label: "Θέλω κάτι άλλο", action: "switch_category" }
+			  { label: "Ας δούμε κάτι άλλο", action: "switch_category" }
 			]);
 		}, 500);	
         return;
       }
-
+	  
+	   if (opt.action === "stay_in_category") {
+        const selectedCategory = getDishCategory();
+        document.getElementById("typing-indicator")?.remove();
+        renderAIBubble(`Πες μου το βασικό υλικό που θα ήθελες να χρησιμοποιήσεις!`, "system");	
+        return;
+      }
+	  
+	   if (opt.action === "switch_category") {
+        const selectedCategory = getDishCategory();
+        document.getElementById("typing-indicator")?.remove();
+        renderAIBubble(`Πες μου τι έχεις στο μυαλό σου για σήμερα!`, "system");	
+        return;
+      }
+  
       if (opt.action === "ai_profile_suggest") {
         const payload = {
           message: "suggest to me a main ingredient acc. to my general preferences",
@@ -703,7 +715,7 @@ function renderQuickReplyOptions(options = []) {
       }
 
       if (opt.action === "confirm_choice") {
-        console.log("[DEBUG] ✅ User confirmed cooking choice");
+        document.getElementById("typing-indicator")?.remove();
         renderAIBubble("Τέλεια! Καλή όρεξη και καλή επιτυχία στο μαγείρεμα! 👩‍🍳", "system");
       }
     };
@@ -796,8 +808,8 @@ function renderDishCards(dishes = []) {
       const card = document.createElement("div");
       card.className = "dish-card p-3 zoom-fade-card";
 	  card.onclick = function() {
-	    //window.location.href = "/recipe_page?id=" + dish.id;
-		window.location.href = "/recipe_page";
+	    console.log("recipe page open = ",dish.id);
+		window.location.href = '/recipe_page/' + dish.id;
 		};
       // --- Τίτλος + καρδούλα
       const title = document.createElement("div");
@@ -814,7 +826,7 @@ function renderDishCards(dishes = []) {
       favWrapper.style.cursor = "pointer";
 	  const isFav = dish.is_favorite == 1;
 
-	  favWrapper.innerHTML = '<i class="' + (isFav ? 'fas' : 'far') + ' fa-heart" style="color: ' + (isFav ? '#c33' : 'gray') + '; font-size: 18px; vertical-align: -2px;"></i>';
+	  favWrapper.innerHTML = '<i class="' + (isFav ? 'fas' : 'far') + ' fa-heart" style="color: ' + (isFav ? '#218e46' : '#218e46') + '; font-size: 18px; vertical-align: -2px;"></i>';
 	  favWrapper.onclick = function(e) {
 	  e.stopPropagation();
 	  toggleFavorite(favWrapper, dish.id);
@@ -986,7 +998,7 @@ function toggleFavorite(wrapper, recipe_id) {
 
     // ✨ Επαναφέρουμε το περιεχόμενο του wrapper
 	wrapper.innerHTML =
-	'<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color: ' + (isAdded ? '#c33' : 'gray') + '; font-size: 18px; vertical-align: -2px; cursor: pointer;"></i>'
+	'<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color: ' + (isAdded ? '#218e46' : '#218e46') + '; font-size: 18px; vertical-align: -2px; cursor: pointer;"></i>'
 
     // ✨ ξαναδένουμε το event handler στο νέο icon
     const icon = wrapper.querySelector("i");
