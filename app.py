@@ -129,10 +129,92 @@ def ai_reply_test():
 def test_ai():
     return render_template("test_ai.html")
 
-@app.route("/recipe_page")
-def recipe_page():
-    return render_template("recipe_page.html")
+@app.route('/recipe_page/<int:recipe_id>')
+def recipe_page(recipe_id):
+    print("\n========== /recipe_page CALLED ==========")
+    print("[INPUT] recipe_id:", recipe_id)
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    recipe = conn.execute("""
+        SELECT id, title,
+               COALESCE(description,'') as description,
+               COALESCE(servings,4) as servings,
+               COALESCE(url,'') as url,
+               COALESCE(chef,'') as chef,
+               COALESCE(prep_time,0) as prep_time,
+               COALESCE(cook_time,0) as cook_time,
+               COALESCE(total_time,0) as total_time,
+               COALESCE(method,'') as method,
+               COALESCE(dish_category,'') as dish_category,
+               COALESCE(ingredients,'') as ingredients,
+               COALESCE(instructions,'') as instructions
+        FROM recipes
+        WHERE id = ?
+    """, (recipe_id,)).fetchone()
 
+    if not recipe:
+        return "Recipe not found", 404
+
+    # Υλικά
+    ingredients = [line.strip() for line in recipe['ingredients'].splitlines() if line.strip()]
+    print("[DB] ingredients list:", ingredients)
+
+    # Οδηγίες
+    instructions = [line.strip() for line in recipe['instructions'].splitlines() if line.strip()]
+    print("[DB] instructions list:", instructions)
+
+    # Εικόνα από static folder
+    image_url = url_for('static', filename=f'images/recipes/{recipe['id']}.jpg')
+
+    # ========== ΕΛΕΓΧΟΣ FAVORITE ==========
+    is_favorite = False
+    user_id = session.get('user_id')
+    if user_id:
+        fav_row = conn.execute(
+            "SELECT 1 FROM favorite_recipes WHERE user_id = ? AND recipe_id = ?",
+            (user_id, recipe_id)
+        ).fetchone()
+        is_favorite = fav_row is not None
+
+    # Κλείσιμο connection για ασφάλεια
+    conn.close()
+
+    return render_template(
+        'recipe_page.html',
+        recipe=recipe,
+        ingredients=ingredients,
+        instructions=instructions,
+        image_url=image_url,
+        is_favorite=is_favorite
+    )
+
+@app.route('/api/similar')
+def api_similar():
+    recipe_id = request.args.get("recipe_id", type=int)
+    if not recipe_id:
+        return {"success": False, "error": "Missing recipe_id"}, 400
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    similar = conn.execute("""
+        SELECT id, title, chef
+        FROM recipes
+        WHERE dish_category = (SELECT dish_category FROM recipes WHERE id = ?)
+          AND id != ?
+        ORDER BY RANDOM()
+        LIMIT 3
+    """, (recipe_id, recipe_id)).fetchall()
+
+    data = []
+    for row in similar:
+        data.append({
+            "id": row["id"],
+            "title": row["title"],
+            "chef": row["chef"],
+            "image_url": url_for('static', filename=f'images/recipes/{row["id"]}.jpg')
+        })
+
+    return {"success": True, "recipes": data}
 
 @app.route("/get_main_tags")
 def get_main_tags():
