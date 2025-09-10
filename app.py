@@ -26,6 +26,21 @@ WEEKDAYS_GR = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη",
 COOKING_METHODS = ['Φούρνος','Κατσαρόλα','Χύτρα','Τηγάνι','Σχάρα','Air-fryer']
 #MAIN_CATEGORIES = ['Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα']
 MAIN_INGREDIENTS = []
+# Mapping: Εμφανιζόμενο όνομα σεφ ➔ όνομα αρχείου avatar
+CHEF_AVATAR_MAP = {
+    'Άκης Πετρετζίκης': 'akis_petretzikis.jpg',
+    'Αργυρώ Μπαρμπαρίγου': 'argyro_barbarigou.jpg',
+    'Βασίλης Καλλίδης': 'vasilis_kallidis.jpg',
+    'Ντίνα Νικολάου': 'ntina_nikolaou.jpg',
+    'Γιάννης Λουκάκος': 'giannis_loukakos.jpg',
+    'Στέλιος Παρλιάρος': 'stelios_parliaros.jpg',
+    'Ελένη Ψυχούλη': 'eleni_psychouli.jpg',
+    'Παναγιώτης Παπαγάλος': 'panagiotis_papagalos.jpg',
+    'Λευτέρης Λαζάρου': 'lefteris_lazarou.jpg',
+    'Μαίρη Παναγάκου': 'mairi_panagakou.jpg',
+    'Άλλος Σεφ': 'default.jpg',  # Για άγνωστο/placeholder
+}
+
 default_minutes = 60
 
 load_dotenv()
@@ -179,13 +194,16 @@ def recipe_page(recipe_id):
     # Κλείσιμο connection για ασφάλεια
     conn.close()
 
+    avatar_filename = CHEF_AVATAR_MAP.get(recipe['chef'], 'default.jpg')
+
     return render_template(
         'recipe_page.html',
         recipe=recipe,
         ingredients=ingredients,
         instructions=instructions,
         image_url=image_url,
-        is_favorite=is_favorite
+        is_favorite=is_favorite,
+        chef_avatar=avatar_filename
     )
 
 @app.route('/api/similar')
