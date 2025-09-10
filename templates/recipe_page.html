@@ -2,9 +2,6 @@
 {% block title %}{{ recipe.title }} • Family Food{% endblock %}
 {% block content %}
 
-
-
-
 <!-- =================== Design Tokens =================== -->
 <style>
   :root {
@@ -19,7 +16,7 @@
     --servings-border: #e2e3e4;
     --pink: #ef2d6a;
     --time-bg: #f4f7f6;
-    --shadow: 0 2px 14px rgba(33,142,70,0.08);
+    --shadow: 0 3px 14px rgba(33,142,70,0.1);
   }
   body {
     background: var(--surface);
@@ -35,27 +32,26 @@
     position: sticky; top: 0; left: 0; right: 0; z-index: 99;
     background: #fff;
     border-bottom: 1.5px solid var(--outline);
-    min-height: 54px; height: 54px;
+    min-height: 56px; height: 56px;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 10px 0 6px;
-    box-shadow: 0 1px 8px rgba(33,142,70,0.05);
-    transition: box-shadow 0.16s;
+    padding: 0 12px 0 8px;
+    box-shadow: 0 2px 9px rgba(33,142,70,0.06);
   }
   .recipe-topbar .icon-btn {
-    width: 38px; height: 38px; margin: 0;
+    width: 40px; height: 40px; margin: 0;
     border-radius: 50%; border: none;
     display: flex; align-items: center; justify-content: center;
     background: none; color: var(--brand);
-    font-size: 1.32rem; cursor: pointer;
+    font-size: 1.4rem; cursor: pointer;
     transition: background 0.13s;
   }
   .recipe-topbar .icon-btn:active { background: #f4f4f4; }
-  .topbar-actions { display: flex; align-items: center; gap: 7px; }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; }
   .topbar-title {
     flex: 1;
-    margin-left: 7px;
-    font-size: 1.2rem; font-weight: 700; color: var(--text);
-    letter-spacing: -0.2px;
+    margin-left: 8px;
+    font-size: 1.25rem; font-weight: 700; color: var(--text);
+    letter-spacing: -0.3px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     opacity: 0; pointer-events: none;
     transition: opacity 0.23s;
@@ -67,485 +63,684 @@
 <!-- =================== Titles & Description =================== -->
 <style>
   .recipe-title-main {
-    font-size: 2.08rem; font-weight: 900; color: var(--text);
-    margin: 18px 0 0 0; padding: 0 24px;
-    letter-spacing: -1px; line-height: 1.1;
+    font-size: 2.4rem; font-weight: 900; color: var(--text);
+    margin: 22px 0 0 0; padding: 0 24px;
+    letter-spacing: -1.1px; line-height: 1.12;
     transition: opacity 0.2s;
   }
   .hide-main-title { opacity: 0; pointer-events: none; height: 0; margin: 0; padding: 0; }
   .recipe-description-main {
-    color: var(--text-dim); font-size: 1.07rem; line-height: 1.55;
-    padding: 0 24px 10px 24px;
+    color: var(--text-dim); font-size: 1.2rem; line-height: 1.6;
   }
+</style>
+
+<!-- =================== Rating =================== -->
+<style>
+.recipe-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 20px;
+  margin: 8px 0 14px 0;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.stars {
+  display: flex; gap: 3px;
+}
+.star-full {
+  color: #f5c518;   /* γεμάτο κίτρινο */
+  font-size: 1.3em;
+}
+.star-empty {
+  color: #f5c518;   /* κίτρινο περίγραμμα */
+  font-size: 1.3em;
+}
+.rating-value {
+  font-weight: 600;
+  color: var(--text);
+}
+.rating-count {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
 </style>
 
 <!-- =================== Hero =================== -->
 <style>
   .recipe-hero {
-    width: 100vw; max-width: 600px; margin: 0 auto;
-    aspect-ratio: 1.1/1;
-    border-bottom-left-radius: 2.2rem; border-bottom-right-radius: 2.2rem;
+    width: 100vw; max-width: 640px; margin: 0 auto;
+    aspect-ratio: 1.05/1;
+    border-bottom-left-radius: 2.4rem; border-bottom-right-radius: 2.4rem;
     background: #eee; overflow: hidden;
     display: flex; align-items: flex-end; justify-content: center;
     position: relative;
   }
   .recipe-hero img {
-    width: 100%; height: 100%; min-height: 220px;
+    width: 100%; height: 100%; min-height: 240px;
     object-fit: cover;
-    border-bottom-left-radius: 2.2rem; border-bottom-right-radius: 2.2rem;
+    border-bottom-left-radius: 2.4rem; border-bottom-right-radius: 2.4rem;
   }
   .hero-play-btn {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
-    width: 58px; height: 58px;
+    width: 64px; height: 64px;
     border-radius: 50%; border: none; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    font-size: 2.1rem;
+    font-size: 2.3rem;
     background: var(--pink); color: #fff;
-    box-shadow: 0 3px 16px rgba(0,0,0,0.13);
-    opacity: 0.95; z-index: 1;
-    transition: background 0.13s;
+    box-shadow: 0 3px 18px rgba(0,0,0,0.15);
+    opacity: 0.96; z-index: 1;
   }
   .hero-play-btn:active { background: #de2861; }
-  .hero-play-btn:hover { background: #43b96a; color: #fff; }
 </style>
 
-<!-- =================== Info Badges & Chef =================== -->
+<!-- =================== Chef Signature =================== -->
+<style>
+.chef-signature2 {
+  display: inline-flex;
+  align-items: center;
+  font-size: 1rem;
+  font-family: 'Indie Flower', cursive, sans-serif;
+  margin: 0 10px;
+}
+.chef-signature2 .chef-name {
+  margin-left: 4px;
+  margin-right: 8px;
+}
+.chef-avatar-inline {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  margin-left: 4px;
+  box-shadow: 0 2px 8px rgba(67,185,106,0.1);
+}
+</style>
+
+<!-- =================== Time label =================== -->
+<style>
+.cooktime-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 1.25rem;
+  margin: 14px 0;
+  padding: 6px 0;
+  border-top: 1.5px solid #e4e5e7;
+  border-bottom: 1.5px solid #e4e5e7;
+  background: transparent;
+  font-weight: 500;
+  gap: 10px;
+}
+.cooktime-bar i {
+  color: var(--brand, #43b96a);
+  font-size: 1.2em;
+}
+.cooktime-value {
+  color: var(--brand-hover, #43b96a);
+  font-weight: 600;
+}
+</style>
+
+<!-- =================== Info Badges =================== -->
 <style>
   .recipe-info-badges {
-    margin: 15px 0 8px 0; padding: 0 20px;
-    display: flex; flex-wrap: wrap; align-items: center; gap: 9px;
+    margin: 16px 0 10px 0; padding: 0 22px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
   }
   .info-badge {
-    padding: 7px 13px 7px 11px;
+    padding: 8px 14px;
     border-radius: 16px;
-    font-size: 0.99rem; font-weight: 500;
-    display: flex; align-items: center; gap: 5px;
+    font-size: 1.05rem; font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
     background: var(--bg-badge); color: var(--brand-hover);
   }
-  .info-badge i { font-size: 1.06em; opacity: 0.86; }
-  .recipe-chef {
-    margin: 2px 0 7px 0; padding: 0 20px;
-    color: var(--text-dim);
-    font-size: 1.01rem; font-weight: 500;
-  }
+  .info-badge i { font-size: 1.1em; opacity: 0.9; }
 </style>
 
 <!-- =================== Ingredients =================== -->
 <style>
   .ingredients-card {
-    max-width: 560px;
-    padding: 18px 12px 12px 12px;
-    border-radius: 20px;
+    max-width: 580px;
+    padding: 20px 14px 14px 14px;
+    border-radius: 22px;
     background: #fff;
     box-shadow: var(--shadow);
   }
-  .ingredients-title-row,
   .ingredients-header-row {
     display: flex; align-items: center; justify-content: space-between;
-    gap: 8px; margin-bottom: 7px;
+    margin-bottom: 8px;
   }
-  .ingredients-title-col { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
   .ingredients-title {
     display: flex; align-items: center; gap: 7px;
-    margin-bottom: 2px;
-    font-size: 1.15rem; font-weight: 800;
-    color: var(--brand-hover); letter-spacing: -0.3px;
+    font-size: 1.35rem; font-weight: 800;
+    color: var(--brand-hover); 
   }
-  .ingredients-title i { font-size: 1.09em; margin-left: 2px; }
-  .servings-cookpad-row { display: flex; align-items: center; gap: 11px; margin-top: 1px; }
-  .servings-user-icon { font-size: 1em; margin-right: 4px; }
-  .servings-label { font-size: 0.8em; font-weight: 500; margin-right: 1px; }
   .servings-tasty-box {
     display: flex; align-items: center; gap: 8px;
-    padding: 3.5px 10px;
-    border: 1.5px solid var(--servings-border); border-radius: 13px;
+    padding: 4px 11px;
+    border: 1.6px solid var(--servings-border); border-radius: 14px;
     background: var(--servings-bg);
-    font-size: 1.08rem; font-weight: 500;
+    font-size: 1.25rem; font-weight: 500;
   }
   .servings-btn {
-    width: 30px; height: 30px; margin: 0;
+    width: 32px; height: 32px;
     border-radius: 50%; border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
     background: none; color: var(--brand-hover);
-    font-size: 1.28em; font-weight: bold;
-    transition: background 0.13s;
+    font-size: 1.3em; font-weight: bold;
   }
-  .servings-btn:active { background: #f4f4f4; }
-  .servings-qty {
-    min-width: 24px; text-align: center;
-    font-size: 1.1em; font-weight: bold;
-    color: var(--text);
-  }
-  .servings-unit { font-size: 0.99em; color: var(--text-dim); margin-left: 1px; }
-  .ingredients-list {
-    list-style: none; margin: 0; padding: 0;
-    font-size: 1.05rem;
-  }
+  .ingredients-list { list-style: none; margin: 0; padding: 0; }
   .ingredients-list li {
-    display: flex; align-items: center; gap: 8px;
-    min-height: 27px; margin-bottom: 8px;
-  }
-  .ingredient-checkbox {
-    width: 1.17em; height: 1.17em; margin-right: 2px;
-    accent-color: var(--brand); cursor: pointer;
-  }
-  .ingredient-qty { color: var(--brand); font-weight: 600; margin-right: 2px; }
-  .ingredient-fulltext { color: var(--text); }
+	  display: flex; align-items: center;
+	  padding: 8px 10px;
+	  border-radius: 10px;
+	  transition: background 0.15s;
+	}
+  .ingredients-list li:nth-child(odd) { background: #fafafa; }
+  .ingredients-list li:hover { background: #f4fdf7; }
+  
+  .ingredient-checkbox { width: 1.3em; height: 1.3em; accent-color: var(--brand); }
+  .ingredient-qty { font-size: 1.25rem; color: var(--brand); font-weight: 600; }
+  .ingredient-fulltext { font-size: 1.2rem; }
+  
 </style>
 
-<!-- =================== Instructions =================== -->
+ <!--=================== Instructions =================== -->
 <style>
   .instructions-card {
-    max-width: 560px; margin: 17px 13px 0 13px;
-    padding: 18px 14px 13px 14px;
-    border-radius: 20px;
+    max-width: 580px; margin: 20px auto 0 auto;
+    padding: 20px 16px 16px 16px;
+    border-radius: 22px;
     background: #fff;
     box-shadow: var(--shadow);
   }
   .instructions-time-badge {
-    width: fit-content;
-    margin: 2px 0 10px 0;
-    padding: 8px 18px 8px 14px;
-    border: 1.2px solid #e5eee5; border-radius: 15px;
+    margin: 2px 0 12px 0;
+    padding: 9px 10px;
+    border: 1.3px solid #e5eee5; border-radius: 16px;
     background: #e8f7eb; color: var(--brand-hover);
-    font-size: 1.02rem; font-weight: 600;
-    display: flex; align-items: center; gap: 8px;
+    font-size: 1.1rem; font-weight: 600;
+    display: flex; align-items: center; gap: 9px;
   }
-  .instructions-time-badge i { font-size: 1.13em; margin-right: 4px; opacity: 0.84; }
-  .instructions-times-row {
-    display: flex; align-items: center; justify-content: flex-start;
-    gap: 11px; margin-bottom: 8px;
-  }
-  .time-badge {
-    padding: 6px 13px 6px 11px;
-    border: 1.2px solid #e5eee5; border-radius: 15px;
-    background: var(--time-bg); color: var(--brand-hover);
-    font-size: 0.98rem; font-weight: 600;
-    display: flex; align-items: center; gap: 4px;
-  }
-  .time-badge i { font-size: 1.1em; opacity: 0.82; }
   .instructions-title {
-    margin: 20px 0 10px 0;
-    font-size: 1.11rem; font-weight: 700; color: var(--brand-hover);
+    margin: 22px 0 12px 0;
+    font-size: 1.35rem; font-weight: 800; color: var(--brand-hover);
   }
-  .instructions-list {
-    list-style: decimal inside;
-    margin: 0; padding: 0;
-    color: var(--text);
-    font-size: 1.04rem;
-  }
-  .instructions-list li { margin-bottom: 7px; line-height: 1.58; padding-left: 1px; }
+	.instructions-list {
+	  counter-reset: step;
+	  margin: 0; padding: 0;
+	}
+	.instructions-list li {
+	  list-style: none;
+	  position: relative;
+	  padding: 9px 0 9px 42px;
+	  font-size: 1.2rem;
+	  line-height: 1.6;
+	}
+	
+    .instructions-list li:nth-child(odd) { background: #fafafa; }
+    .instructions-list li:hover { background: #f4fdf7; }
+  
+	.instructions-list li::before {
+	  counter-increment: step;
+	  content: counter(step);
+	  position: absolute;
+	  left: 0; top: 9px;
+	  width: 28px; height: 28px;
+	  border-radius: 50%;
+	  background: var(--brand);
+	  color: #fff;
+	  font-weight: 700;
+	  font-size: 0.95rem;
+	  display: flex; align-items: center; justify-content: center;
+	  box-shadow: 0 2px 6px rgba(33,142,70,0.15);
+	}
+</style>
+
+<!-- =================== Comments =================== -->
+<style>
+.comments-card {
+  max-width: 580px;
+  margin: 22px auto 36px auto;
+  padding: 18px 15px 16px 15px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+.comments-card h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--brand-hover);
+  margin: 0 0 12px 0;   /* μηδέν top */
+}
+.comment {
+  display: flex; gap: 10px;
+  margin-bottom: 14px;
+}
+.comment-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--outline);
+}
+.comment-author {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.comment-text {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+.comment-form textarea {
+  width: 100%; min-height: 60px;
+  border: 1.5px solid var(--outline);
+  border-radius: 12px;
+  padding: 8px 10px;
+  resize: vertical;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+.comment-form textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px rgba(33,142,70,0.15);
+}
+.comment-form button {
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.comment-form button:hover { background: var(--brand-hover); }
 </style>
 
 <!-- =================== Similar Recipes =================== -->
 <style>
   .similar-card {
-    max-width: 560px; margin: 21px 12px 34px 12px;
-    padding: 18px 13px 11px 13px;
-    border-radius: 18px;
+    max-width: 580px; margin: 24px auto 36px auto;
+    padding: 20px 15px 12px 15px;
+    border-radius: 20px;
     background: #fff;
     box-shadow: var(--shadow);
-    overflow: hidden;
   }
-  .similar-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .similar-title { font-size: 1.12rem; font-weight: 700; color: var(--brand-hover); letter-spacing: -0.3px; }
-  .similar-swiper { display: flex; align-items: center; gap: 9px; overflow-x: auto; scroll-snap-type: x mandatory; }
-  .similar-btns-row { display: flex; align-items: center; gap: 2px; }
-  .similar-btn {
-    width: 34px; height: 34px; margin: 0;
-    border-radius: 50%; border: 1.4px solid var(--outline); cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--surface); color: var(--brand-hover);
-    font-size: 1.11rem;
-    transition: background 0.13s;
-    box-shadow: none;
-  }
-  .similar-btn:active { background: #f6f6f6; }
+  .similar-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .similar-title { font-size: 1.25rem; font-weight: 700; color: var(--brand-hover); }
+  .similar-swiper { display: flex; align-items: center; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; }
   .similar-card-item {
-    height: 170px;        /* ή όσο σου ταιριάζει */
-    min-height: 170px;
-    max-height: 170px;
-    min-width: 132px; max-width: 155px; margin-right: 2px;
-    padding: 9px 7px 5px 7px;
-    border-radius: 16px; border: 1.4px solid #eee;
+    min-width: 145px; max-width: 170px;
+    padding: 10px 8px 8px 8px;
+    border-radius: 18px; border: 1.4px solid #eee;
     background: #fcfcfc;
     display: flex; flex-direction: column; align-items: center; cursor: pointer;
-    justify-content: center;
-	box-shadow: 0 2px 8px rgba(33,142,70,0.06);
+    box-shadow: 0 2px 8px rgba(33,142,70,0.07);
     scroll-snap-align: start;
-    transition: border-color 0.13s;
   }
-  .similar-card-item:hover { border-color: var(--brand-hover); }
   .similar-card-item img {
-    width: 70px; height: 70px; margin-bottom: 7px;
-    border-radius: 11px;
-    object-fit: cover;
+    width: 92px; height: 62px; margin-bottom: 8px;
+    border-radius: 12px; object-fit: cover;
   }
   .similar-card-item-title {
-    max-width: 120px; margin-bottom: 4px;
-    font-size: 0.96em; font-weight: 600; line-height: 1.25;
-    text-align: center; color: var(--text);
-    white-space: normal; overflow: hidden; text-overflow: ellipsis;
+    max-width: 140px; margin-bottom: 4px;
+    font-size: 1rem; font-weight: 600; text-align: center;
+    color: var(--text);
   }
-  .similar-card-item-chef { font-size: 0.88em; font-weight: 500; color: var(--text-dim); text-align: center; }
+  .similar-card-item-chef { font-size: 0.9rem; font-weight: 500; color: var(--text-dim); text-align: center; }
 </style>
 
 <!-- =================== Responsive =================== -->
 <style>
   @media (max-width: 600px) {
-    .recipe-hero { max-width: 100vw; border-radius: 0 0 18px 18px; }
-    .recipe-hero img { border-radius: 0 0 18px 18px; }
-    .ingredients-card, .instructions-card, .similar-card { margin-left: 2vw; margin-right: 2vw; }
-    .recipe-title-main, .recipe-description-main { padding-left: 15px; padding-right: 15px; }
-    .recipe-info-badges, .recipe-chef { padding-left: 10px; padding-right: 10px; }
+    .recipe-hero { max-width: 100vw; border-radius: 0 0 20px 20px; }
+    .recipe-hero img { border-radius: 0 0 20px 20px; }
+    .ingredients-card, .instructions-card, .similar-card, .comments-card { margin-left: 4vw; margin-right: 4vw; }
+    .recipe-title-main, .recipe-description-main { padding-left: 18px; padding-right: 18px; }
+    .recipe-info-badges { padding-left: 12px; padding-right: 12px; }
   }
 </style>
 
+<!-- =================== CONTENT =================== -->
 
-  <!-- Sticky Top Bar -->
-  <div class="recipe-topbar" id="topBar">
-    <button class="icon-btn" id="backBtn"><i class="fa fa-arrow-left"></i></button>
-    <div class="topbar-title" id="compactTitle">{{ recipe.title }}</div>
-	<div class="topbar-actions">
-	  <button class="icon-btn" title="Κοινοποίηση"><i class="fa fa-share-alt"></i></button>
-		<button class="icon-btn" title="Αγαπημένο" id="favBtnTopBar">
-		  <i class="{{ 'fas' if is_favorite else 'far' }} fa-heart"></i>
-		</button>
+<div class="recipe-topbar" id="topBar">
+  <button class="icon-btn" id="backBtn"><i class="fa fa-arrow-left"></i></button>
+  <div class="topbar-title" id="compactTitle">{{ recipe.title }}</div>
+  <div class="topbar-actions">
+    <button class="icon-btn" title="Κοινοποίηση"><i class="fa fa-share-alt"></i></button>
+    <button class="icon-btn" title="Αγαπημένο" id="favBtnTopBar">
+      <i class="{{ 'fas' if is_favorite else 'far' }} fa-heart"></i>
+    </button>
+  </div>
+</div>
+
+<div class="recipe-title-main" id="mainTitle">{{ recipe.title }}</div>
+<div class="recipe-description-main">{{ recipe.description }}</div>
+
+<!-- ======= Rating Demo Block ======= -->
+<div class="recipe-rating">
+  <div class="stars">
+    <i class="fas fa-star star-full"></i>
+    <i class="fas fa-star star-full"></i>
+    <i class="fas fa-star star-full"></i>
+    <i class="fas fa-star star-full"></i>
+    <i class="far fa-star star-empty"></i>
+  </div>
+  <span class="rating-value">4.0</span>
+  <span class="rating-count">(128 αξιολογήσεις)</span>
+</div>
+
+<div class="recipe-hero">
+  <img src="{{ image_url }}" alt="{{ recipe.title }}">
+  {% if recipe.url %}
+    <a href="{{ recipe.url }}" target="_blank" class="hero-play-btn">
+      <i class="fa fa-play"></i>
+    </a>
+  {% endif %}
+</div>
+
+<div style="display:flex; justify-content:flex-end;">
+	<div class="chef-signature2">
+	  by <span class="chef-name">{{ recipe.chef }}</span>
+	  <img class="chef-avatar-inline"
+		   src="{{ url_for('static', filename='images/avatars/' ~ chef_avatar) }}"
+		   alt="Chef">
 	</div>
-  </div>
+</div>
 
-  <!-- Main Title -->
-  <div class="recipe-title-main" id="mainTitle">{{ recipe.title }}</div>
-  <div class="recipe-description-main">{{ recipe.description }}</div>
+<div class="cooktime-bar">
+  <i class="fa fa-clock"></i>
+  Έτοιμο σε <span class="cooktime-value">{{ recipe.total_time }} λεπτά</span>
+</div>
 
-  <!-- Hero -->
-  <div class="recipe-hero">
-    <img src="{{ image_url }}" alt="{{ recipe.title }}">
-    {% if recipe.url %}
-		<a href="{{ recipe.url }}" target="_blank" class="hero-play-btn">
-		  <i class="fa fa-play"></i>
-		</a>
-	{% endif %}
-  </div>
+<div class="recipe-info-badges">
+  {% if recipe.dish_category %}<span class="info-badge"><i class="fa fa-utensils"></i> {{ recipe.dish_category }}</span>{% endif %}
+  {% if recipe.method %}<span class="info-badge"><i class="fa fa-fire"></i> {{ recipe.method }}</span>{% endif %}
+</div>
 
-  <!-- Info badges -->
-  <div class="recipe-info-badges">
-    {% if recipe.total_time %}<span class="info-badge"><i class="fa fa-clock"></i> {{ recipe.total_time }}′</span>{% endif %}
-    {% if recipe.method %}<span class="info-badge"><i class="fa fa-fire"></i> {{ recipe.method }}</span>{% endif %}
-    {% if recipe.dish_category %}<span class="info-badge"><i class="fa fa-utensils"></i> {{ recipe.dish_category }}</span>{% endif %}
-    {% if recipe.chef %}<span class="info-badge"><i class="fa fa-user"></i> {{ recipe.chef }}</span>{% endif %}
-  </div>
-
-  <!-- Ingredients -->
-  <div class="ingredients-card">
-    <div class="ingredients-header-row">
-      <div class="ingredients-title">
-        Υλικά για <span id="servingsVal">{{ recipe.servings or 4 }}</span> <i class="fa fa-user"></i>
-      </div>
-      <div class="servings-tasty-box">
-        <button class="servings-btn" id="btnMinus"><i class="fa fa-minus"></i></button>
-        <span class="servings-qty" id="servingsQty">{{ recipe.servings or 4 }}</span>
-        <button class="servings-btn" id="btnPlus"><i class="fa fa-plus"></i></button>
-      </div>
+<div class="ingredients-card">
+  <div class="ingredients-header-row">
+    <div class="ingredients-title">
+      Υλικά για <span id="servingsVal">{{ recipe.servings or 4 }}</span> <i class="fa fa-user"></i>
     </div>
-	<ul class="ingredients-list">
-	  {% for ing in ingredients %}
-	  <li>
-		<input type="checkbox" class="ingredient-checkbox">
-		<span class="ingredient-fulltext">{{ ing }}</span>
-	  </li>
-	  {% endfor %}
-	</ul>
+    <div class="servings-tasty-box">
+      <button class="servings-btn" id="btnMinus"><i class="fa fa-minus"></i></button>
+      <span class="servings-qty" id="servingsQty">{{ recipe.servings or 4 }}</span>
+      <button class="servings-btn" id="btnPlus"><i class="fa fa-plus"></i></button>
+    </div>
   </div>
+  <ul class="ingredients-list">
+    {% for ing in ingredients %}
+    <li>
+      <input type="checkbox" class="ingredient-checkbox">
+      <span class="ingredient-fulltext">{{ ing }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
 
-  <!-- Instructions -->
-  <div class="instructions-card">
-  
-	<div class="instructions-time-badge">
-	  <span title="Χρόνος προετοιμασίας">
-		<i class="fa fa-clock"></i>
-		<b>Προετοιμασία:</b> {{ recipe.prep_time }}′
-	  </span>
-	  &nbsp;|&nbsp;
-	  <span title="Χρόνος μαγειρέματος">
-		<i class="fa fa-fire"></i>
-		<b>Μαγείρεμα:</b> {{ recipe.cook_time }}′
-	  </span>
-	</div>
-
-  
-    <div class="instructions-title">Οδηγίες</div>
-	<ol class="instructions-list">
-	  {% for step in instructions %}
-	  <li>{{ step }}</li>
-	  {% endfor %}
-	</ol>
+<div class="instructions-card">
+  <div class="instructions-time-badge">
+    <span><i class="fa fa-clock"></i> <b>Προετοιμασία:</b> {{ recipe.prep_time }}′</span>
+    &nbsp;|&nbsp;
+    <span><i class="fa fa-fire"></i> <b>Μαγείρεμα:</b> {{ recipe.cook_time }}′</span>
   </div>
+  <div class="instructions-title">Οδηγίες</div>
+  <ol class="instructions-list">
+    {% for step in instructions %}
+    <li>{{ step }}</li>
+    {% endfor %}
+  </ol>
+</div>
 
-<!-- Similar recipes -->
+<div class="comments-card">
+  <h3>Σχόλια</h3>
+  <div class="comment">
+    <img src="/static/avatars/user1.jpg" class="comment-avatar">
+    <div>
+      <div class="comment-author">Μαρία • 12/9/2025</div>
+      <div class="comment-text">Τέλεια συνταγή, πέτυχε με την πρώτη!</div>
+    </div>
+  </div>
+  <form class="comment-form">
+    <textarea placeholder="Γράψτε το σχόλιό σας..."></textarea>
+    <button>Υποβολή</button>
+  </form>
+</div>
+
 <div class="similar-card">
   <div class="similar-title-row">
     <span class="similar-title">Παρόμοιες συνταγές</span>
     <button class="similar-btn" id="refreshSimilar"><i class="fa fa-refresh"></i></button>
   </div>
-  <div class="similar-swiper" id="similarSwiper">
-    <!-- γεμίζει με JS -->
-  </div>
+  <div class="similar-swiper" id="similarSwiper"></div>
 </div>
-
-<script>
-  const RECIPE_ID = {{ recipe.id }};
-</script>
 
 {% endblock %}
 
 {% block scripts %}
 
-<script> 
+<script>
+  // --- Constants που περνάνε από το backend
+  const RECIPE_ID = {{ recipe.id }};
+  const BASE_SERVINGS = {{ recipe.servings or 4 }};
+</script>
 
-let servings = 4;
-function updateServings(val) {
-  servings = val;
-  document.getElementById('servingsVal').textContent = servings;
-  document.getElementById('servingsQty').textContent = servings;
-  // (Εδώ μπορείς να βάλεις και scaling υλικών αν χρειαστεί)
-}
-document.getElementById('btnMinus').onclick = function() {
-  if (servings > 1) updateServings(servings - 1);
-};
-document.getElementById('btnPlus').onclick = function() {
-  if (servings < 16) updateServings(servings + 1);
-};
-document.getElementById('backBtn').onclick = function() {
-  window.location.href = '/main';
-};
+<script>
+  // ------------------ Helpers ------------------
 
-document.addEventListener("DOMContentLoaded", function() {
-  var favBtn = document.getElementById('favBtnTopBar');
-  if (favBtn) {
-    favBtn.onclick = function(e) {
-      e.stopPropagation();
-      // Το wrapper εδώ είναι το ίδιο το button (ή το εσωτερικό <i>)
-      toggleFavorite(favBtn, RECIPE_ID);
+  function parseFraction(str) {
+    str = str.replace(',', '.').trim();
+    const fractions = {'½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1/3, '⅔': 2/3, '⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875};
+    if (fractions[str]) return fractions[str];
+    if (str.match(/^\d+\/\d+$/)) {
+      let [n, d] = str.split('/').map(Number);
+      return n/d;
+    }
+    if (str.match(/^\d+\-\d+$/)) {
+      let [n, d] = str.split('-').map(Number);
+      return n;
+    }
+    if (!isNaN(parseFloat(str))) return parseFloat(str);
+    let m = str.match(/^([0-9\.]+)/);
+    if (m) return parseFloat(m[1]);
+    return NaN;
+  }
+
+  function formatQty(qty) {
+    if (Math.abs(qty - Math.round(qty)) < 0.01) return Math.round(qty);
+    return qty.toFixed(2).replace(/\.00$/, '');
+  }
+
+  function toCookingFraction(num) {
+    const fracMap = {
+      0.125: '⅛', 0.25: '¼', 0.33: '⅓', 0.5: '½', 0.66: '⅔',
+      0.75: '¾', 0.375: '⅜', 0.625: '⅝', 0.875: '⅞'
     };
+    let intPart = Math.floor(num);
+    let frac = +(num - intPart).toFixed(3);
+    let fracStr = '';
+    let closest = Object.keys(fracMap).reduce((prev, curr) => Math.abs(curr-frac) < Math.abs(prev-frac) ? curr : prev, 0);
+    if (frac > 0.01) {
+      fracStr = fracMap[closest];
+      if (fracStr && Math.abs(frac-closest) < 0.02) {
+        return intPart > 0 ? intPart + ' ' + fracStr : fracStr;
+      } else {
+        return num.toFixed(2).replace(/\.00$/,'');
+      }
+    } else {
+      return intPart;
+    }
   }
-});
 
-  
-// Compact title logic
-const mainTitle = document.getElementById('mainTitle');
-const topBar = document.getElementById('topBar');
-const compactTitle = document.getElementById('compactTitle');
-
-window.addEventListener('scroll', function() {
-  const threshold = 65;  // όταν περάσει αυτό, compact
-  const rect = mainTitle.getBoundingClientRect();
-
-  // ➤ Αν το top του mainTitle είναι ακόμα ψηλά, δείξε μεγάλο τίτλο
-  if (window.scrollY < 10 || rect.top >= 0) {
-    topBar.classList.remove('show-compact-title');
-    mainTitle.classList.remove('hide-main-title');
-  } else {
-    topBar.classList.add('show-compact-title');
-    mainTitle.classList.add('hide-main-title');
+  function splitQtyUnit(str) {
+    let m = str.match(/^([-0-9½¼¾⅓⅔⅛⅜⅝⅞\/\.]+)\s*([a-zA-Zα-ωΑ-Ω\.]*)$/u);
+    if (m) return {qty: m[1], unit: m[2]};
+    return {qty: str, unit: ''};
   }
-});
 
+  // --------- DOMContentLoaded ensures all elements exist! ----------
+  document.addEventListener("DOMContentLoaded", function() {
 
-// Play button: άνοιγμα συνταγής (url)
-document.getElementById('playBtn').onclick = function() {
-  window.open('https://www.argiro.gr/recipe/mpiftekia-kotopoulou/', '_blank');
-};
-
-// Similar recipes "carousel" logic (basic horizontal scroll)
-const swiper = document.getElementById('similarSwiper');
-document.getElementById('similarPrev').onclick = () => { swiper.scrollBy({left: -155, behavior: 'smooth'}); };
-document.getElementById('similarNext').onclick = () => { swiper.scrollBy({left: +155, behavior: 'smooth'}); };
-</script>
-
-<script>
-async function loadSimilar(recipeId) {
-  try {
-    const res = await fetch(`/api/similar?recipe_id=${recipeId}`);
-    const data = await res.json();
-    const swiper = document.getElementById('similarSwiper');
-    swiper.innerHTML = '';
-
-	if (data.success && data.recipes.length > 0) {
-	  data.recipes.forEach(function(r) {
-		var item = document.createElement('div');
-		item.className = 'similar-card-item';
-		item.onclick = function() { window.location = '/recipe_page/' + r.id; };
-
-		var html = ''
-		  + '<img src="' + r.image_url + '" alt="' + r.title + '">'
-		  + '<div class="similar-card-item-title">' + r.title + '</div>';
-
-		if (r.chef) {
-		  html += '<div class="similar-card-item-chef">' + r.chef + '</div>';
-		}
-
-		item.innerHTML = html;
-		swiper.appendChild(item);
-	  });
-	} else {
-	  swiper.innerHTML = '<p style="color:#666;">Δεν βρέθηκαν παρόμοιες συνταγές.</p>';
-	}
-
-  } catch (err) {
-    console.error("[ERROR] Failed to load similar recipes:", err);
-  }
-}
-
-// Αρχικό φόρτωμα
-loadSimilar({{ recipe.id }});
-
-// Refresh button
-document.getElementById('refreshSimilar').onclick = () => loadSimilar({{ recipe.id }});
-</script>
-
-<script>
-function toggleFavorite(wrapper, recipe_id) {
-  fetch('/toggle_favorite_recipe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recipe_id: recipe_id })
-  })
-  .then(r => r.json())
-  .then(data => {
-    const isAdded = data.status === "added";
-    // Ενημέρωσε το εικονίδιο
-    wrapper.innerHTML =
-      '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color:' + (isAdded ? '#218e46' : '#218e46') + ';font-size:18px;vertical-align:-2px;cursor:pointer;"></i>';
-
-    // Ξαναδέσε το click event (γιατί αντικατέστησες το innerHTML!)
-    const icon = wrapper.querySelector("i");
-    if (icon) {
-      icon.onclick = function(e) {
-        e.stopPropagation();
-        toggleFavorite(wrapper, recipe_id);
+    // ---------- Play Button -------------
+    const playBtn = document.getElementById('playBtn');
+    if (playBtn) {
+      playBtn.onclick = function() {
+        const url = playBtn.dataset.url;
+        if (url) window.open(url, '_blank');
       };
     }
-  });
-}
-</script>
 
-<script>
-document.querySelectorAll('.ingredients-list .ingredient-fulltext').forEach(span => {
-  let txt = span.textContent.trim();
-  console.log('[DEBUG] Επεξεργασία:', txt);
-  // Regex: Πιάνει ποσότητα + υλικό
-  let m = txt.match(/^([0-9½¼¾\-\/\.\s\w]+)\s+(.*)$/);
-  if (m) {
-    console.log('[DEBUG] Βρέθηκε ποσότητα:', m[1], '| Υλικό:', m[2]);
-    span.innerHTML =
-      '<span class="ingredient-qty">' + m[1].trim() + '</span> ' +
-      '<span class="ingredient-fulltext">' + m[2].trim() + '</span>';
-  } else {
-    console.log('[DEBUG] Δεν βρέθηκε ποσότητα, όλο ως υλικό:', txt);
-    span.innerHTML = '<span class="ingredient-fulltext">' + txt + '</span>';
-  }
-});
-</script>
+    // ---------- Back Button -------------
+    const backBtn = document.getElementById('backBtn');
+    if (backBtn) {
+      backBtn.onclick = function() {
+        window.location.href = '/main';
+      };
+    }
 
+    // ---------- Favorites TopBar Button -------------
+    var favBtn = document.getElementById('favBtnTopBar');
+    if (favBtn) {
+      favBtn.onclick = function(e) {
+        e.stopPropagation();
+        toggleFavorite(favBtn, RECIPE_ID);
+      };
+    }
+
+    // ---------- Compact Title on Scroll -------------
+    const mainTitle = document.getElementById('mainTitle');
+    const topBar = document.getElementById('topBar');
+    if (mainTitle && topBar) {
+      window.addEventListener('scroll', function() {
+        const rect = mainTitle.getBoundingClientRect();
+        if (window.scrollY < 10 || rect.top >= 0) {
+          topBar.classList.remove('show-compact-title');
+          mainTitle.classList.remove('hide-main-title');
+        } else {
+          topBar.classList.add('show-compact-title');
+          mainTitle.classList.add('hide-main-title');
+        }
+      });
+    }
+
+    // ---------- Ingredients Split and Scaling -------------
+    document.querySelectorAll('.ingredients-list .ingredient-fulltext').forEach(span => {
+      let txt = span.textContent.trim();
+      let m = txt.match(/^([-0-9½¼¾⅓⅔⅛⅜⅝⅞\/\.]+(?:\s*[a-zA-Zα-ωΑ-Ω\.]*)?)\s+(.+)$/u);
+      if (m && !isNaN(parseFraction(m[1]))) {
+        span.innerHTML =
+          '<span class="ingredient-qty" data-qty="'+ m[1].trim() +'">' + m[1].trim() + '</span> ' +
+          '<span class="ingredient-fulltext">' + m[2].trim() + '</span>';
+      } else {
+        span.innerHTML = '<span class="ingredient-fulltext">' + txt + '</span>';
+      }
+    });
+
+    let currentServings = BASE_SERVINGS;
+    const minusBtn = document.getElementById('btnMinus');
+    const plusBtn = document.getElementById('btnPlus');
+    if (minusBtn) {
+      minusBtn.onclick = function() {
+        if (currentServings > 1) updateServings(currentServings - 1);
+      };
+    }
+    if (plusBtn) {
+      plusBtn.onclick = function() {
+        updateServings(currentServings + 1);
+      };
+    }
+
+    function updateServings(newServings) {
+      if (newServings < 1) return;
+      currentServings = newServings;
+      document.getElementById('servingsQty').textContent = currentServings;
+      document.getElementById('servingsVal').textContent = currentServings;
+      document.querySelectorAll('.ingredient-qty').forEach(span => {
+        let base = splitQtyUnit(span.getAttribute('data-qty'));
+        let parsed = parseFraction(base.qty);
+        if (!isNaN(parsed)) {
+          let newQty = parsed * (currentServings / BASE_SERVINGS);
+          span.textContent = toCookingFraction(newQty) + (base.unit ? ' ' + base.unit : '');
+        }
+      });
+    }
+
+    // ---------- Similar Recipes Carousel -------------
+    const swiper = document.getElementById('similarSwiper');
+    const prevBtn = document.getElementById('similarPrev');
+    const nextBtn = document.getElementById('similarNext');
+    if (swiper && prevBtn && nextBtn) {
+      prevBtn.onclick = () => { swiper.scrollBy({left: -155, behavior: 'smooth'}); };
+      nextBtn.onclick = () => { swiper.scrollBy({left: +155, behavior: 'smooth'}); };
+    }
+
+    // ---------- Load Similar Recipes -------------
+    async function loadSimilar(recipeId) {
+      try {
+        const res = await fetch(`/api/similar?recipe_id=${recipeId}`);
+        const data = await res.json();
+        const swiper = document.getElementById('similarSwiper');
+        swiper.innerHTML = '';
+
+        if (data.success && data.recipes.length > 0) {
+          data.recipes.forEach(function(r) {
+            var item = document.createElement('div');
+            item.className = 'similar-card-item';
+            item.onclick = function() { window.location = '/recipe_page/' + r.id; };
+            var html = ''
+              + '<img src="' + r.image_url + '" alt="' + r.title + '">'
+              + '<div class="similar-card-item-title">' + r.title + '</div>';
+            if (r.chef) {
+              html += '<div class="similar-card-item-chef">' + r.chef + '</div>';
+            }
+            item.innerHTML = html;
+            swiper.appendChild(item);
+          });
+        } else {
+          swiper.innerHTML = '<p style="color:#666;">Δεν βρέθηκαν παρόμοιες συνταγές.</p>';
+        }
+      } catch (err) {
+        console.error("[ERROR] Failed to load similar recipes:", err);
+      }
+    }
+
+    loadSimilar(RECIPE_ID);
+    const refreshSimilar = document.getElementById('refreshSimilar');
+    if (refreshSimilar) {
+      refreshSimilar.onclick = () => loadSimilar(RECIPE_ID);
+    }
+
+    // ---------- Favorites AJAX ----------
+    window.toggleFavorite = function(wrapper, recipe_id) {
+      fetch('/toggle_favorite_recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipe_id: recipe_id })
+      })
+      .then(r => r.json())
+      .then(data => {
+        const isAdded = data.status === "added";
+        wrapper.innerHTML =
+          '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color:' + (isAdded ? '#218e46' : '#218e46') + ';font-size:18px;vertical-align:-2px;cursor:pointer;"></i>';
+        const icon = wrapper.querySelector("i");
+        if (icon) {
+          icon.onclick = function(e) {
+            e.stopPropagation();
+            toggleFavorite(wrapper, recipe_id);
+          };
+        }
+      });
+    }
+
+  }); // END DOMContentLoaded
+
+</script>
 {% endblock %}

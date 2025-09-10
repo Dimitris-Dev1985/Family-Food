@@ -30,7 +30,8 @@
   <!-- Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <!-- Roboto Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+
   
 <link rel="stylesheet" href="/static/styles1.css">
 
@@ -53,6 +54,44 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+
+<script>
+function openRecipePage(id) {
+  // π.χ. πάρε από local array ή fetch(`/api/recipe/${id}`)
+  const recipeData = recipesArr.find(r => r.id == id); // παράδειγμα με local array
+  // render δυναμικά το περιεχόμενο της συνταγής:
+  document.getElementById('recipePage').innerHTML = renderRecipeHTML(recipeData);
+  document.getElementById('mainPage').style.display = 'none';
+  document.getElementById('recipePage').style.display = 'block';
+
+  // Push state για να δουλεύει και το browser back!
+  history.pushState({page: 'recipe', id: id}, '', `#recipe-${id}`);
+}
+
+// Επιστροφή στο main
+function backToMain() {
+  document.getElementById('recipePage').style.display = 'none';
+  document.getElementById('mainPage').style.display = 'block';
+  history.pushState({page: 'main'}, '', '#main');
+}
+
+// Handle browser back/forward
+window.onpopstate = function(e) {
+  if (!e.state || e.state.page === 'main') {
+    backToMain();
+  } else if (e.state.page === 'recipe') {
+    openRecipePage(e.state.id);
+  }
+};
+
+// Σύνδεση κουμπιού "πίσω"
+document.body.addEventListener('click', function(e){
+  if (e.target.closest('.icon-btn[data-back]')) {
+    backToMain();
+  }
+});
+</script>
 
 {% block scripts %}{% endblock %}
 
