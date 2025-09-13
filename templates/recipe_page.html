@@ -241,10 +241,36 @@
   .ingredients-list li:nth-child(odd) { background: #fafafa; }
   .ingredients-list li:hover { background: #f4fdf7; }
   
-  .ingredient-checkbox { width: 1.3em; height: 1.3em; accent-color: var(--brand); }
+  .ingredient-checkbox { width: 1.3em; height: 1.3em; margin-right:20px; accent-color: var(--brand); opacity: 1 !important; pointer-events: auto !important;}
   .ingredient-qty { font-size: 1.25rem; color: var(--brand); font-weight: 600; }
   .ingredient-fulltext { font-size: 1.2rem; }
   
+.ingredients-tip {
+  max-width: 580px;
+  margin: 0 auto 14px auto;
+  padding: 12px 12px 12px 5px;
+  border-radius: 16px;
+  background: #f9f9f9;
+  border: 1.5px solid var(--outline);
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  display: flex;
+  align-items: center;   /* κάθετο κεντράρισμα */
+  gap: 10px;
+  text-align: justify;   /* justified text */
+}
+.tip-label {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  border: 1px solid var(--outline);
+  border-radius: 50px;   /* πιο στρογγυλεμένο */
+  padding: 3px 8px;
+  background: #fff;
+  flex-shrink: 0;        /* να μη τεντώνει */
+}  
 </style>
 
  <!--=================== Instructions =================== -->
@@ -476,14 +502,21 @@
       <button class="servings-btn" id="btnPlus"><i class="fa fa-plus"></i></button>
     </div>
   </div>
-  <ul class="ingredients-list">
-    {% for ing in ingredients %}
-    <li>
-      <input type="checkbox" class="ingredient-checkbox">
-      <span class="ingredient-fulltext">{{ ing }}</span>
-    </li>
-    {% endfor %}
-  </ul>
+  
+  <div class="ingredients-tip">
+	  <span class="tip-label">TIP</span>
+	  Ξε-τσέκαρε όσα υλικά δεν έχεις διαθέσιμα, αυτόματα θα αποκλειστούν από άλλες συνταγές που θα σου προτείνουμε για σήμερα!
+	</div>
+  
+	<ul class="ingredients-list" id="ingredientsList">
+	  {% for ing in ingredients %}
+	  <li>
+		<input type="checkbox" class="ingredient-checkbox" data-ing="{{ ing }}">
+		<span class="ingredient-fulltext">{{ ing }}</span>
+	  </li>
+	  {% endfor %}
+	</ul>
+	
 </div>
 
 <div class="instructions-card">
@@ -503,7 +536,7 @@
 <div class="comments-card">
   <h3>Σχόλια</h3>
   <div class="comment">
-    <img src="/static/avatars/user1.jpg" class="comment-avatar">
+    <img src="/static/images/avatars/user1.jpg" class="comment-avatar">
     <div>
       <div class="comment-author">Μαρία • 12/9/2025</div>
       <div class="comment-text">Τέλεια συνταγή, πέτυχε με την πρώτη!</div>
@@ -523,7 +556,11 @@
   <div class="similar-swiper" id="similarSwiper"></div>
 </div>
 
+
 {% endblock %}
+
+
+
 
 {% block scripts %}
 
@@ -632,17 +669,24 @@
     }
 
     // ---------- Ingredients Split and Scaling -------------
-    document.querySelectorAll('.ingredients-list .ingredient-fulltext').forEach(span => {
-      let txt = span.textContent.trim();
-      let m = txt.match(/^([-0-9½¼¾⅓⅔⅛⅜⅝⅞\/\.]+(?:\s*[a-zA-Zα-ωΑ-Ω\.]*)?)\s+(.+)$/u);
-      if (m && !isNaN(parseFraction(m[1]))) {
-        span.innerHTML =
-          '<span class="ingredient-qty" data-qty="'+ m[1].trim() +'">' + m[1].trim() + '</span> ' +
-          '<span class="ingredient-fulltext">' + m[2].trim() + '</span>';
-      } else {
-        span.innerHTML = '<span class="ingredient-fulltext">' + txt + '</span>';
-      }
-    });
+	document.querySelectorAll('.ingredients-list li').forEach(li => {
+	  const span = li.querySelector('.ingredient-fulltext');
+	  let txt = span.textContent.trim();
+	  let m = txt.match(/^([-0-9½¼¾⅓⅔⅛⅜⅝⅞\/\.]+(?:\s*[a-zA-Zα-ωΑ-Ω\.]*)?)\s+(.+)$/u);
+	  let ingredientName;
+	  if (m && !isNaN(parseFraction(m[1]))) {
+		ingredientName = m[2].trim();
+		span.innerHTML =
+		  '<span class="ingredient-qty" data-qty="' + m[1].trim() + '">' + m[1].trim() + '</span> ' +
+		  '<span class="ingredient-fulltext">' + ingredientName + '</span>';
+	  } else {
+		ingredientName = txt;
+		span.innerHTML = '<span class="ingredient-fulltext">' + txt + '</span>';
+	  }
+	  // Βάζεις ΜΟΝΟ το υλικό σαν data-ing στο checkbox
+	  let cb = li.querySelector('input[type="checkbox"]');
+	  if (cb) cb.setAttribute('data-ing', ingredientName);
+	});
 
     let currentServings = BASE_SERVINGS;
     const minusBtn = document.getElementById('btnMinus');
@@ -743,4 +787,82 @@
   }); // END DOMContentLoaded
 
 </script>
+
+  
+<script>
+
+// --------- Checkbox ----------
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('[ING] DOM ready');
+
+  var list = document.getElementById('ingredientsList');
+  if (!list) { console.warn('[ING] #ingredientsList not found'); return; }
+
+  var raw = localStorage.getItem('excluded');
+  var excluded = [];
+  try {
+    var parsed = JSON.parse(raw);
+    excluded = Array.isArray(parsed) ? parsed : [];
+  } catch(e) {
+    excluded = [];
+  }
+  console.log('[ING] excluded from LS:', excluded);
+
+  var boxes = list.querySelectorAll('input.ingredient-checkbox');
+  console.log('[ING] found checkboxes:', boxes.length);
+
+  boxes.forEach(function(cb, idx) {
+    // υπολόγισε όνομα υλικού
+    var ing = cb.dataset.ing || (cb.nextElementSibling && cb.nextElementSibling.textContent || '').trim();
+    cb.dataset.ing = ing;
+
+    // επιβάλει native εμφάνιση σε περίπτωση global overrides
+    cb.style.appearance = 'auto';
+    cb.style.webkitAppearance = 'auto';
+    cb.style.MozAppearance = 'auto';
+
+    // αρχική κατάσταση: checked αν ΔΕΝ είναι στα excluded
+    var shouldBeChecked = ing ? excluded.indexOf(ing) === -1 : true;
+    cb.checked = shouldBeChecked;
+
+    // διαγνωστικά για CSS conflicts
+    var cs = window.getComputedStyle(cb);
+    console.log('[ING][box]', idx, {
+      ing: ing,
+      checked: cb.checked,
+      appearance: cs.appearance,
+      display: cs.display,
+      width: cs.width,
+      height: cs.height,
+      opacity: cs.opacity,
+      pointerEvents: cs.pointerEvents
+    });
+
+    // click log
+    cb.addEventListener('click', function(e){
+      console.log('[ING][click]', idx, 'target=', e.target.tagName, 'preChecked=', cb.checked);
+    });
+
+    // change -> ενημέρωση localStorage
+    cb.addEventListener('change', function() {
+      console.log('[ING][change]', ing, 'now', cb.checked);
+      if (cb.checked) {
+        excluded = excluded.filter(function(x){ return x !== ing; });
+      } else {
+        if (excluded.indexOf(ing) === -1) excluded.push(ing);
+      }
+      localStorage.setItem('excluded', JSON.stringify(excluded));
+      console.log('[ING] excluded now:', excluded);
+    });
+  });
+
+  // sanity check: κάποιο CSS κρύβει όλα τα checkboxes;
+  var anyHidden = Array.from(boxes).some(function(b){ return getComputedStyle(b).display === 'none'; });
+  if (anyHidden) console.warn('[ING] Warning: κάποιο CSS έχει display:none σε checkbox');
+
+});
+
+</script>
+
+
 {% endblock %}
