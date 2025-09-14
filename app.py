@@ -640,6 +640,7 @@ def ai_suggest_dish():
         final_dishes = []
         seen_ids = set()
 
+
         # =============== Branch 1: lexical match ==================
         if user_message:
             print("[DEBUG] ========== Branch 1 ==========")
@@ -659,7 +660,6 @@ def ai_suggest_dish():
                     matches.append((row, score, fav_flag, raw_title))
 
             if matches:
-                # Προτεραιότητα: 1) αγαπημένα, 2) score
                 matches.sort(key=lambda x: (x[2], x[1]), reverse=True)
 
                 print("[DEBUG] 📊 Branch1 match details:")
@@ -668,39 +668,48 @@ def ai_suggest_dish():
                     print(f"    {raw_title} | score={score:.1f} | favorite={fav_mark}")
 
                 matched_ids = [m[0]["id"] for m in matches]
-                # Δεν χρειάζεται δεύτερο query!
                 row_map = {row["id"]: row for row, _, _, _ in matches}
 
-                # ➤ Φιλτράρουμε να μην ξαναπροταθούν ήδη προτεινόμενα πιάτα
+                # ➤ ΝΕΟ: Φιλτράρουμε excluded υλικά!
+                def is_excluded(dish):
+                    ingredients_norm = remove_tonos((dish["ingredients"] or "").lower())
+                    for ex in excluded:
+                        ex_norm = remove_tonos(str(ex).lower())
+                        if ex_norm and ex_norm in ingredients_norm:
+                            return True
+                    return False
+
                 dishes_branch1 = [
                     row_map[mid] for mid in matched_ids
                     if mid in row_map and mid not in seen_ids and mid not in already_suggested
+                    and not is_excluded(row_map[mid])
                 ]
 
-                print(f"[DEBUG] 🎯 Branch1 ordered return ({len(dishes_branch1)} dishes):",
-                      [d["title"] for d in dishes_branch1])
+                print(f"[DEBUG] 🎯 Branch1 NEW results (μετά το φίλτρο & excluded) = {len(dishes_branch1)}:")
+                print("     ", [d["title"] for d in dishes_branch1])
 
-                conn.close()
-                step = data.get("step")
-                print(f"[DEBUG] ✅ Final returned from Branch1 (step={step})")
-
-                if step == 2:
-                    # Επιστρέφουμε ΟΛΑ τα matches
-                    session["suggested_dish_ids"] = already_suggested + [d["id"] for d in dishes_branch1]
+                if not dishes_branch1:
+                    print("[DEBUG] ⚠️ Όλα τα Branch1 matches έχουν ήδη προταθεί ή αποκλείονται λόγω excluded. Συνεχίζω στο Branch 2.")
+                    # ΜΗΝ κάνεις return εδώ! Προχωράει στο Branch 2
+                else:
+                    conn.close()
+                    step = data.get("step")
+                    print(f"[DEBUG] ✅ Final returned from Branch1 (step={step})")
+                    if step == 2:
+                        session["suggested_dish_ids"] = already_suggested + [d["id"] for d in dishes_branch1]
+                        return jsonify({
+                            "message": random.choice(suggestion_messages),
+                            "dishes": [dict(d) for d in dishes_branch1]
+                        })
+                    top_dishes = dishes_branch1[:3]
+                    session["suggested_dish_ids"] = already_suggested + [d["id"] for d in top_dishes]
                     return jsonify({
                         "message": random.choice(suggestion_messages),
-                        "dishes": [dict(d) for d in dishes_branch1]
+                        "dishes": [dict(d) for d in top_dishes]
                     })
-
-                # Κανονικά επιστρέφουμε max 3
-                top_dishes = dishes_branch1[:3]
-                session["suggested_dish_ids"] = already_suggested + [d["id"] for d in top_dishes]
-                return jsonify({
-                    "message": random.choice(suggestion_messages),
-                    "dishes": [dict(d) for d in top_dishes]
-                })
             else:
                 print("[DEBUG] ❌ Branch1 no strong matches")
+
 
         # =============== Branch 2: normal filtering ==================
         print("[DEBUG] ========== Branch 2 ==========")
