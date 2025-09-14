@@ -3,32 +3,6 @@
 {% block content %}
 
 
-<!-- =================== Original Design Tokens =================== --> 
-<style>
-  :root {
-    --brand: #218e46;
-    --brand-hover: #1a6e38;
-    --text: #1b1b1b;
-    --surface: #fffaf5;
-    --outline: #ddd;
-    --shadow: 0 2px 14px rgba(33,142,70,0.08);
-    --input-bg: #fff;
-    --input-bg-focus: #f0fff4;
-    --voice-bg: #ffebee;
-    --voice-color: #c62828;
-  }
-  body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    padding: 0;
-    background: var(--surface);
-    font-family: 'Roboto', sans-serif;
-    color: var(--text);
-  }  
-</style>
-
 <!-- =================== Topbar =================== -->
 <style>
   .recipe-topbar {
@@ -105,7 +79,7 @@
   .chat-intro {
     margin: 0 0 0 0;
     padding-bottom: 2px;
-    font-size: 1.7rem; font-weight: 600;
+    font-size: 1.85rem; font-weight: 600;
     color: var(--brand-hover);
     text-align: center;
   }
@@ -122,27 +96,69 @@
 
 <!-- =================== Chat Bubbles =================== -->
 <style>
+  .chatbox {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px 0 10px 0;
+  }
   .chat-bubble {
-    max-width: 75%;
-    padding: 10px 14px;
+    align-items: flex-start;
+    max-width: 76%;
+    padding: 12px 16px;
     border-radius: 20px;
-    font-size: 0.98rem; line-height: 1.45;
-    word-break: break-word; white-space: pre-wrap;
-    animation: fadeIn 0.4s ease-out;
+    font-size: 1.1rem;
+    line-height: 1.5;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    word-break: break-word;
+    white-space: pre-wrap;
+    position: relative;
+    margin-bottom: 1px;
+    margin-top: 0;
+    animation: fadeIn 0.3s;
   }
   .from-ai {
     align-self: flex-start;
-    background: #eafbe7; color: var(--brand);
+    background: #cff7c8;
+    color: var(--brand-hover);
+    margin-right: auto;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 18px;
+    border-bottom-right-radius: 18px;
+    border-bottom-left-radius: 18px;
   }
   .from-user {
     align-self: flex-end;
-    background: #d4eaf7; color: #0d5584;
+    background: #e5f1fa;
+    color: #195885;
+    margin-left: auto;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 18px;
+    border-bottom-left-radius: 18px;
+  }
+  .chat-bubble .bubble-icon {
+    margin-right: 7px;
+    font-size: 1.15em;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .from-user .bubble-icon {
+    margin-left: 7px;
+    margin-right: 0;
+    order: 2;
   }
   .typing-indicator {
     align-self: flex-start;
-    margin-top: 2px;
-    font-size: 0.9rem; font-style: italic;
+    margin-left: 20px;
+    font-size: 0.97rem;
+    font-style: italic;
     color: #999;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(14px);}
+    to   { opacity: 1; transform: translateY(0);}
   }
 </style>
 
@@ -158,7 +174,7 @@
   .quick-reply {
     padding: 7px 16px;
     border-radius: 24px; border: none;
-    font-size: 0.9rem; font-weight: 500;
+    font-size: 1.1rem; font-weight: 500;
     white-space: nowrap; cursor: pointer;
     background: var(--surface); color: var(--brand-hover);
     box-shadow: 0 1px 4px rgba(33,142,70,0.04);
@@ -211,158 +227,6 @@
   }
   .mui-icon { font-size: 26px; color: var(--brand); }
   .mui-icon:hover { color: var(--brand-hover); }
-</style>
-
-<!-- =================== Dish Cards =================== -->
-<style>
-
-.chat-carousel-row {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  display: block;
-}
-
-.similar-swiper {
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 10px !important;
-  width: max-content !important;      /* Αυτό βοηθά το swipe μόνο στα items */
-  min-width: 100px;
-  scroll-snap-type: x mandatory !important;
-  background: none !important;
-  margin: 12px 0 8px 0 !important;
-  padding: 5px 2px 9px 0 !important;
-  align-items: center;
-}
-.similar-swiper::-webkit-scrollbar {
-  height: 8px !important;
-  background: #f6f9f7 !important;
-}
-.similar-swiper::-webkit-scrollbar-thumb {
-  background: #d5f6db !important;
-  border-radius: 8px !important;
-}
-
-.similar-card-item {
-  min-width: 122px !important;
-  max-width: 122px !important;
-  width: 122px !important;
-  height: fit-content;
-  background: #fcfcfc !important;
-  border: 1.2px solid #eee !important;
-  border-radius: 15px !important;
-  box-shadow: 0 2px 8px rgba(33,142,70,0.07) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  position: relative !important;
-  margin: 0 2px !important;
-  cursor: pointer !important;
-  overflow: visible !important;
-  padding: 0 0 7px 0 !important; /* ΚΑΘΟΛΟΥ πλάγιο padding */
-  scroll-snap-align: start !important;
-  box-sizing: border-box !important;
-}
-
-.similar-card-item img.card-main-img {
-  width: 100% !important;
-  max-width: 100% !important;
-  /* ΜΗΝ βάζεις height/min-height/max-height */
-  display: block !important;
-  object-fit: contain !important;  /* ή cover αν θες "γεμάτο" */
-  border-radius: 14px 14px 0 0 !important;
-  background: #f3f3f3 !important;
-  border: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  box-sizing: border-box !important;
-}
-
-.similar-card-item img.chef-avatar-inline {
-  width: 22px !important;
-  height: 22px !important;
-  min-width: 22px !important;
-  min-height: 22px !important;
-  max-width: 22px !important;
-  max-height: 22px !important;
-  border-radius: 50% !important;
-  object-fit: cover !important;
-  background: #fff !important;
-  margin: 0 !important;
-  box-shadow: 0 2px 8px rgba(67,185,106,0.11) !important;
-  display: inline-block !important;
-  vertical-align: middle !important;
-  padding: 0 !important;
-}
-
-.similar-card-item-title {
-  font-size: 0.9rem !important;
-  font-weight: 700 !important;
-  margin: 0 0 4px 0 !important;
-  text-align: center !important;
-  line-height: 1.22 !important;
-  word-break: break-word !important;
-  color: #17221b !important;
-  padding: 0 2px;
-}
-.similar-card-item-chef {
-  font-size: 0.89rem !important;
-  font-weight: 500 !important;
-  color: #767676 !important;
-  text-align: center !important;
-  margin-top: 2px !important;
-  margin-bottom: 1px !important;
-  padding: 0 2px;
-}
-.similar-card-item span[style*="position: absolute"] {
-  right: 7px !important;
-  top: 6px !important;
-}
-
-/* ======== Meta row: χρόνος, by, avatar ======== */
-.similar-card-item-meta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  max-width: 120px;
-  margin: 0 auto 2px auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-height: 20px;
-}
-.similar-card-item-meta .fa-clock {
-  font-size: 1.02rem;
-  color: #218e46;
-  margin-right: 1px;
-  vertical-align: middle;
-  display: inline-block;
-  line-height: 1;
-}
-.similar-card-item-time-val {
-  font-size: 0.85rem;
-  color: #1a6e38;
-  font-weight: 500;
-  margin-right: 1px;
-  margin-left: 2px;
-  letter-spacing: 0.4px;
-  font-family: inherit;
-}
-.chef-by-label {
-  font-family: 'Indie Flower', cursive;
-  font-size: 0.85rem;
-  color: #bdbdbd;
-  margin-right: 2px;
-  margin-left: 5px;
-  font-style: italic;
-  letter-spacing: 0.1em;
-  line-height: 1;
-  position: relative;
-  top: 0.5px;
-}
-
 </style>
 
 <!-- =================== Animations =================== -->
@@ -456,7 +320,7 @@ function clearCookingFilters() { Object.values(StorageKeys).forEach(k => localSt
 const input = document.getElementById("userInput");
 const inputRow = document.getElementById("chatInputRow");
 const originalPlaceholder = input.placeholder;
-const DISH_CATEGORIES = ["Brunch","Vegan","Ζυμαρικά","Θαλασσινά","Κόκκινο κρέας","Λαδερά","Όσπρια","Παραδοσιακά","Πίτες","Πουλερικά","Σούπες","Σαλάτες"];
+const DISH_CATEGORIES = ["Brunch","Leftovers","Vegan","Ζυμαρικά","Θαλασσινά","Κόκκινο κρέας","Λαδερά","Όσπρια","Παραδοσιακά","Πίτες","Πίτσα","Πουλερικά","Σούπες","Σαλάτες"];
 let moreResultsClicks = 0;
 let userNeedsHelp = false;
 
@@ -502,7 +366,7 @@ function scrollChatToBottom() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  localStorage.clear();
+  //localStorage.clear();
   if (!localStorage.getItem(StorageKeys.METHOD_PREFS)) setMethodPrefs(getMethodPrefs());
   if (!localStorage.getItem(StorageKeys.EXCLUDED)) setExcluded([]);
   if (!localStorage.getItem(StorageKeys.MAX_TIME)) setMaxTime(180);
@@ -523,6 +387,12 @@ window.addEventListener("DOMContentLoaded", () => {
 	}
 });
 
+window.addEventListener('storage', function(e) {
+  if (e.key === 'favorite_recipe_ids') {
+    refreshFavorites();
+  }
+});
+
 input.addEventListener("keydown", function(e) {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
@@ -540,8 +410,10 @@ function restoreChatHistory() {
   if (hist) {
     document.getElementById('chatbox').innerHTML = hist;
     document.getElementById('chatbox').scrollTop = document.getElementById('chatbox').scrollHeight;
+	refreshFavorites();
     rebindQuickReplyButtons();
 	rebindDishCardClicks();
+	rebindFavoriteHearts();
 	adjustChatboxPosition();
 	setTimeout(scrollChatToBottom, 5); // λίγο delay για να ξεκινήσουν να φορτώνουν τα images
   }
@@ -599,7 +471,7 @@ function renderQuickReplyOptions(options = []) {
     btn.setAttribute('data-action', opt.action);
     btn.setAttribute('data-value', opt.label);
     btn.onclick = function() {
-      handleQuickReplyClick(this);
+      handleQuickReply(this);
       wrapper.remove();
     };
     btn.style.setProperty('--delay', (idx * 45) + 'ms');
@@ -616,7 +488,7 @@ function renderQuickReplyOptions(options = []) {
   saveChatHistory();
 }
 
-function handleQuickReplyClick(btn) {
+function handleQuickReply(btn) {
   const action = btn.getAttribute('data-action');
   const value = btn.getAttribute('data-value');
 
@@ -731,13 +603,14 @@ function handleQuickReplyClick(btn) {
     renderUserBubble(value);
     moreResultsClicks++;
     document.getElementById("typing-indicator")?.remove();
+	console.log("call 2");
     callAISuggest(getMainIngredient(), 1);
     return;
   }
 
   if (action === "confirm_choice") {
     document.getElementById("typing-indicator")?.remove();
-    renderAIBubble("Τέλεια! Καλή όρεξη και καλή επιτυχία στο μαγείρεμα! 👩‍🍳", "system");
+    renderAIBubble("....to be continued", "system");
     return;
   }
 
@@ -778,7 +651,7 @@ function rebindQuickReplyButtons() {
   const quickReplies = document.querySelectorAll("#chatbox .quick-reply");
   quickReplies.forEach(btn => {
     btn.onclick = function() {
-      handleQuickReplyClick(this);
+      handleQuickReply(this);
       if (btn.parentNode && btn.parentNode.classList.contains('quick-replies')) {
         btn.parentNode.remove();
       }
@@ -795,6 +668,21 @@ function rebindDishCardClicks() {
         window.location.href = '/recipe_page/' + recipeId;
       };
     }
+  });
+}
+
+function rebindFavoriteHearts() {
+  // Βρες ΟΛΑ τα hearts που είναι "καρδούλες favorite"
+  document.querySelectorAll('.similar-card-item span[style*="position: absolute"]').forEach(favWrapper => {
+    const card = favWrapper.closest('.similar-card-item');
+    if (!card) return;
+    const recipeId = card.getAttribute('data-recipe-id');
+    if (!recipeId) return;
+    favWrapper.onclick = function(e) {
+      e.stopPropagation();
+	  refreshFavorites();
+      toggleFavorite(favWrapper, recipeId);
+    };
   });
 }
 
@@ -837,7 +725,7 @@ function renderDishCards(dishes = []) {
     favWrapper.style.zIndex = "10";
     favWrapper.style.cursor = "pointer";
     favWrapper.innerHTML =
-      '<i class="' + (dish.is_favorite == 1 ? 'fas' : 'far') + ' fa-heart" style="color: #1a6e38; font-size: 20px; filter: drop-shadow(0 2px 5px #fff2);"></i>';
+      '<i class="' + (isFavorite(dish.id) ? 'fas' : 'far') + ' fa-heart" style="color: #1a6e38; font-size: 20px; filter: drop-shadow(0 2px 5px #fff2);"></i>';
     favWrapper.onclick = function(e) {
       e.stopPropagation();
       toggleFavorite(favWrapper, dish.id);
@@ -845,6 +733,7 @@ function renderDishCards(dishes = []) {
     item.appendChild(favWrapper);
 
     wrapper.appendChild(item);
+	
   });
 
   // === ΕΔΩ η ασφαλής εκδοχή ===
@@ -854,6 +743,13 @@ function renderDishCards(dishes = []) {
   } else {
     chatbox.appendChild(carouselRow);
   }
+
+	setTimeout(function() {
+	  renderQuickReplyOptions([
+		{ label: "Θα μαγειρέψω κάτι από τα παραπάνω", action: "confirm_choice" },
+		{ label: "Δείξε μου κάτι άλλο", action: "more_results" }
+	  ], carouselRow);
+	}, 350);
 
   scrollChatToBottom();
   saveChatHistory();
@@ -949,7 +845,7 @@ function callAISuggest(userMessage = "", step) {
       if (data.message) renderAIBubble(data.message);
       if (data.dishes?.length) renderDishCards(data.dishes);
       if (!data.dishes || data.dishes.length === 0) {
-        localStorage.clear();
+        //localStorage.clear();
         if (typeof initLocalState === "function") initLocalState();
       }
     })
@@ -990,7 +886,17 @@ function resetInputUI() {
   inputRow.classList.remove("voice-active");
 }
 
+<!------------- Fanorites Handling ------------->
 function toggleFavorite(wrapper, recipe_id) {
+  // Βεβαιώσου ότι το recipe_id είναι ΠΑΝΤΑ αριθμός!
+  recipe_id = Number(recipe_id);
+
+  let favIds = [];
+  try {
+    favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
+  } catch (e) {}
+
+  // Ενημέρωση backend
   fetch('/toggle_favorite_recipe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -999,6 +905,17 @@ function toggleFavorite(wrapper, recipe_id) {
   .then(r => r.json())
   .then(data => {
     const isAdded = data.status === "added";
+
+    // === Ενημέρωσε το localStorage (πάντα ως αριθμοί!) ===
+    let idx = favIds.findIndex(x => Number(x) === recipe_id);
+    if (isAdded && idx === -1) {
+      favIds.push(recipe_id);
+    } else if (!isAdded && idx !== -1) {
+      favIds.splice(idx, 1);
+    }
+    localStorage.setItem('favorite_recipe_ids', JSON.stringify(favIds));
+
+    // === Ενημέρωσε το εικονίδιο ===
     wrapper.innerHTML = '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color: var(--brand); font-size: 18px; vertical-align: -2px; cursor: pointer;"></i>';
     const icon = wrapper.querySelector("i");
     if (icon) {
@@ -1009,6 +926,53 @@ function toggleFavorite(wrapper, recipe_id) {
     }
   });
 }
+
+function isFavorite(recipe_id) {
+  recipe_id = Number(recipe_id);
+  try {
+    const favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
+    return favIds.map(x => Number(x)).includes(recipe_id);
+  } catch (e) {
+    return false;
+  }
+}
+
+function refreshFavorites() {
+  console.log('[refreshFavorites] Ξεκινάμε refresh...');
+  const allCards = document.querySelectorAll('.similar-card-item');
+  console.log('[refreshFavorites] Βρέθηκαν', allCards.length, 'dish cards στο DOM');
+
+  allCards.forEach(card => {
+    const recipeId = card.getAttribute('data-recipe-id');
+    console.log('[refreshFavorites] Card με id:', recipeId);
+
+    const favWrapper = card.querySelector('span[style*="position: absolute"]');
+    if (!favWrapper) {
+      console.log('[refreshFavorites] ΔΕΝ βρέθηκε favWrapper για card', recipeId);
+      return;
+    }
+
+    const fav = isFavorite(recipeId);
+    console.log('[refreshFavorites] isFavorite(', recipeId, ') =', fav);
+
+    favWrapper.innerHTML =
+      '<i class="' + (fav ? 'fas' : 'far') + ' fa-heart" style="color: #1a6e38; font-size: 20px; filter: drop-shadow(0 2px 5px #fff2);"></i>';
+
+    const icon = favWrapper.querySelector("i");
+    if (icon) {
+      icon.onclick = function(e) {
+        e.stopPropagation();
+        toggleFavorite(favWrapper, recipeId);
+      };
+      console.log('[refreshFavorites] OnClick set for card', recipeId);
+    } else {
+      console.log('[refreshFavorites] ΔΕΝ βρέθηκε icon για card', recipeId);
+    }
+  });
+  console.log('[refreshFavorites] Τέλος refresh');
+}
+
+
 </script>
 
 {% endblock %}

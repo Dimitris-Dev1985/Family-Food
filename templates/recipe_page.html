@@ -2,29 +2,6 @@
 {% block title %}{{ recipe.title }} • Family Food{% endblock %}
 {% block content %}
 
-<!-- =================== Design Tokens =================== -->
-<style>
-  :root {
-    --brand: #218e46;
-    --brand-hover: #1a6e38;
-    --surface: #fffaf5;
-    --text: #1b1b1b;
-    --text-dim: #666;
-    --outline: #ddd;
-    --bg-badge: #f0f9f2;
-    --servings-bg: #fff;
-    --servings-border: #e2e3e4;
-    --pink: #ef2d6a;
-    --time-bg: #f4f7f6;
-    --shadow: 0 3px 14px rgba(33,142,70,0.1);
-  }
-  body {
-    background: var(--surface);
-    color: var(--text);
-    font-family: 'Roboto', sans-serif;
-    margin: 0; padding: 0;
-  }
-</style>
 
 <!-- =================== Topbar =================== -->
 <style>
@@ -392,35 +369,56 @@
 
 <!-- =================== Similar Recipes =================== -->
 <style>
-  .similar-card {
+.similar-card {
     max-width: 580px; margin: 24px auto 36px auto;
     padding: 20px 15px 12px 15px;
     border-radius: 20px;
     background: #fff;
     box-shadow: var(--shadow);
   }
-  .similar-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .similar-title { font-size: 1.25rem; font-weight: 700; color: var(--brand-hover); }
-  .similar-swiper { display: flex; align-items: center; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; }
-  .similar-card-item {
-    min-width: 145px; max-width: 170px;
-    padding: 10px 8px 8px 8px;
-    border-radius: 18px; border: 1.4px solid #eee;
-    background: #fcfcfc;
-    display: flex; flex-direction: column; align-items: center; cursor: pointer;
-    box-shadow: 0 2px 8px rgba(33,142,70,0.07);
-    scroll-snap-align: start;
-  }
-  .similar-card-item img {
-    width: 92px; height: 62px; margin-bottom: 8px;
-    border-radius: 12px; object-fit: cover;
-  }
-  .similar-card-item-title {
-    max-width: 140px; margin-bottom: 4px;
-    font-size: 1rem; font-weight: 600; text-align: center;
-    color: var(--text);
-  }
-  .similar-card-item-chef { font-size: 0.9rem; font-weight: 500; color: var(--text-dim); text-align: center; }
+.similar-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.similar-title { font-size: 1.25rem; font-weight: 700; color: var(--brand-hover); }
+
+
+.similar-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--brand, #218e46);
+  background: var(--surface, #fffaf5);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(33,142,70,0.09);
+  transition: border-color 0.22s, box-shadow 0.22s, background 0.22s;
+  margin-left: 7px;
+  outline: none;
+  padding: 0;
+}
+
+.similar-btn i {
+  font-size: 1.24rem;
+  color: var(--brand, #218e46);
+  transition: transform 0.33s cubic-bezier(.39,1.56,.56,1.01), color 0.18s;
+}
+
+.similar-btn:hover,
+.similar-btn:focus {
+  border-color: var(--brand-hover, #1a6e38);
+  background: #eafbe7;
+  box-shadow: 0 4px 18px rgba(33,142,70,0.13);
+}
+
+.similar-btn:hover i,
+.similar-btn:focus i {
+  color: var(--brand-hover, #1a6e38);
+  transform: rotate(180deg);
+}
+
+.fa-rotate-right, .fa-solid {
+  color: var(--brand, #218e46) !important;
+}
 </style>
 
 <!-- =================== Responsive =================== -->
@@ -433,6 +431,8 @@
     .recipe-info-badges { padding-left: 12px; padding-right: 12px; }
   }
 </style>
+
+
 
 <!-- =================== CONTENT =================== -->
 
@@ -551,9 +551,13 @@
 <div class="similar-card">
   <div class="similar-title-row">
     <span class="similar-title">Παρόμοιες συνταγές</span>
-    <button class="similar-btn" id="refreshSimilar"><i class="fa fa-refresh"></i></button>
+	<button class="similar-btn" id="refreshSimilar" title="Ανανέωση">
+	  <i class="fa-solid fa-rotate-right"></i>
+	</button>
+
+
   </div>
-  <div class="similar-swiper" id="similarSwiper"></div>
+  <div class="chat-carousel-row" id="similarSwiper"></div>
 </div>
 
 
@@ -643,14 +647,6 @@
       };
     }
 
-    // ---------- Favorites TopBar Button -------------
-    var favBtn = document.getElementById('favBtnTopBar');
-    if (favBtn) {
-      favBtn.onclick = function(e) {
-        e.stopPropagation();
-        toggleFavorite(favBtn, RECIPE_ID);
-      };
-    }
 
     // ---------- Compact Title on Scroll -------------
     const mainTitle = document.getElementById('mainTitle');
@@ -717,75 +713,176 @@
       });
     }
 
-    // ---------- Similar Recipes Carousel -------------
-    const swiper = document.getElementById('similarSwiper');
-    const prevBtn = document.getElementById('similarPrev');
-    const nextBtn = document.getElementById('similarNext');
-    if (swiper && prevBtn && nextBtn) {
-      prevBtn.onclick = () => { swiper.scrollBy({left: -155, behavior: 'smooth'}); };
-      nextBtn.onclick = () => { swiper.scrollBy({left: +155, behavior: 'smooth'}); };
-    }
-
-    // ---------- Load Similar Recipes -------------
-    async function loadSimilar(recipeId) {
-      try {
-        const res = await fetch(`/api/similar?recipe_id=${recipeId}`);
-        const data = await res.json();
-        const swiper = document.getElementById('similarSwiper');
-        swiper.innerHTML = '';
-
-        if (data.success && data.recipes.length > 0) {
-          data.recipes.forEach(function(r) {
-            var item = document.createElement('div');
-            item.className = 'similar-card-item';
-            item.onclick = function() { window.location = '/recipe_page/' + r.id; };
-            var html = ''
-              + '<img src="' + r.image_url + '" alt="' + r.title + '">'
-              + '<div class="similar-card-item-title">' + r.title + '</div>';
-            if (r.chef) {
-              html += '<div class="similar-card-item-chef">' + r.chef + '</div>';
-            }
-            item.innerHTML = html;
-            swiper.appendChild(item);
-          });
-        } else {
-          swiper.innerHTML = '<p style="color:#666;">Δεν βρέθηκαν παρόμοιες συνταγές.</p>';
-        }
-      } catch (err) {
-        console.error("[ERROR] Failed to load similar recipes:", err);
-      }
-    }
-
-    loadSimilar(RECIPE_ID);
-    const refreshSimilar = document.getElementById('refreshSimilar');
-    if (refreshSimilar) {
-      refreshSimilar.onclick = () => loadSimilar(RECIPE_ID);
-    }
-
-    // ---------- Favorites AJAX ----------
-    window.toggleFavorite = function(wrapper, recipe_id) {
-      fetch('/toggle_favorite_recipe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipe_id: recipe_id })
-      })
-      .then(r => r.json())
-      .then(data => {
-        const isAdded = data.status === "added";
-        wrapper.innerHTML =
-          '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color:' + (isAdded ? '#218e46' : '#218e46') + ';font-size:18px;vertical-align:-2px;cursor:pointer;"></i>';
-        const icon = wrapper.querySelector("i");
-        if (icon) {
-          icon.onclick = function(e) {
-            e.stopPropagation();
-            toggleFavorite(wrapper, recipe_id);
-          };
-        }
-      });
-    }
-
   }); // END DOMContentLoaded
 
+</script>
+
+
+<!------------- Similars Carousel Handling ------------->
+<script>
+function renderDishCards(dishes, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "similar-swiper";
+  container.appendChild(wrapper);
+
+  dishes.forEach(dish => {
+    const item = document.createElement('div');
+    item.className = 'similar-card-item';
+    item.setAttribute('data-recipe-id', dish.id);
+    item.style.position = "relative";
+    item.onclick = function() {
+      window.location = '/recipe_page/' + dish.id;
+    };
+
+    var imgSrc = dish.image_url || ('/static/images/recipes/' + dish.id + '.jpg');
+    var html = ''
+      + '<img class="card-main-img" src="' + imgSrc + '" alt="' + dish.title + '" onerror="this.src=\'/static/images/placeholder.jpg\'">'
+      + '<div class="similar-card-item-title">' + dish.title + '</div>'
+      + '<div class="similar-card-item-meta">'
+        + '<i class="fa fa-clock"></i>'
+        + '<span class="similar-card-item-time-val">' + (dish.total_time ? dish.total_time + "'" : "-") + '</span>'
+        + '<span class="chef-by-label">by</span>'
+        + '<img class="chef-avatar-inline" src="' + (dish.chef_avatar || '/static/images/avatars/default.jpg') + '" alt="Chef">'
+      + '</div>';
+
+    item.innerHTML = html;
+
+    const favWrapper = document.createElement("span");
+    favWrapper.style.position = "absolute";
+    favWrapper.style.top = "7px";
+    favWrapper.style.right = "11px";
+    favWrapper.style.zIndex = "10";
+    favWrapper.style.cursor = "pointer";
+    favWrapper.innerHTML =
+      '<i class="' + (isFavorite(dish.id) ? 'fas' : 'far') + ' fa-heart" style="color: #1a6e38; font-size: 20px; filter: drop-shadow(0 2px 5px #fff2);"></i>';
+    favWrapper.onclick = function(e) {
+      e.stopPropagation();
+      toggleFavorite(favWrapper, dish.id);
+    };
+    item.appendChild(favWrapper);
+
+    wrapper.appendChild(item);
+  });
+
+  setTimeout(() => {
+    container.scrollLeft = container.scrollWidth;
+  }, 10);
+}
+
+async function loadSimilar(recipeId) {
+  try {
+    const res = await fetch(`/api/similar?recipe_id=${recipeId}`);
+    const data = await res.json();
+    if (data.success && data.recipes.length > 0) {
+      renderDishCards(data.recipes, "similarSwiper");
+    } else {
+      document.getElementById('similarSwiper').innerHTML = '<p style="color:#666;">Δεν βρέθηκαν παρόμοιες συνταγές.</p>';
+    }
+  } catch (err) {
+    console.error("[ERROR] Failed to load similar recipes:", err);
+  }
+   setTimeout(function() {
+    document.getElementById('similarSwiper').scrollLeft = 0;
+  }, 10);
+}
+
+loadSimilar(RECIPE_ID);
+
+const refreshSimilar = document.getElementById('refreshSimilar');
+if (refreshSimilar) {
+  refreshSimilar.onclick = () => loadSimilar(RECIPE_ID);
+}
+
+
+
+</script>
+
+
+<!------------- Fanorites Handling ------------->
+<script>
+function isFavorite(recipe_id) {
+  recipe_id = Number(recipe_id);
+  try {
+    const favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
+    return favIds.map(x => Number(x)).includes(recipe_id);
+  } catch (e) {
+    return false;
+  }
+}
+
+function toggleFavorite(wrapper, recipe_id) {
+  recipe_id = Number(recipe_id);
+
+  // Πάρε το array από localStorage
+  let favIds = [];
+  try {
+    favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
+  } catch (e) {}
+
+  fetch('/toggle_favorite_recipe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe_id: recipe_id })
+  })
+  .then(r => r.json())
+  .then(data => {
+    const isAdded = data.status === "added";
+
+    // === Ενημέρωσε το localStorage (ως αριθμοί!) ===
+    let idx = favIds.findIndex(x => Number(x) === recipe_id);
+    if (isAdded && idx === -1) {
+      favIds.push(recipe_id);
+    } else if (!isAdded && idx !== -1) {
+      favIds.splice(idx, 1);
+    }
+    localStorage.setItem('favorite_recipe_ids', JSON.stringify(favIds));
+
+    // === Ενημέρωσε το εικονίδιο ===
+    wrapper.innerHTML =
+      '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color:#218e46;font-size:18px;vertical-align:-2px;cursor:pointer;"></i>';
+    const icon = wrapper.querySelector("i");
+    if (icon) {
+      icon.onclick = function(e) {
+        e.stopPropagation();
+        toggleFavorite(wrapper, recipe_id);
+      };
+    }
+  });
+}
+
+// ---- Στο recipes page ----
+var favBtn = document.getElementById('favBtnTopBar');
+if (favBtn) {
+  favBtn.onclick = function(e) {
+    e.stopPropagation();
+    toggleFavorite(favBtn, RECIPE_ID);
+  };
+  // --- Sync το state και αν κάνεις refresh/αλλαγή tab! 
+  function updateFavBtnState() {
+    const fav = isFavorite(RECIPE_ID);
+    favBtn.innerHTML =
+      '<i class="' + (fav ? 'fas' : 'far') + ' fa-heart" style="color:#218e46;font-size:18px;vertical-align:-2px;cursor:pointer;"></i>';
+    const icon = favBtn.querySelector("i");
+    if (icon) {
+      icon.onclick = function(e) {
+        e.stopPropagation();
+        toggleFavorite(favBtn, RECIPE_ID);
+      };
+    }
+  }
+  updateFavBtnState();
+
+  // Αυτόματο sync όταν αλλάζει το localStorage (άλλο tab, κλπ)
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'favorite_recipe_ids') {
+      updateFavBtnState();
+    }
+  });
+}
 </script>
 
   
