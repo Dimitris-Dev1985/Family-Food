@@ -8,3 +8,4 @@ Flask-Mail==0.10.0
 requests==2.32.4
 gunicorn==23.0.0
 fuzzywuzzy==0.18.0
+python-Levenshtein==0.12.2
