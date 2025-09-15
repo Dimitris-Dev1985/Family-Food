@@ -170,11 +170,11 @@
   .info-badge {
     padding: 8px 14px;
     border-radius: 16px;
-    font-size: 1.05rem; font-weight: 500;
+    font-size: 1rem;
     display: flex; align-items: center; gap: 6px;
     background: var(--bg-badge); color: var(--brand-hover);
   }
-  .info-badge i { font-size: 1.1em; opacity: 0.9; }
+  .info-badge i { font-size: 1em; opacity: 0.9; }
 </style>
 
 <!-- =================== Ingredients =================== -->
@@ -218,7 +218,20 @@
   .ingredients-list li:nth-child(odd) { background: #fafafa; }
   .ingredients-list li:hover { background: #f4fdf7; }
   
-  .ingredient-checkbox { width: 1.3em; height: 1.3em; margin-right:20px; accent-color: var(--brand); opacity: 1 !important; pointer-events: auto !important;}
+  .ingredient-checkbox {
+	  width: 22px;
+	  height: 22px;
+	  min-width: 22px;
+	  min-height: 22px;
+	  margin-right: 18px;
+	  accent-color: var(--brand);
+	  opacity: 1 !important;
+	  pointer-events: auto !important;
+	  appearance: auto;
+	  vertical-align: middle;
+	}
+
+  
   .ingredient-qty { font-size: 1.25rem; color: var(--brand); font-weight: 600; }
   .ingredient-fulltext { font-size: 1.2rem; }
   
@@ -260,11 +273,10 @@
     box-shadow: var(--shadow);
   }
   .instructions-time-badge {
-    margin: 2px 0 12px 0;
     padding: 9px 10px;
     border: 1.3px solid #e5eee5; border-radius: 16px;
     background: #e8f7eb; color: var(--brand-hover);
-    font-size: 1.1rem; font-weight: 600;
+    font-size: 1rem; font-weight: 600;
     display: flex; align-items: center; gap: 9px;
   }
   .instructions-title {
@@ -432,6 +444,49 @@
   }
 </style>
 
+<!-- =================== Toast =================== -->
+<style>
+.excluded-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  background: var(--brand, #218e46);
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 16px;
+  min-width: 90px;
+  width: 85vw;
+  font-size: 1.1rem;
+  box-shadow: var(--shadow, 0 3px 14px rgba(33,142,70,0.10));
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 9999;
+  text-align: center;
+  pointer-events: none;
+  letter-spacing: 0.01em;
+  border: 1.5px solid var(--brand-hover, #1a6e38);
+}
+.excluded-toast.show {
+  opacity: 1;
+}
+
+.toast-ing {
+  font-size: 1.3em;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--surface, #fffaf5);
+  background: var(--brand-hover);
+  border-radius: 10px;
+  padding: 4px 12px 4px 12px;
+  margin: 0 2px;
+  display: inline-block;
+  box-shadow: 0 1px 7px rgba(33,142,70,0.08);
+  letter-spacing: 0.01em;
+}
+
+
+</style>
 
 
 <!-- =================== CONTENT =================== -->
@@ -486,11 +541,6 @@
   Έτοιμο σε <span class="cooktime-value">{{ recipe.total_time }} λεπτά</span>
 </div>
 
-<div class="recipe-info-badges">
-  {% if recipe.dish_category %}<span class="info-badge"><i class="fa fa-utensils"></i> {{ recipe.dish_category }}</span>{% endif %}
-  {% if recipe.method %}<span class="info-badge"><i class="fa fa-fire"></i> {{ recipe.method }}</span>{% endif %}
-</div>
-
 <div class="ingredients-card">
   <div class="ingredients-header-row">
     <div class="ingredients-title">
@@ -525,13 +575,18 @@
     &nbsp;|&nbsp;
     <span><i class="fa fa-fire"></i> <b>Μαγείρεμα:</b> {{ recipe.cook_time }}′</span>
   </div>
-  <div class="instructions-title">Οδηγίες</div>
-  <ol class="instructions-list">
-    {% for step in instructions %}
-    <li>{{ step }}</li>
-    {% endfor %}
-  </ol>
-</div>
+
+	<div class="recipe-info-badges">
+	  {% if recipe.dish_category %}<span class="info-badge"><i class="fa fa-utensils"></i> {{ recipe.dish_category }}</span>{% endif %}
+	  {% if recipe.method %}<span class="info-badge"><i class="fa fa-fire"></i> {{ recipe.method }}</span>{% endif %}
+	</div>
+
+</div> 
+
+
+
+
+
 
 <div class="comments-card">
   <h3>Σχόλια</h3>
@@ -908,21 +963,42 @@ document.addEventListener('DOMContentLoaded', function() {
   var boxes = list.querySelectorAll('input.ingredient-checkbox');
   console.log('[ING] found checkboxes:', boxes.length);
 
+  // --- Toast function ---
+function showToast(msg) {
+  let toast = document.createElement('div');
+  toast.className = 'excluded-toast';
+  toast.innerHTML = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 350);
+    }, 1600);
+  }, 10);
+}
+
+  async function getNormalizedIngredient(rawIng) {
+    const resp = await fetch('/api/normalize_ingredient', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text: rawIng})
+    });
+    const data = await resp.json();
+    return data.core;
+  }
+
   boxes.forEach(function(cb, idx) {
-    // υπολόγισε όνομα υλικού
     var ing = cb.dataset.ing || (cb.nextElementSibling && cb.nextElementSibling.textContent || '').trim();
     cb.dataset.ing = ing;
 
-    // επιβάλει native εμφάνιση σε περίπτωση global overrides
     cb.style.appearance = 'auto';
     cb.style.webkitAppearance = 'auto';
     cb.style.MozAppearance = 'auto';
 
-    // αρχική κατάσταση: checked αν ΔΕΝ είναι στα excluded
     var shouldBeChecked = ing ? excluded.indexOf(ing) === -1 : true;
     cb.checked = shouldBeChecked;
 
-    // διαγνωστικά για CSS conflicts
     var cs = window.getComputedStyle(cb);
     console.log('[ING][box]', idx, {
       ing: ing,
@@ -935,29 +1011,31 @@ document.addEventListener('DOMContentLoaded', function() {
       pointerEvents: cs.pointerEvents
     });
 
-    // click log
     cb.addEventListener('click', function(e){
       console.log('[ING][click]', idx, 'target=', e.target.tagName, 'preChecked=', cb.checked);
     });
 
-    // change -> ενημέρωση localStorage
-    cb.addEventListener('change', function() {
+    // change -> ενημέρωση localStorage ΜΟΝΟ με normalized core + Toast
+    cb.addEventListener('change', async function() {
       console.log('[ING][change]', ing, 'now', cb.checked);
+      const core = await getNormalizedIngredient(ing);
       if (cb.checked) {
-        excluded = excluded.filter(function(x){ return x !== ing; });
+        excluded = excluded.filter(function(x){ return x !== core; });
+        showToast('✅ Το υλικό <span class="toast-ing">' + core + '</span> προστέθηκε ξανά');
       } else {
-        if (excluded.indexOf(ing) === -1) excluded.push(ing);
+        if (excluded.indexOf(core) === -1) excluded.push(core);
+        showToast('⛔ Αποκλείστηκε για σήμερα το υλικό: <span class="toast-ing">' + core + '</span>');
+
       }
       localStorage.setItem('excluded', JSON.stringify(excluded));
       console.log('[ING] excluded now:', excluded);
     });
   });
 
-  // sanity check: κάποιο CSS κρύβει όλα τα checkboxes;
   var anyHidden = Array.from(boxes).some(function(b){ return getComputedStyle(b).display === 'none'; });
   if (anyHidden) console.warn('[ING] Warning: κάποιο CSS έχει display:none σε checkbox');
-
 });
+
 
 </script>
 

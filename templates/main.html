@@ -320,7 +320,7 @@ function clearCookingFilters() { Object.values(StorageKeys).forEach(k => localSt
 const input = document.getElementById("userInput");
 const inputRow = document.getElementById("chatInputRow");
 const originalPlaceholder = input.placeholder;
-const DISH_CATEGORIES = ["Brunch","Leftovers","Vegan","Ζυμαρικά","Θαλασσινά","Κόκκινο κρέας","Λαδερά","Όσπρια","Παραδοσιακά","Πίτες","Πίτσα","Πουλερικά","Σούπες","Σαλάτες"];
+const DISH_CATEGORIES = ["Brunch","Βραδινό","Vegan","Ζυμαρικά","Θαλασσινά","Κόκκινο κρέας","Λαδερά","Όσπρια","Παραδοσιακά","Πίτες","Πίτσα","Πουλερικά","Σούπες","Σαλάτες"];
 let moreResultsClicks = 0;
 let userNeedsHelp = false;
 
@@ -366,18 +366,18 @@ function scrollChatToBottom() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  //localStorage.clear();
+  localStorage.clear();
   if (!localStorage.getItem(StorageKeys.METHOD_PREFS)) setMethodPrefs(getMethodPrefs());
   if (!localStorage.getItem(StorageKeys.EXCLUDED)) setExcluded([]);
   if (!localStorage.getItem(StorageKeys.MAX_TIME)) setMaxTime(180);
   if (!localStorage.getItem(StorageKeys.DISH_CATEGORY)) setDishCategory("");
   if (!localStorage.getItem(StorageKeys.MAIN_INGREDIENT)) setMainIngredient("");
   if (!localStorage.getItem(StorageKeys.AUX_INGREDIENTS)) setAuxIngredient([]);
-  if (sessionStorage.getItem('chatHistory')) {
-    restoreChatHistory();
+  //if (sessionStorage.getItem('chatHistory')) {
+    //restoreChatHistory();
     // ΜΗΝ ξαναπροσθέτεις quick replies!
-    return;
-  }
+    //return;
+  //}
   if (!document.querySelector('#chatbox .quick-replies')) {
 	  renderQuickReplyOptions([
 		{ label: "Έως 30'", action: "time" },
