@@ -67,8 +67,8 @@ known_ingredients = [
     "σταφίδες", "δάκρυα σοκολάτας", "μαρμελάδα", "γλυκό του κουταλιού", "λουκούμι", "σιρόπι", "κουβερτούρα", "σαλέπι",
     "παγωτό", "μπουτί αρνιού", "φιλέτο κοτόπουλου", "παϊδάκια", "σνίτσελ", "μπριζόλα", "ψαρονέφρι", "συκώτι", "γύρος", "κεμπάπ",
     "τσουρέκι", "κουλούρι", "κέικ", "παντεσπάνι", "μπακλαβάς", "γλυκά του ταψιού", "μελομακάρονα", "κουραμπιέδες", "καρυδόπιτα", "πορτοκαλόπιτα",
-    "σούπα", "κρέμα", "πουρές", "μακαρονάδα", "λαζάνια", "μουσακάς", "γεμιστά", "παπουτσάκια", "ντολμαδάκια", "λαδερά", "λαχανικά", "σαλάτα",
-]
+    "σούπα", "κρέμα", "πουρές", "μακαρονάδα", "λαζάνια", "μουσακάς", "γεμιστά", "παπουτσάκια", "ντολμαδάκια", "λαδερά", "λαχανικά", "σαλάτα", "αφρόψαρα", "αμπελόφυλλα", "μαραθόριζα",
+    ]
 
 
 default_minutes = 60
@@ -136,7 +136,6 @@ def build_system_prompt():
             "(e.g. if current time = 200 and user says 'πιο γρήγορο' → new time = 160 (20% less).\n"
     )
 
-
 def lookup_ingredient(raw):
     conn = sqlite3.connect(DB)
     c = conn.cursor()
@@ -193,7 +192,6 @@ def fix_ai_ingredient(ai_result, known_ingredients):
         return best_match
     # Αν όχι, γύρνα το AI core (έστω και αν είναι κομμένο)
     return ai_result
-
 
 @app.route('/api/normalize_ingredient', methods=['POST'])
 def normalize_ingredient_route():
@@ -269,7 +267,9 @@ def recipe_page(recipe_id):
                COALESCE(method,'') as method,
                COALESCE(dish_category,'') as dish_category,
                COALESCE(ingredients,'') as ingredients,
-               COALESCE(instructions,'') as instructions
+               COALESCE(dish_tags,'') as dish_tags,
+               COALESCE(instructions,'') as instructions,
+               COALESCE(image_path,'') as image_path
         FROM recipes
         WHERE id = ?
     """, (recipe_id,)).fetchone()
@@ -279,14 +279,21 @@ def recipe_page(recipe_id):
 
     # Υλικά
     ingredients = [line.strip() for line in recipe['ingredients'].splitlines() if line.strip()]
-    print("[DB] ingredients list:", ingredients)
-
+   
+    # dish_tags
+    dish_tags = [line.strip() for line in recipe['dish_tags'].splitlines() if line.strip()]
+    print(dish_tags)
+   
     # Οδηγίες
     instructions = [line.strip() for line in recipe['instructions'].splitlines() if line.strip()]
-    print("[DB] instructions list:", instructions)
-
+    
     # Εικόνα από static folder
-    image_url = url_for('static', filename=f'images/recipes/{recipe['id']}.jpg')
+    image_path = recipe['image_path'] if 'image_path' in recipe.keys() else ''
+    print('image_path:', repr(recipe['image_path']))
+    if image_path and image_path.strip() != '':
+        image_url = url_for('static', filename=f"images/recipes/{image_path}")
+    else:
+        image_url = url_for('static', filename="images/placeholder.jpg")
 
     # ========== ΕΛΕΓΧΟΣ FAVORITE ==========
     is_favorite = False
@@ -303,11 +310,14 @@ def recipe_page(recipe_id):
 
     avatar_filename = CHEF_AVATAR_MAP.get(recipe['chef'], 'default.jpg')
 
+    print(image_url)
+
     return render_template(
         'recipe_page.html',
         recipe=recipe,
         ingredients=ingredients,
         instructions=instructions,
+        dish_tags=dish_tags,
         image_url=image_url,
         is_favorite=is_favorite,
         chef_avatar=avatar_filename
@@ -322,7 +332,7 @@ def api_similar():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     similar = conn.execute("""
-        SELECT id, title, chef
+        SELECT id, title, chef, COALESCE(image_path, '') as image_path
         FROM recipes
         WHERE dish_category = (SELECT dish_category FROM recipes WHERE id = ?)
           AND id != ?
@@ -332,14 +342,39 @@ def api_similar():
 
     data = []
     for row in similar:
+        if row["image_path"] and row["image_path"].strip() != "":
+            image_url = url_for('static', filename=f'images/recipes/{row["image_path"]}')
+        else:
+            image_url = url_for('static', filename='images/placeholder.jpg')
         data.append({
             "id": row["id"],
             "title": row["title"],
             "chef": row["chef"],
-            "image_url": url_for('static', filename=f'images/recipes/{row["id"]}.jpg')
+            "image_url": image_url
         })
 
     return {"success": True, "recipes": data}
+
+@app.route('/api/dish_categories')
+def get_dish_categories():
+    import sqlite3
+    categories = set()
+    try:
+        conn = sqlite3.connect(DB)
+        c = conn.cursor()
+        c.execute('SELECT dish_category FROM recipes WHERE dish_category IS NOT NULL AND dish_category != ""')
+        rows = c.fetchall()
+        for row in rows:
+            for cat in str(row[0]).split(','):
+                cleaned = cat.strip()
+                if cleaned:
+                    categories.add(cleaned)
+        conn.close()
+        sorted_cats = sorted(categories, key=lambda x: x.lower())
+        return jsonify({'categories': sorted_cats})
+    except Exception as e:
+        print('[ERROR] get_dish_categories:', e)
+        return jsonify({'categories': []}), 500
 
 @app.route("/get_main_tags")
 def get_main_tags():
@@ -719,7 +754,16 @@ def ai_suggest_dish():
         words = [w for w in text.split() if w not in STOPWORDS_GR and w not in COOKING_WORDS]
         return " ".join(words)
 
-    # ➤ Λίστα με fixed προτάσεις
+    # Helper για να προσθέτεις image_url
+    def enrich_dish_with_image_url(d):
+        image_path = ""
+        if ("image_path" in d.keys()) and d["image_path"] and str(d["image_path"]).strip() != "":
+            image_path = d["image_path"]
+        image_url = url_for('static', filename=f"images/recipes/{image_path}") if image_path else url_for('static', filename="images/placeholder.jpg")
+        result = dict(d)
+        result["image_url"] = image_url
+        return result
+
     suggestion_messages = [
         "Τέλεια, τι λες για τα παρακάτω πιάτα;",
         "Τέλεια, πως σου φαίνονται τα παρακάτω;",
@@ -755,6 +799,81 @@ def ai_suggest_dish():
         seen_ids = set()
 
 
+
+            # =============== Branch 0: Quick category+main_ingredient lookup ==============
+        if data.get("step") == 0:
+            print("[DEBUG] ========== Branch 0 (step=0) ==========")
+            dish_category = data.get("dish_category", "")
+            main_ingredient = data.get("main_ingredient", "")
+            excluded = data.get("excluded") or []
+            if not isinstance(excluded, list):
+                excluded = []
+            allergens = data.get("allergens") or session.get("allergens") or []
+            if not isinstance(allergens, list):
+                allergens = []
+
+            q = """
+            SELECT recipes.*,
+                   CASE WHEN fav.recipe_id IS NOT NULL THEN 1 ELSE 0 END as is_favorite
+            FROM recipes
+            LEFT JOIN favorite_recipes fav 
+                 ON fav.recipe_id = recipes.id AND fav.user_id = ?
+            WHERE 1=1
+            """
+            params = [session.get("user_id")]
+
+            if dish_category:
+                q += " AND remove_tonos(LOWER(dish_category)) LIKE ?"
+                params.append(f"%{remove_tonos(dish_category.lower())}%")
+            if main_ingredient:
+                q += " AND remove_tonos(LOWER(main_ingredient)) LIKE ?"
+                params.append(f"%{remove_tonos(main_ingredient.lower())}%")
+
+            # Excluded υλικά
+            for item in excluded:
+                ex_norm = remove_tonos(str(item).lower())
+                q += " AND remove_tonos(ingredients) NOT LIKE ?"
+                params.append(f"%{ex_norm}%")
+
+            # Allergens
+            for allergen in allergens:
+                al_norm = remove_tonos(str(allergen).lower())
+                q += " AND remove_tonos(ingredients) NOT LIKE ?"
+                params.append(f"%{al_norm}%")
+
+            q += " ORDER BY is_favorite DESC, RANDOM() LIMIT 4"
+            print("[SQL]", q)
+            print("[PARAMS]", params)
+
+            conn = sqlite3.connect(DB)
+            conn.row_factory = sqlite3.Row
+            conn.create_function("remove_tonos", 1, remove_tonos)
+            dishes = conn.execute(q, params).fetchall()
+            conn.close()
+
+            print(f"[DEBUG] 🍽️ Branch0 returned {len(dishes)} dishes:", [d["title"] for d in dishes])
+
+            results = []
+            for d in dishes:
+                rec = dict(d)
+                image_path = rec.get("image_path") or rec.get("image_url")
+                if image_path:
+                    if not image_path.startswith("http"):
+                        image_url = "/static/images/recipes/" + image_path.lstrip("/")
+                    else:
+                        image_url = image_path
+                    rec["image_url"] = image_url
+                else:
+                    rec["image_url"] = "/static/images/recipes/default.jpg"
+                results.append(rec)
+
+            return jsonify({
+                "message": random.choice(suggestion_messages),
+                "dishes": results
+            })
+
+
+
         # =============== Branch 1: lexical match ==================
         if user_message:
             print("[DEBUG] ========== Branch 1 ==========")
@@ -784,7 +903,6 @@ def ai_suggest_dish():
                 matched_ids = [m[0]["id"] for m in matches]
                 row_map = {row["id"]: row for row, _, _, _ in matches}
 
-                # ➤ ΝΕΟ: Φιλτράρουμε excluded υλικά!
                 def is_excluded(dish):
                     ingredients_norm = remove_tonos((dish["ingredients"] or "").lower())
                     for ex in excluded:
@@ -804,7 +922,6 @@ def ai_suggest_dish():
 
                 if not dishes_branch1:
                     print("[DEBUG] ⚠️ Όλα τα Branch1 matches έχουν ήδη προταθεί ή αποκλείονται λόγω excluded. Συνεχίζω στο Branch 2.")
-                    # ΜΗΝ κάνεις return εδώ! Προχωράει στο Branch 2
                 else:
                     conn.close()
                     step = data.get("step")
@@ -813,17 +930,16 @@ def ai_suggest_dish():
                         session["suggested_dish_ids"] = already_suggested + [d["id"] for d in dishes_branch1]
                         return jsonify({
                             "message": random.choice(suggestion_messages),
-                            "dishes": [dict(d) for d in dishes_branch1]
+                            "dishes": [enrich_dish_with_image_url(d) for d in dishes_branch1]
                         })
                     top_dishes = dishes_branch1[:3]
                     session["suggested_dish_ids"] = already_suggested + [d["id"] for d in top_dishes]
                     return jsonify({
                         "message": random.choice(suggestion_messages),
-                        "dishes": [dict(d) for d in top_dishes]
+                        "dishes": [enrich_dish_with_image_url(d) for d in top_dishes]
                     })
             else:
                 print("[DEBUG] ❌ Branch1 no strong matches")
-
 
         # =============== Branch 2: normal filtering ==================
         print("[DEBUG] ========== Branch 2 ==========")
@@ -911,7 +1027,7 @@ def ai_suggest_dish():
 
         return jsonify({
             "message": random.choice(suggestion_messages),
-            "dishes": [dict(d) for d in final_dishes]
+            "dishes": [enrich_dish_with_image_url(d) for d in final_dishes]
         })
 
     except Exception as e:
