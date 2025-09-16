@@ -320,7 +320,6 @@ function clearCookingFilters() { Object.values(StorageKeys).forEach(k => localSt
 const input = document.getElementById("userInput");
 const inputRow = document.getElementById("chatInputRow");
 const originalPlaceholder = input.placeholder;
-const DISH_CATEGORIES = ["Brunch","Βραδινό","Vegan","Ζυμαρικά","Θαλασσινά","Κόκκινο κρέας","Λαδερά","Όσπρια","Παραδοσιακά","Πίτες","Πίτσα","Πουλερικά","Σούπες","Σαλάτες"];
 let moreResultsClicks = 0;
 let userNeedsHelp = false;
 
@@ -533,7 +532,7 @@ function handleQuickReply(btn) {
     setMainIngredient(value);
     renderUserBubble(value);
 	console.log("call 1");
-    callAISuggest(value, 1);
+    callAISuggest("", 0);
     return;
   }
 
@@ -626,12 +625,7 @@ function handleQuickReply(btn) {
       document.getElementById("typing-indicator")?.remove();
       renderAIBubble("Τι θα ήθελες να δούμε για σήμερα; Επίλεξε μια κατηγορία για να ξεκινήσουμε!", "system");
       setTimeout(() => {
-        renderQuickReplyOptions(
-          shuffle(DISH_CATEGORIES).map(label => ({
-            label,
-            action: "set_dish_category"
-          }))
-        );
+         fetchDishCategoriesAndRenderQuickReplies()
       }, 500);
     }
     return;
@@ -645,6 +639,24 @@ function handleQuickReply(btn) {
     setExcluded([...getExcluded(), value.toLowerCase()]);
     return;
   }
+}
+
+function fetchDishCategoriesAndRenderQuickReplies() {
+  fetch('/api/dish_categories')
+    .then(r => r.json())
+    .then(data => {
+      const categories = Array.isArray(data.categories) ? data.categories : [];
+      renderQuickReplyOptions(
+        shuffle(categories).map(label => ({
+          label,
+          action: "set_dish_category"
+        }))
+      );
+    })
+    .catch(err => {
+      console.error('[ERROR] Failed to fetch dish categories:', err);
+      renderQuickReplyOptions([]);
+    });
 }
 
 function rebindQuickReplyButtons() {
@@ -705,7 +717,7 @@ function renderDishCards(dishes = []) {
       window.location = '/recipe_page/' + dish.id;
     };
 
-    var imgSrc = '/static/images/recipes/' + dish.id + '.jpg';
+    var imgSrc = dish.image_url || '/static/images/placeholder.jpg';
     var html = ''
       + '<img class="card-main-img" src="' + imgSrc + '" alt="' + dish.title + '" onerror="this.src=\'/static/images/placeholder.jpg\'">'
       + '<div class="similar-card-item-title">' + dish.title + '</div>'

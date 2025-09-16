@@ -577,7 +577,7 @@
   </div>
 
 	<div class="recipe-info-badges">
-	  {% if recipe.dish_category %}<span class="info-badge"><i class="fa fa-utensils"></i> {{ recipe.dish_category }}</span>{% endif %}
+	  {% if recipe.dish_tags %}<span class="info-badge"><i class="fa fa-utensils"></i> {{ recipe.dish_tags }}</span>{% endif %}
 	  {% if recipe.method %}<span class="info-badge"><i class="fa fa-fire"></i> {{ recipe.method }}</span>{% endif %}
 	</div>
 
@@ -793,7 +793,7 @@ function renderDishCards(dishes, containerId) {
       window.location = '/recipe_page/' + dish.id;
     };
 
-    var imgSrc = dish.image_url || ('/static/images/recipes/' + dish.id + '.jpg');
+    var imgSrc = dish.image_url
     var html = ''
       + '<img class="card-main-img" src="' + imgSrc + '" alt="' + dish.title + '" onerror="this.src=\'/static/images/placeholder.jpg\'">'
       + '<div class="similar-card-item-title">' + dish.title + '</div>'
@@ -855,7 +855,6 @@ if (refreshSimilar) {
 
 
 </script>
-
 
 <!------------- Fanorites Handling ------------->
 <script>
@@ -940,10 +939,8 @@ if (favBtn) {
 }
 </script>
 
-  
+<!------------- Ingredients Handling ------------->
 <script>
-
-// --------- Checkbox ----------
 document.addEventListener('DOMContentLoaded', function() {
   console.log('[ING] DOM ready');
 
@@ -961,22 +958,20 @@ document.addEventListener('DOMContentLoaded', function() {
   console.log('[ING] excluded from LS:', excluded);
 
   var boxes = list.querySelectorAll('input.ingredient-checkbox');
-  console.log('[ING] found checkboxes:', boxes.length);
 
-  // --- Toast function ---
-function showToast(msg) {
-  let toast = document.createElement('div');
-  toast.className = 'excluded-toast';
-  toast.innerHTML = msg;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.classList.add('show');
+  function showToast(msg) {
+    let toast = document.createElement('div');
+    toast.className = 'excluded-toast';
+    toast.innerHTML = msg;
+    document.body.appendChild(toast);
     setTimeout(() => {
-      toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 350);
-    }, 1600);
-  }, 10);
-}
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 350);
+      }, 1600);
+    }, 10);
+  }
 
   async function getNormalizedIngredient(rawIng) {
     const resp = await fetch('/api/normalize_ingredient', {
@@ -1000,22 +995,11 @@ function showToast(msg) {
     cb.checked = shouldBeChecked;
 
     var cs = window.getComputedStyle(cb);
-    console.log('[ING][box]', idx, {
-      ing: ing,
-      checked: cb.checked,
-      appearance: cs.appearance,
-      display: cs.display,
-      width: cs.width,
-      height: cs.height,
-      opacity: cs.opacity,
-      pointerEvents: cs.pointerEvents
-    });
 
     cb.addEventListener('click', function(e){
       console.log('[ING][click]', idx, 'target=', e.target.tagName, 'preChecked=', cb.checked);
     });
 
-    // change -> ενημέρωση localStorage ΜΟΝΟ με normalized core + Toast
     cb.addEventListener('change', async function() {
       console.log('[ING][change]', ing, 'now', cb.checked);
       const core = await getNormalizedIngredient(ing);
@@ -1025,7 +1009,6 @@ function showToast(msg) {
       } else {
         if (excluded.indexOf(core) === -1) excluded.push(core);
         showToast('⛔ Αποκλείστηκε για σήμερα το υλικό: <span class="toast-ing">' + core + '</span>');
-
       }
       localStorage.setItem('excluded', JSON.stringify(excluded));
       console.log('[ING] excluded now:', excluded);
@@ -1035,8 +1018,6 @@ function showToast(msg) {
   var anyHidden = Array.from(boxes).some(function(b){ return getComputedStyle(b).display === 'none'; });
   if (anyHidden) console.warn('[ING] Warning: κάποιο CSS έχει display:none σε checkbox');
 });
-
-
 </script>
 
 
