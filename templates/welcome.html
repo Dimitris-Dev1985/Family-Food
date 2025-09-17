@@ -29,7 +29,7 @@
 	height: 100dvh;
     max-height: 100dvh;
     box-sizing: border-box;
-    gap: 24px;
+    gap: 0px;
   }
 
   .logo {
@@ -181,15 +181,15 @@
 
 
 <div class="welcome-screen">
-  <img src="{{ url_for('static', filename='image.png') }}" alt="Family Food Logo" class="logo">
+  <img src="{{ url_for('static', filename='image.png') }}" alt="Family Food Logo" class="logo mb-3">
 
-  <h1 class="app-title">Family Food</h1>
-  <p class="tagline">Η κουζίνα της οικογένειάς σου, στην τσέπη σου!</p>
+  <h1 class="app-title mb-2">Family Food</h1>
+  <p class="tagline mb-2">Η κουζίνα της οικογένειάς σου, στην τσέπη σου!</p>
 
-  <img src="{{ url_for('static', filename='pasta2.jpg') }}" alt="Φαγητό" class="food-image">
+  <img src="{{ url_for('static', filename='pasta2.jpg') }}" alt="Φαγητό" class="food-image mb-3">
 
-  <a href="/signup" id="signupBtn" class="btn btn-primary">Εγγραφή</a>
-  <a href="/login" id="loginBtn" class="btn btn-secondary">Σύνδεση</a>
+  <a href="/signup" id="signupBtn" class="btn btn-primary mb-4">Εγγραφή</a>
+  <a href="/login" id="loginBtn" class="btn btn-secondary mb-1">Σύνδεση</a>
 </div>
 
 {% endblock %}

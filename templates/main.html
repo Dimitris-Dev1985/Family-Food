@@ -257,13 +257,16 @@
   width: 83vw; max-width: 340px;
   height: 100vh;
   background: var(--surface, #fffaf5);
-  box-shadow: 2px 0 26px rgba(33,142,70,0.14), 0 0 0 0 rgba(0,0,0,0.05);
+  box-shadow: 2px 0 20px 2px rgba(33,142,70,0.08), 0 6px 48px 2px rgba(33,142,70,0.08);
   z-index: 120;
   transform: translateX(-105%);
-  transition: transform 0.26s cubic-bezier(.44,.13,.46,.87);
+  transition: transform 0.27s cubic-bezier(.44,.13,.46,.87), box-shadow 0.17s;
   display: flex;
   flex-direction: column;
-  border-right: 1.5px solid var(--outline, #e0e0e0);
+  border-top-right-radius: 28px;      /* στρογγυλεμένη πάνω */
+  border-bottom-right-radius: 22px;   /* στρογγυλεμένη κάτω */
+  border-right: none;
+  overflow: hidden;
 }
 
 .offcanvas-menu.open { transform: translateX(0); }
@@ -272,16 +275,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 18px 10px 15px;
+  padding: 22px 22px 12px 19px;      /* extra μαξιλαράκι πάνω */
   border-bottom: 1px solid var(--outline, #eee);
-  min-height: 60px;
+  min-height: 62px;
 }
 .offcanvas-logo {
-  height: 35px;
+  height: 38px;
   width: auto;
   display: block;
   margin-right: 3px;
   user-select: none;
+  filter: drop-shadow(0 1px 0 #eafbe7);
 }
 .close-btn {
   background: none;
@@ -298,8 +302,10 @@
 .offcanvas-content {
   display: flex;
   flex-direction: column;
-  padding: 19px 12px 12px 8px;
-  gap: 12px; /* (Νο 2) πιο άνετο */
+  padding: 22px 14px 18px 13px;      /* extra μαξιλαράκι κάτω */
+  gap: 14px;
+  overflow-y: auto;
+  flex: 1;
 }
 .offcanvas-link {
   display: flex;
@@ -315,12 +321,13 @@
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.17s;
   text-align: left;
-  font-weight: 500; /* (Νο 1) πιο bold */
+  font-weight: 500;
   outline: none;
-  min-height: 48px; /* (Νο 4) καλύτερο tap area */
+  min-height: 48px;
+  box-shadow: none;
 }
 .offcanvas-link .offcanvas-text {
-  font-weight: 500; /* (Νο 1) πιο έντονο */
+  font-weight: 500;
   font-size: 1.09em;
   letter-spacing: -0.1px;
 }
@@ -328,17 +335,16 @@
   font-size: 1.26em;
   min-width: 25px;
   text-align: center;
-  /* (Νο 3) Εικονίδια λίγο πιο κάτω για τέλεια ευθυγράμμιση */
   position: relative; top: 2px;
 }
 .offcanvas-link:hover, .offcanvas-link:focus {
   background: #eafbe7;
-  box-shadow: 0 2px 12px 0 rgba(33,142,70,0.05); /* (Νο 4) tap feedback */
+  box-shadow: 0 2px 12px 0 rgba(33,142,70,0.08);
 }
 .offcanvas-exit {
   color: var(--pink, #ef2d6a);
   font-weight: 600;
-  margin-top: 28px; /* (Νο 6) περισσότερο separation */
+  margin-top: 30px;
   font-size: 1.05rem;
 }
 .offcanvas-exit i { color: var(--pink, #ef2d6a) !important; }
@@ -347,27 +353,24 @@
 .icon-brand { color: var(--brand-hover, #1a6e38) !important; }
 .icon-pink { color: var(--pink, #ef2d6a) !important; }
 
-/* (Νο 9) πιο "μαλακή" σκιά */
-.offcanvas-menu {
-  box-shadow: 2px 0 16px 2px rgba(33,142,70,0.11);
-  border-right: 1.5px solid var(--outline, #e0e0e0);
-}
+/* πιο soft box-shadow και πιο “friendy” εμφανιση */
 .offcanvas-backdrop {
   display: none;
   position: fixed;
   inset: 0;
   z-index: 110;
-  background: rgba(33, 55, 33, 0.17);
-  backdrop-filter: blur(1px);
+  background: rgba(33, 55, 33, 0.11);
+  backdrop-filter: blur(1.2px);
   transition: opacity 0.19s;
 }
 .offcanvas-backdrop.open { display: block; opacity: 1; }
 
 @media (max-width: 480px) {
-  .offcanvas-menu { max-width: 96vw; }
-  .offcanvas-logo { height: 28px; }
-  .offcanvas-content { padding: 15px 6px 10px 6px; }
+  .offcanvas-menu { max-width: 97vw; border-top-right-radius: 19px; border-bottom-right-radius: 14px; }
+  .offcanvas-logo { height: 27px; }
+  .offcanvas-content { padding: 13px 5px 13px 6px; }
 }
+
 </style>
 
 <!-- =================== OUT CONFIRM MODAL =================== -->
@@ -522,7 +525,7 @@
     </div>
     <div class="modal-logout-msg">
       Επιθυμείς σίγουρα να αποσυνδεθείς;<br>
-      <span style="color:#a33; font-weight:600;">Οι προτιμήσεις σου για σήμερα θα διαγραφούν!</span>
+      <span style="color:var(--red); font-weight:600;">Οι προτιμήσεις σου για σήμερα θα διαγραφούν!</span>
     </div>
     <div class="modal-logout-actions">
       <button class="btn-logout-cancel" onclick="closeLogoutModal()">Ακύρωση</button>
