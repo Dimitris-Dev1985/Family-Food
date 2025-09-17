@@ -2,6 +2,7 @@
 {% block title %}Family Food{% endblock %}
 {% block content %}
 
+
 <style>
   :root {
     --brand: #218e46;
@@ -110,11 +111,14 @@
 }
 
 
-  .food-image {
-    width: 100%;
-    max-width: 320px;
-
-  }
+.food-image {
+  width: 100%;
+  height: auto;
+  max-height: 50vh;
+  flex-shrink: 1;
+  object-fit: contain;
+  transition: max-height 0.2s;
+}
 
   .btn {
     display: inline-flex;
@@ -157,6 +161,24 @@
   }
 
 </style>
+
+
+
+<style>
+
+.logo, .app-title, .tagline, .btn {flex-shrink: 0;}
+
+
+@media (max-height: 520px) {
+  .food-image {
+    max-height: 14vh;
+  }
+  .logo { width: 70px; height: 70px; }
+  .app-title { font-size: 2rem; }
+  .tagline { font-size: 1rem; }
+}
+</style>
+
 
 <div class="welcome-screen">
   <img src="{{ url_for('static', filename='image.png') }}" alt="Family Food Logo" class="logo">
