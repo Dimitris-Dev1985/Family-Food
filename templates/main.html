@@ -207,10 +207,12 @@
     flex: 1;
     min-height: 44px; max-height: 120px;
     padding: 0 20px 0 10px;
+	margin-right: 15px;
     border: 1.5px solid var(--outline); border-radius: 20px;
     font-size: 0.9rem; resize: none;
     background: var(--input-bg);
     overflow-y: auto;
+	letter-spacing: 1.12px;
     transition: background-color 0.2s;
 	align-content: center;
   }
@@ -247,6 +249,199 @@
   }
 </style>
 
+<!-- =================== OFFCANVAS =================== -->
+<style>
+.offcanvas-menu {
+  position: fixed;
+  top: 0; left: 0;
+  width: 83vw; max-width: 340px;
+  height: 100vh;
+  background: var(--surface, #fffaf5);
+  box-shadow: 2px 0 26px rgba(33,142,70,0.14), 0 0 0 0 rgba(0,0,0,0.05);
+  z-index: 120;
+  transform: translateX(-105%);
+  transition: transform 0.26s cubic-bezier(.44,.13,.46,.87);
+  display: flex;
+  flex-direction: column;
+  border-right: 1.5px solid var(--outline, #e0e0e0);
+}
+
+.offcanvas-menu.open { transform: translateX(0); }
+
+.offcanvas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 10px 15px;
+  border-bottom: 1px solid var(--outline, #eee);
+  min-height: 60px;
+}
+.offcanvas-logo {
+  height: 35px;
+  width: auto;
+  display: block;
+  margin-right: 3px;
+  user-select: none;
+}
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--brand-hover, #1a6e38);
+  font-size: 1.4rem;
+  padding: 5px 7px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.11s;
+}
+.close-btn:hover { background: #eafbe7; }
+
+.offcanvas-content {
+  display: flex;
+  flex-direction: column;
+  padding: 19px 12px 12px 8px;
+  gap: 12px; /* (Νο 2) πιο άνετο */
+}
+.offcanvas-link {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: 1.09rem;
+  font-family: 'Inter', 'Montserrat', sans-serif;
+  color: var(--text, #222);
+  background: none;
+  border: none;
+  border-radius: 10px;
+  padding: 13px 12px 13px 10px;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.17s;
+  text-align: left;
+  font-weight: 500; /* (Νο 1) πιο bold */
+  outline: none;
+  min-height: 48px; /* (Νο 4) καλύτερο tap area */
+}
+.offcanvas-link .offcanvas-text {
+  font-weight: 500; /* (Νο 1) πιο έντονο */
+  font-size: 1.09em;
+  letter-spacing: -0.1px;
+}
+.offcanvas-link i {
+  font-size: 1.26em;
+  min-width: 25px;
+  text-align: center;
+  /* (Νο 3) Εικονίδια λίγο πιο κάτω για τέλεια ευθυγράμμιση */
+  position: relative; top: 2px;
+}
+.offcanvas-link:hover, .offcanvas-link:focus {
+  background: #eafbe7;
+  box-shadow: 0 2px 12px 0 rgba(33,142,70,0.05); /* (Νο 4) tap feedback */
+}
+.offcanvas-exit {
+  color: var(--pink, #ef2d6a);
+  font-weight: 600;
+  margin-top: 28px; /* (Νο 6) περισσότερο separation */
+  font-size: 1.05rem;
+}
+.offcanvas-exit i { color: var(--pink, #ef2d6a) !important; }
+
+.icon-green { color: var(--brand, #218e46) !important; }
+.icon-brand { color: var(--brand-hover, #1a6e38) !important; }
+.icon-pink { color: var(--pink, #ef2d6a) !important; }
+
+/* (Νο 9) πιο "μαλακή" σκιά */
+.offcanvas-menu {
+  box-shadow: 2px 0 16px 2px rgba(33,142,70,0.11);
+  border-right: 1.5px solid var(--outline, #e0e0e0);
+}
+.offcanvas-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: rgba(33, 55, 33, 0.17);
+  backdrop-filter: blur(1px);
+  transition: opacity 0.19s;
+}
+.offcanvas-backdrop.open { display: block; opacity: 1; }
+
+@media (max-width: 480px) {
+  .offcanvas-menu { max-width: 96vw; }
+  .offcanvas-logo { height: 28px; }
+  .offcanvas-content { padding: 15px 6px 10px 6px; }
+}
+</style>
+
+<!-- =================== OUT CONFIRM MODAL =================== -->
+<style>
+
+.modal-logout {
+  display: none;
+  position: fixed;
+  z-index: 250;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  background: #fffaf5;
+  border-radius: 15px;
+  box-shadow: 0 6px 24px rgba(33,142,70,0.17);
+  min-width: 288px; max-width: 95vw;
+  padding: 28px 20px 20px 20px;
+  animation: fadeIn 0.17s;
+}
+.modal-logout.open { display: block; }
+.modal-logout-content { text-align: center; }
+.modal-logout-title {
+  font-size: 1.17rem;
+  font-weight: 700;
+  color: var(--brand, #218e46);
+  margin-bottom: 7px;
+}
+.modal-logout-title i { color: #e34056; margin-right: 7px; }
+.modal-logout-msg {
+  color: var(--text-dim, #444);
+  font-size: 1.04rem;
+  margin-bottom: 19px;
+  font-family: 'Inter', sans-serif;
+}
+.modal-logout-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+.btn-logout-cancel {
+  background: #f3f3f3;
+  color: #555;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.13s;
+}
+.btn-logout-cancel:hover { background: #eafbe7; color: var(--brand-hover, #1a6e38); }
+.btn-logout-confirm {
+  background: var(--pink, #ef2d6a);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.btn-logout-confirm:hover { background: #c5163e; }
+
+.modal-logout-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  z-index: 200;
+  background: rgba(44, 44, 44, 0.15);
+  backdrop-filter: blur(1.5px);
+  animation: fadeIn 0.17s;
+}
+.modal-logout-backdrop.open { display: block; }
+
+</style>
 
 
 <body style="min-height:100vh; display:flex; flex-direction:column;">
@@ -281,11 +476,64 @@
       </div>
     </div>
 
+
+<!-- === OFFCANVAS MENU === -->
+<div id="offcanvas" class="offcanvas-menu">
+  <div class="offcanvas-header">
+    <img src="/static/images/logo.png" alt="Family Food" class="offcanvas-logo" />
+    <button class="close-btn" onclick="closeOffcanvas()" aria-label="Κλείσιμο μενού">
+      <i class="fa fa-times"></i>
+    </button>
+  </div>
+  <div class="offcanvas-content">
+	<button class="offcanvas-link" onclick="location.href='/favorites'">
+	  <i class="fa fa-heart icon-green"></i> Αγαπημένες συνταγές
+	</button>
+	<button class="offcanvas-link" onclick="location.href='/ingredients'">
+	  <i class="fa fa-lemon icon-brand"></i> Διαχείριση υλικών
+	</button>
+	<button class="offcanvas-link" onclick="location.href='/history'">
+	  <i class="fa fa-history icon-brand"></i> Ιστορικό
+	</button>
+	<button class="offcanvas-link" onclick="location.href='/weekly_menu'">
+	  <i class="fa fa-calendar-week icon-brand"></i> Μενού εβδομάδας
+	</button>
+	<button class="offcanvas-link offcanvas-exit" onclick="logoutUser()">
+	  <i class="fa fa-sign-out-alt icon-pink"></i> Έξοδος
+	</button>
+
+  </div>
+</div>
+<div id="offcanvas-backdrop" class="offcanvas-backdrop" onclick="closeOffcanvas()"></div>
+
+
+
 </body>
 
-
-
 {% endblock %}
+
+{% block modals %}
+
+<!-- === LOGOUT CONFIRM MODAL === -->
+<div id="logoutConfirmModal" class="modal-logout">
+  <div class="modal-logout-content">
+    <div class="modal-logout-title">
+      <i class="fa fa-sign-out-alt"></i> Αποσύνδεση;
+    </div>
+    <div class="modal-logout-msg">
+      Επιθυμείς σίγουρα να αποσυνδεθείς;<br>
+      <span style="color:#a33; font-weight:600;">Οι προτιμήσεις σου για σήμερα θα διαγραφούν!</span>
+    </div>
+    <div class="modal-logout-actions">
+      <button class="btn-logout-cancel" onclick="closeLogoutModal()">Ακύρωση</button>
+      <button class="btn-logout-confirm" onclick="confirmLogout()">Αποσύνδεση</button>
+    </div>
+  </div>
+</div>
+<div id="logoutModalBackdrop" class="modal-logout-backdrop" onclick="closeLogoutModal()"></div>
+{% endblock %}
+
+
 
 
 {% block scripts %}
@@ -365,18 +613,17 @@ function scrollChatToBottom() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  localStorage.clear();
+  //localStorage.clear();
   if (!localStorage.getItem(StorageKeys.METHOD_PREFS)) setMethodPrefs(getMethodPrefs());
   if (!localStorage.getItem(StorageKeys.EXCLUDED)) setExcluded([]);
   if (!localStorage.getItem(StorageKeys.MAX_TIME)) setMaxTime(180);
   if (!localStorage.getItem(StorageKeys.DISH_CATEGORY)) setDishCategory("");
   if (!localStorage.getItem(StorageKeys.MAIN_INGREDIENT)) setMainIngredient("");
   if (!localStorage.getItem(StorageKeys.AUX_INGREDIENTS)) setAuxIngredient([]);
-  //if (sessionStorage.getItem('chatHistory')) {
-    //restoreChatHistory();
-    // ΜΗΝ ξαναπροσθέτεις quick replies!
-    //return;
-  //}
+  if (sessionStorage.getItem('chatHistory')) {
+    restoreChatHistory();
+    return;
+  }
   if (!document.querySelector('#chatbox .quick-replies')) {
 	  renderQuickReplyOptions([
 		{ label: "Έως 30'", action: "time" },
@@ -987,4 +1234,61 @@ function refreshFavorites() {
 
 </script>
 
+
+<script>
+// === OFFCANVAS LOGIC ===
+
+// Άνοιγμα από το hamburger button
+document.querySelector('.fa-bars').closest('button').onclick = openOffcanvas;
+
+function openOffcanvas() {
+  document.getElementById('offcanvas').classList.add('open');
+  document.getElementById('offcanvas-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden'; // για να μην scrollάρει το body
+}
+
+function closeOffcanvas() {
+  document.getElementById('offcanvas').classList.remove('open');
+  document.getElementById('offcanvas-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Έξοδος χρήστη
+function logoutUser() {
+  localStorage.clear();
+  window.location.href = '/logout';
+}
+
+// Προαιρετικά: Κλείσιμο με ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === "Escape") closeOffcanvas();
+});
+</script>
+
+<script>
+// === LOGOUT CONFIRM LOGIC ===
+function logoutUser() {
+  // Εμφάνισε modal επιβεβαίωσης (αντί για άμεσο logout)
+  document.getElementById('logoutConfirmModal').classList.add('open');
+  document.getElementById('logoutModalBackdrop').classList.add('open');
+  // Κλείσε το offcanvas αν είναι ανοιχτό
+  closeOffcanvas && closeOffcanvas();
+  // Disable scroll στο body
+  document.body.style.overflow = 'hidden';
+}
+function closeLogoutModal() {
+  document.getElementById('logoutConfirmModal').classList.remove('open');
+  document.getElementById('logoutModalBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function confirmLogout() {
+  localStorage.clear();
+  window.location.href = '/logout';
+}
+
+// Προαιρετικά: Κλείσιμο με Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === "Escape") closeLogoutModal();
+});
+</script>
 {% endblock %}
