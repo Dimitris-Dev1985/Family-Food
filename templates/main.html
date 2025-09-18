@@ -303,15 +303,14 @@
   display: flex;
   flex-direction: column;
   padding: 22px 14px 18px 13px;      /* extra μαξιλαράκι κάτω */
-  gap: 14px;
   overflow-y: auto;
   flex: 1;
 }
 .offcanvas-link {
   display: flex;
   align-items: center;
-  gap: 13px;
-  font-size: 1.09rem;
+  gap: 20px;
+  font-size: 1.2rem;
   font-family: 'Inter', 'Montserrat', sans-serif;
   color: var(--text, #222);
   background: none;
@@ -344,8 +343,8 @@
 .offcanvas-exit {
   color: var(--pink, #ef2d6a);
   font-weight: 600;
-  margin-top: 30px;
-  font-size: 1.05rem;
+  margin-top: 20px;
+  font-size: 1.1rem;
 }
 .offcanvas-exit i { color: var(--pink, #ef2d6a) !important; }
 
@@ -708,7 +707,7 @@ function renderAIBubble(text, type = "ai") {
 
 function renderQuickReplyOptions(options = []) {
   // Σβήνει ΜΟΝΟ τα προηγούμενα quick replies, ΟΧΙ το carousel!
-  document.querySelectorAll('#chatbox .quick-replies').forEach(qr => qr.remove());
+  //document.querySelectorAll('#chatbox .quick-replies').forEach(qr => qr.remove());
 
   const chat = document.getElementById("chatbox");
   const wrapper = document.createElement("div");
@@ -746,7 +745,7 @@ function handleQuickReply(btn) {
   if (!action) return;
 
   // Πάντα καθάρισε τα παλιά quick replies
-  document.querySelectorAll(".quick-replies").forEach(qr => qr.remove());
+  //document.querySelectorAll(".quick-replies").forEach(qr => qr.remove());
 
   if (action === "set_dish_category") {
     renderUserBubble(value);
@@ -849,13 +848,21 @@ function handleQuickReply(btn) {
   }
 
   if (action === "more_results") {
-    renderUserBubble(value);
-    moreResultsClicks++;
-    document.getElementById("typing-indicator")?.remove();
-	console.log("call 2");
-    callAISuggest(getMainIngredient(), 1);
-    return;
-  }
+	  renderUserBubble(value);
+	  moreResultsClicks++;
+	  document.getElementById("typing-indicator")?.remove();
+
+	  const more2show = localStorage.getItem("More2ShowfromAI_0");
+	  if (more2show === "1") {
+		// Κάλεσε με step=0 (δηλ. συνέχισε από το Branch 0)
+		callAISuggest("", 0);
+	  } else {
+		// Δεν έχει άλλα στο Branch 0, συνέχισε με step=1
+		callAISuggest(getMainIngredient(), 1);
+	  }
+	  return;
+	}
+
 
   if (action === "confirm_choice") {
     document.getElementById("typing-indicator")?.remove();
@@ -949,7 +956,7 @@ function rebindFavoriteHearts() {
 }
 
 function renderDishCards(dishes = []) {
-  document.querySelectorAll('#chatbox .chat-carousel-row').forEach(e => e.remove());
+  //document.querySelectorAll('#chatbox .chat-carousel-row').forEach(e => e.remove());
 
   const chatbox = document.getElementById("chatbox");
   const carouselRow = document.createElement("div");
@@ -1009,7 +1016,7 @@ function renderDishCards(dishes = []) {
 	setTimeout(function() {
 	  renderQuickReplyOptions([
 		{ label: "Θα μαγειρέψω κάτι από τα παραπάνω", action: "confirm_choice" },
-		{ label: "Δείξε μου κάτι άλλο", action: "more_results" }
+		{ label: "Θα ήθελα να δω κάτι άλλο", action: "more_results" }
 	  ], carouselRow);
 	}, 350);
 
@@ -1110,6 +1117,17 @@ function callAISuggest(userMessage = "", step) {
         //localStorage.clear();
         if (typeof initLocalState === "function") initLocalState();
       }
+	  
+	    // === ΝΕΟ: Έλεγχος για περισσότερα αποτελέσματα στο step=0 ===
+	  if (data.matches_count !== undefined && data.dishes && typeof step !== "undefined" && step === 0) {
+		if (data.matches_count > data.dishes.length) {
+		  localStorage.setItem("More2ShowfromAI_0", "1");
+		  localStorage.setItem("More2ShowfromAI_0_total", data.matches_count);
+		} else {
+		  localStorage.setItem("More2ShowfromAI_0", "0");
+		  localStorage.setItem("More2ShowfromAI_0_total", data.matches_count || "0");
+		}
+	  }     
     })
     .catch(err => {
 	  console.log(err);

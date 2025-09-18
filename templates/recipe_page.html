@@ -51,39 +51,6 @@
   }
 </style>
 
-<!-- =================== Rating =================== -->
-<style>
-.recipe-rating {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 20px;
-  margin: 8px 0 14px 0;
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: var(--text);
-}
-.stars {
-  display: flex; gap: 3px;
-}
-.star-full {
-  color: #f5c518;   /* γεμάτο κίτρινο */
-  font-size: 1.3em;
-}
-.star-empty {
-  color: #f5c518;   /* κίτρινο περίγραμμα */
-  font-size: 1.3em;
-}
-.rating-value {
-  font-weight: 600;
-  color: var(--text);
-}
-.rating-count {
-  font-size: 0.9rem;
-  color: var(--text-dim);
-}
-</style>
-
 <!-- =================== Hero =================== -->
 <style>
   .recipe-hero {
@@ -488,6 +455,118 @@
 
 </style>
 
+<!-- =================== Rating =================== -->
+<style>
+.recipe-rating {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 6px 20px;
+  margin: 8px 0 4px 0;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.stars {
+  display: flex; gap: 3px;
+}
+.star-full {
+  color: #f5c518;   /* γεμάτο κίτρινο */
+  font-size: 1.3em;
+}
+.star-empty {
+  color: #f5c518;   /* κίτρινο περίγραμμα */
+  font-size: 1.3em;
+}
+.rating-value {
+  font-weight: 600;
+  color: var(--text);
+}
+.rating-count {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+
+.user-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  
+}
+.user-rating-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--brand-hover);
+  min-width: 132px;
+  white-space: nowrap;
+}
+.user-stars {
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+}
+.user-stars i {
+  color: var(--brand-hover);
+  font-size: 1.7em;
+  transition: color 0.16s, transform 0.11s;
+  cursor: pointer;
+}
+.user-stars i.user-star-empty {
+  color: var(--brand-hover);
+  font-weight: normal;
+}
+.user-stars i.user-star-selected {
+  color: var(--brand-hover);
+  font-weight: bold;
+}
+.user-stars i.user-star-hover {
+  color: var(--brand);
+  transform: scale(1.13);
+}
+.user-rating-hint {
+  font-size: 0.99rem;
+  color: #666;
+  font-style: italic;
+  margin: 1px 0 0 0;
+  white-space: normal;
+}
+
+.user-stars .fa-star,
+.user-stars .fa-star.user-star-empty,
+.user-stars .far.fa-star,
+.user-stars .fa-regular.fa-star {
+  color: var(--brand-hover) !important;
+  opacity: 1;
+  font-weight: normal;
+}
+
+.stars i,
+.stars .fa-star,
+.stars .fas.fa-star {
+  color: #f5c518 !important;
+  font-size: 1.3em;
+}
+.stars i.star-empty,
+.stars .fa-star.star-empty,
+.stars .far.fa-star.star-empty {
+  color: #f5c518  !important;
+}
+.stars .fa-star-half-stroke {
+  color: #f5c518 !important;
+  font-size: 1.45em;
+  transform: scale(0.897) translateY(-1.3px);
+  margin-left: -2px;
+  margin-right: -2px;
+}
+
+
+
+</style>
+
+
+
 
 <!-- =================== CONTENT =================== -->
 
@@ -505,17 +584,25 @@
 <div class="recipe-title-main" id="mainTitle">{{ recipe.title }}</div>
 <div class="recipe-description-main">{{ recipe.description }}</div>
 
-<!-- ======= Rating Demo Block ======= -->
+<!-- ======= Rating Block με Average & User Rating ======= -->
 <div class="recipe-rating">
-  <div class="stars">
-    <i class="fas fa-star star-full"></i>
-    <i class="fas fa-star star-full"></i>
-    <i class="fas fa-star star-full"></i>
-    <i class="fas fa-star star-full"></i>
-    <i class="far fa-star star-empty"></i>
+
+  <!-- Μέσος όρος -->
+  <div style="display: flex; align-items: center; gap: 7px;">
+    <div class="stars" id="avgStars">
+      <!-- JS will render avg stars -->
+    </div>
+    <span class="rating-value" id="avgRatingNum">-</span>
+    <span class="rating-count" id="ratingCount" style="margin-left: 3px;">(0 αξιολογήσεις)</span>
   </div>
-  <span class="rating-value">4.0</span>
-  <span class="rating-count">(128 αξιολογήσεις)</span>
+
+  <!-- User rating -->
+	<div class="user-rating-row mt-3">
+	  <span class="user-rating-label">Η δική σας βαθμολογία:</span>
+	  <div class="user-stars" id="userStars"></div>
+	</div>
+	<div id="userRatingHint" class="user-rating-hint"></div>
+
 </div>
 
 <div class="recipe-hero">
@@ -626,6 +713,7 @@
 <script>
   // --- Constants που περνάνε από το backend
   const RECIPE_ID = {{ recipe.id }};
+  const USER_ID = {{ user_id }};
   const BASE_SERVINGS = {{ recipe.servings or 4 }};
 </script>
 
@@ -1017,6 +1105,130 @@ document.addEventListener('DOMContentLoaded', function() {
 
   var anyHidden = Array.from(boxes).some(function(b){ return getComputedStyle(b).display === 'none'; });
   if (anyHidden) console.warn('[ING] Warning: κάποιο CSS έχει display:none σε checkbox');
+});
+</script>
+
+
+<!------------- Rating Handling ------------->
+<script>
+
+
+// ------- Render Average Rating (read-only) -------
+async function renderAvgRating() {
+  const avgStars = document.getElementById('avgStars');
+  const avgNum = document.getElementById('avgRatingNum');
+  const ratingCount = document.getElementById('ratingCount');
+  avgStars.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+  try {
+    const res = await fetch('/api/get_recipe_avg_rating?recipe_id=' + RECIPE_ID);
+    const data = await res.json();
+    let avg = data.avg_rating ? Number(data.avg_rating) : 0;
+    let count = data.count || 0;
+    avg = Math.round(avg * 10) / 10;
+    avgNum.textContent = avg > 0 ? avg : '-';
+    ratingCount.textContent = '(' + count + ' αξιολογήσεις)';
+    avgStars.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+		if (avg >= i) {
+		  avgStars.innerHTML += '<i class="fas fa-star"></i>';
+		} else if (avg >= i - 0.5) {
+		  avgStars.innerHTML += '<i class="fas fa-star-half-stroke"></i>';
+		} else {
+		  avgStars.innerHTML += '<i class="far fa-star star-empty"></i>';
+		}
+    }
+  } catch (e) {
+    avgStars.innerHTML = '<i class="fa fa-question"></i>';
+    avgNum.textContent = '-';
+    ratingCount.textContent = '(?)';
+  }
+}
+
+
+// ------- Render User Rating (editable) -------
+let userRating = 0;
+let hoverRating = 0;
+
+async function renderUserRating() {
+  const starsEl = document.getElementById('userStars');
+  const hintEl = document.getElementById('userRatingHint');
+  starsEl.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    let icon = document.createElement('i');
+    if ((hoverRating || userRating) >= i) {
+      icon.className = 'fas fa-star user-star-selected';
+    } else {
+      icon.className = 'far fa-star user-star-empty';
+    }
+    icon.dataset.val = i;
+    if (hoverRating >= i) {
+      icon.classList.add('user-star-hover');
+    }
+    starsEl.appendChild(icon);
+  }
+  if (!userRating) {
+    hintEl.textContent = "Το μαγείρεψες; Αξιολόγησέ το!";
+  } else {
+    hintEl.textContent = '';
+  }
+}
+
+
+async function fetchUserRating() {
+  const starsEl = document.getElementById('userStars');
+  if (!USER_ID) { userRating = 0; renderUserRating(); return; }
+  try {
+    const res = await fetch('/api/get_recipe_rating?recipe_id=' + RECIPE_ID + '&user_id=' + USER_ID);
+    const data = await res.json();
+    userRating = data.rating ? Number(data.rating) : 0;
+    renderUserRating();
+  } catch (e) {
+    userRating = 0;
+    renderUserRating();
+  }
+}
+
+function setupUserRatingEvents() {
+  const starsEl = document.getElementById('userStars');
+  if (!starsEl) return;
+  starsEl.addEventListener('mouseover', function(e){
+    if (e.target.matches('i')) {
+      hoverRating = Number(e.target.dataset.val);
+      renderUserRating();
+    }
+  });
+  starsEl.addEventListener('mouseleave', function(e){
+    hoverRating = 0;
+    renderUserRating();
+  });
+	starsEl.addEventListener('click', async function(e){
+	  // Δέχεται είτε <i> είτε <svg>
+	  let val = e.target.dataset.val || (e.target.closest('[data-val]') && e.target.closest('[data-val]').dataset.val);
+	  if (val) {
+		console.log("USER_STAR_CLICK", val, "USER_ID=", USER_ID);
+		userRating = Number(val);
+		renderUserRating();
+		if (USER_ID) {
+		  await fetch('/api/rate_recipe', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+			  recipe_id: RECIPE_ID,
+			  user_id: USER_ID,
+			  rating: userRating
+			})
+		  });
+		  renderAvgRating();
+		}
+	  }
+	});
+
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  renderAvgRating();
+  fetchUserRating();
+  setupUserRatingEvents();
 });
 </script>
 
