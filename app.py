@@ -87,6 +87,28 @@ openai.requestssession = req_session
 
 
 
+def get_user():    
+    user_id = session.get("user_id")
+    print(user_id)
+#    if not user_id:
+#        user_id = 1  # fallback μόνο για debug
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    members = conn.execute("SELECT * FROM family_members WHERE user_id=?", (user_id,)).fetchall()
+    conn.close()
+    return user, members
+
+def login_required(f):
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        if "user_id" not in session:
+            print("no user logged in")
+            return redirect(url_for("login"))
+        print("user logged in")
+        return f(*args, **kwargs)
+    return wrapped
+
 def normalize(text):
     if text is None:
         return ""
@@ -211,46 +233,11 @@ def normalize_ingredient_route():
         core = fixed_core
     return jsonify({'core': core})
 
-
-# 🔹 Global variables
-COOKING_METHODS = ['Φούρνος','Κατσαρόλα','Χύτρα','Τηγάνι','Σχάρα','Air-fryer']
-NORMALIZED_METHODS = { normalize(m): m for m in COOKING_METHODS }
-SYSTEM_PROMPT = build_system_prompt()
-
-@app.route("/test_openai")
-def test_openai():
-
-    try:
-        # Μπορείς να δηλώσεις το API key εδώ αν δεν το έχεις βάλει αλλού:
-        # openai.api_key = "your-openai-api-key"
-
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{
-                "role": "user",
-                "content": "Πόσο κάνουν 2 + 2;"
-            }],
-            temperature=0
-        )
-
-        reply = response.choices[0].message["content"].strip()
-        return f"<h3>✅ Επιτυχής σύνδεση με OpenAI!</h3><p><b>AI απάντηση:</b> {reply}</p>"
-
-    except Exception as e:
-        traceback_str = traceback.format_exc()
-        return f"<h3>❌ Σφάλμα κατά τη σύνδεση με OpenAI</h3><pre>{traceback_str}</pre>"
-
-@app.route("/ai_reply_test")
-def ai_reply_test():
-    print("[DEBUG] 🧪 Serving ai_reply_test.html")
-    return render_template("ai_reply_test.html")
-
-@app.route("/test_ai")
-def test_ai():
-    return render_template("test_ai.html")
-
 @app.route('/recipe_page/<int:recipe_id>')
+@login_required
 def recipe_page(recipe_id):
+    user_id = session.get("user_id")
+    print("user logged in: ",user_id)
     print("\n========== /recipe_page CALLED ==========")
     print("[INPUT] recipe_id:", recipe_id)
     conn = sqlite3.connect(DB)
@@ -320,8 +307,125 @@ def recipe_page(recipe_id):
         dish_tags=dish_tags,
         image_url=image_url,
         is_favorite=is_favorite,
+        user_id=user_id,
         chef_avatar=avatar_filename
     )
+
+
+@app.route('/api/rate_recipe', methods=['POST'])
+def rate_recipe():
+    data = request.json
+    recipe_id = data.get('recipe_id')
+    user_id = data.get('user_id')
+    rating = data.get('rating')
+    if not recipe_id or not user_id or not rating:
+        return jsonify({'success': False, 'error': 'missing fields'}), 400
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute("SELECT id FROM recipe_ratings WHERE recipe_id = ? AND user_id = ?", (recipe_id, user_id))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE recipe_ratings SET rating = ?, updated_at = CURRENT_TIMESTAMP WHERE recipe_id = ? AND user_id = ?", (rating, recipe_id, user_id))
+    else:
+        c.execute("INSERT INTO recipe_ratings (recipe_id, user_id, rating) VALUES (?, ?, ?)", (recipe_id, user_id, rating))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/get_recipe_avg_rating')
+def get_recipe_avg_rating():
+    recipe_id = request.args.get('recipe_id')
+    if not recipe_id:
+        return jsonify({'success': False, 'error': 'missing recipe_id'}), 400
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute("SELECT AVG(rating), COUNT(*) FROM recipe_ratings WHERE recipe_id = ?", (recipe_id,))
+    avg_rating, count = c.fetchone()
+    conn.close()
+    return jsonify({'success': True, 'avg_rating': avg_rating, 'count': count})
+
+@app.route('/api/get_recipe_rating')
+def get_recipe_rating():
+    recipe_id = request.args.get('recipe_id')
+    user_id = request.args.get('user_id')
+    if not recipe_id or not user_id:
+        return jsonify({'success': False, 'error': 'missing fields'}), 400
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute("SELECT rating FROM recipe_ratings WHERE recipe_id = ? AND user_id = ?", (recipe_id, user_id))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return jsonify({'success': True, 'rating': row[0]})
+    else:
+        return jsonify({'success': True, 'rating': None})
+
+@app.route('/api/submit_comment', methods=['POST'])
+def submit_comment():
+    data = request.json
+    recipe_id = data.get('recipe_id')
+    user_id = data.get('user_id')
+    comment = data.get('comment')
+    if not recipe_id or not user_id or not comment:
+        return jsonify({'success': False, 'error': 'missing fields'}), 400
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute("INSERT INTO recipe_comments (recipe_id, user_id, comment) VALUES (?, ?, ?)", (recipe_id, user_id, comment))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/get_recipe_comments')
+def get_recipe_comments():
+    recipe_id = request.args.get('recipe_id')
+    if not recipe_id:
+        return jsonify({'success': False, 'error': 'missing recipe_id'}), 400
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute("SELECT user_id, comment, created_at FROM recipe_comments WHERE recipe_id = ? ORDER BY created_at DESC", (recipe_id,))
+    results = [{'user_id': r[0], 'comment': r[1], 'created_at': r[2]} for r in c.fetchall()]
+    conn.close()
+    return jsonify({'success': True, 'comments': results})
+
+
+
+
+# 🔹 Global variables
+COOKING_METHODS = ['Φούρνος','Κατσαρόλα','Χύτρα','Τηγάνι','Σχάρα','Air-fryer']
+NORMALIZED_METHODS = { normalize(m): m for m in COOKING_METHODS }
+SYSTEM_PROMPT = build_system_prompt()
+
+@app.route("/test_openai")
+def test_openai():
+
+    try:
+        # Μπορείς να δηλώσεις το API key εδώ αν δεν το έχεις βάλει αλλού:
+        # openai.api_key = "your-openai-api-key"
+
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{
+                "role": "user",
+                "content": "Πόσο κάνουν 2 + 2;"
+            }],
+            temperature=0
+        )
+
+        reply = response.choices[0].message["content"].strip()
+        return f"<h3>✅ Επιτυχής σύνδεση με OpenAI!</h3><p><b>AI απάντηση:</b> {reply}</p>"
+
+    except Exception as e:
+        traceback_str = traceback.format_exc()
+        return f"<h3>❌ Σφάλμα κατά τη σύνδεση με OpenAI</h3><pre>{traceback_str}</pre>"
+
+@app.route("/ai_reply_test")
+def ai_reply_test():
+    print("[DEBUG] 🧪 Serving ai_reply_test.html")
+    return render_template("ai_reply_test.html")
+
+@app.route("/test_ai")
+def test_ai():
+    return render_template("test_ai.html")
 
 @app.route('/api/similar')
 def api_similar():
@@ -799,8 +903,7 @@ def ai_suggest_dish():
         seen_ids = set()
 
 
-
-            # =============== Branch 0: Quick category+main_ingredient lookup ==============
+        # =============== Branch 0: Quick category+main_ingredient lookup ==============
         if data.get("step") == 0:
             print("[DEBUG] ========== Branch 0 (step=0) ==========")
             dish_category = data.get("dish_category", "")
@@ -812,9 +915,9 @@ def ai_suggest_dish():
             if not isinstance(allergens, list):
                 allergens = []
 
-            q = """
-            SELECT recipes.*,
-                   CASE WHEN fav.recipe_id IS NOT NULL THEN 1 ELSE 0 END as is_favorite
+            # ΝΕΟ: suggested_dish_ids
+            already_suggested = session.get("suggested_dish_ids", [])
+            q_base = """
             FROM recipes
             LEFT JOIN favorite_recipes fav 
                  ON fav.recipe_id = recipes.id AND fav.user_id = ?
@@ -823,35 +926,44 @@ def ai_suggest_dish():
             params = [session.get("user_id")]
 
             if dish_category:
-                q += " AND remove_tonos(LOWER(dish_category)) LIKE ?"
+                q_base += " AND remove_tonos(LOWER(dish_category)) LIKE ?"
                 params.append(f"%{remove_tonos(dish_category.lower())}%")
             if main_ingredient:
-                q += " AND remove_tonos(LOWER(main_ingredient)) LIKE ?"
+                q_base += " AND remove_tonos(LOWER(main_ingredient)) LIKE ?"
                 params.append(f"%{remove_tonos(main_ingredient.lower())}%")
 
-            # Excluded υλικά
+            # Excluded ηδη προτεινόμενα!
+            if already_suggested:
+                placeholders = ",".join("?" * len(already_suggested))
+                q_base += f" AND recipes.id NOT IN ({placeholders})"
+                params.extend(already_suggested)
+
             for item in excluded:
                 ex_norm = remove_tonos(str(item).lower())
-                q += " AND remove_tonos(ingredients) NOT LIKE ?"
+                q_base += " AND remove_tonos(ingredients) NOT LIKE ?"
                 params.append(f"%{ex_norm}%")
-
-            # Allergens
             for allergen in allergens:
                 al_norm = remove_tonos(str(allergen).lower())
-                q += " AND remove_tonos(ingredients) NOT LIKE ?"
+                q_base += " AND remove_tonos(ingredients) NOT LIKE ?"
                 params.append(f"%{al_norm}%")
 
-            q += " ORDER BY is_favorite DESC, RANDOM() LIMIT 4"
-            print("[SQL]", q)
+            count_query = "SELECT COUNT(*) " + q_base
+            select_query = "SELECT recipes.*, CASE WHEN fav.recipe_id IS NOT NULL THEN 1 ELSE 0 END as is_favorite " + q_base + " ORDER BY is_favorite DESC, RANDOM() LIMIT 3"
+
+            print("[SQL]", select_query)
             print("[PARAMS]", params)
 
             conn = sqlite3.connect(DB)
             conn.row_factory = sqlite3.Row
             conn.create_function("remove_tonos", 1, remove_tonos)
-            dishes = conn.execute(q, params).fetchall()
+
+            count_res = conn.execute(count_query, params).fetchone()
+            matches_count = count_res[0] if count_res else 0
+
+            dishes = conn.execute(select_query, params).fetchall()
             conn.close()
 
-            print(f"[DEBUG] 🍽️ Branch0 returned {len(dishes)} dishes:", [d["title"] for d in dishes])
+            print(f"[DEBUG] 🍽️ Branch0 returned {len(dishes)} dishes (total matches: {matches_count}):", [d["title"] for d in dishes])
 
             results = []
             for d in dishes:
@@ -867,10 +979,16 @@ def ai_suggest_dish():
                     rec["image_url"] = "/static/images/recipes/default.jpg"
                 results.append(rec)
 
+            # Προσθήκη στα suggested (μόνο τα νέα)
+            new_ids = [rec["id"] for rec in results if rec["id"] not in already_suggested]
+            session["suggested_dish_ids"] = already_suggested + new_ids
+
             return jsonify({
                 "message": random.choice(suggestion_messages),
-                "dishes": results
+                "dishes": results,
+                "matches_count": matches_count
             })
+
 
 
 
@@ -1071,17 +1189,6 @@ def google_login_callback():
     session["user_id"] = user_id
     return redirect(url_for("welcome"))
 
-def get_user():    
-    user_id = session.get("user_id")
-    if not user_id:
-        user_id = 1  # fallback μόνο για debug
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
-    members = conn.execute("SELECT * FROM family_members WHERE user_id=?", (user_id,)).fetchall()
-    conn.close()
-    return user, members
-
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
@@ -1120,14 +1227,6 @@ def signup():
         return redirect(url_for("login"))
 
     return render_template("signup.html")
-
-def login_required(f):
-    @wraps(f)
-    def wrapped(*args, **kwargs):
-        if "user_id" not in session:
-            return redirect(url_for("login"))
-        return f(*args, **kwargs)
-    return wrapped
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
