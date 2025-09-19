@@ -85,7 +85,10 @@ req_session.verify = False  # ⚠️ απενεργοποίηση SSL validation
 # Το περνάμε στον OpenAI client
 openai.requestssession = req_session
 
-
+def get_db_conn():
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def get_user():    
     user_id = session.get("user_id")
@@ -191,7 +194,7 @@ def ai_normalize_ingredient(raw):
     "Ποτέ μην επιστρέφεις μόνο μέρος της λέξης (όπως \"κρεμμυδ\" αντί για \"κρεμμύδι\"). "
     "Δώσε μόνο τη λέξη ή τη φράση, χωρίς εισαγωγικά, εξηγήσεις ή επιπλέον χαρακτήρες.\n"
     f"Φράση: {raw}\n"
-)
+    )
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -236,8 +239,9 @@ def normalize_ingredient_route():
 @app.route('/recipe_page/<int:recipe_id>')
 @login_required
 def recipe_page(recipe_id):
-    user_id = session.get("user_id")
-    print("user logged in: ",user_id)
+    user_id = session.get('user_id', 0)
+    user_name = None
+    user_avatar = None
     print("\n========== /recipe_page CALLED ==========")
     print("[INPUT] recipe_id:", recipe_id)
     conn = sqlite3.connect(DB)
@@ -284,7 +288,6 @@ def recipe_page(recipe_id):
 
     # ========== ΕΛΕΓΧΟΣ FAVORITE ==========
     is_favorite = False
-    user_id = session.get('user_id')
     if user_id:
         fav_row = conn.execute(
             "SELECT 1 FROM favorite_recipes WHERE user_id = ? AND recipe_id = ?",
@@ -292,12 +295,29 @@ def recipe_page(recipe_id):
         ).fetchone()
         is_favorite = fav_row is not None
 
-    # Κλείσιμο connection για ασφάλεια
     conn.close()
+
+    if user_id:
+        conn = get_db_conn()
+        c = conn.cursor()
+        c.execute('SELECT first_name FROM users WHERE id = ?', (user_id,))
+        row = c.fetchone()
+        if row and row['first_name']:
+            user_name = row['first_name']
+        else:
+            user_name = 'Χρήστης'
+        user_avatar = f'/static/images/avatars/{user_id}.jpg'
+        conn.close()
+    else:
+        user_name = 'Επισκέπτης'
+        user_avatar = '/static/images/avatars/default.jpg'
+
 
     avatar_filename = CHEF_AVATAR_MAP.get(recipe['chef'], 'default.jpg')
 
     print(image_url)
+    print(user_name)
+    print(user_avatar)
 
     return render_template(
         'recipe_page.html',
@@ -308,9 +328,10 @@ def recipe_page(recipe_id):
         image_url=image_url,
         is_favorite=is_favorite,
         user_id=user_id,
+        user_name=user_name,
+        user_avatar=user_avatar,
         chef_avatar=avatar_filename
     )
-
 
 @app.route('/api/rate_recipe', methods=['POST'])
 def rate_recipe():
@@ -360,32 +381,177 @@ def get_recipe_rating():
     else:
         return jsonify({'success': True, 'rating': None})
 
-@app.route('/api/submit_comment', methods=['POST'])
-def submit_comment():
-    data = request.json
-    recipe_id = data.get('recipe_id')
-    user_id = data.get('user_id')
-    comment = data.get('comment')
-    if not recipe_id or not user_id or not comment:
-        return jsonify({'success': False, 'error': 'missing fields'}), 400
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-    c.execute("INSERT INTO recipe_comments (recipe_id, user_id, comment) VALUES (?, ?, ?)", (recipe_id, user_id, comment))
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/api/get_recipe_comments')
+# ----------- GET COMMENTS για recipe -----------
+@app.route('/api/recipe_comments')
 def get_recipe_comments():
     recipe_id = request.args.get('recipe_id')
     if not recipe_id:
-        return jsonify({'success': False, 'error': 'missing recipe_id'}), 400
+        return jsonify({'error': 'Missing recipe_id'}), 400
+    try:
+        conn = get_db_conn()
+        c = conn.cursor()
+        c.execute('''
+            SELECT c.*, u.first_name as username,
+                   '/static/images/avatars/' || c.user_id || '.jpg' as avatar_url
+            FROM recipe_comments c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE c.recipe_id = ?
+            ORDER BY c.created_at DESC
+        ''', (recipe_id,))
+        rows = c.fetchall()
+        comments = [dict(row) for row in rows]
+        conn.close()
+        return jsonify({'comments': comments})
+    except Exception as e:
+        print('[ERROR] get_recipe_comments:', e)
+        return jsonify({'error': 'DB error'}), 500
+
+# ----------- ADD NEW COMMENT -----------
+@app.route('/api/recipe_comments', methods=['POST'])
+def add_recipe_comment():
+    data = request.json
+    recipe_id = data.get('recipe_id')
+    user_id = data.get('user_id')
+    comment = data.get('comment', '').strip()
+
+    if not (recipe_id and user_id and comment):
+        return jsonify({'error': 'Missing data'}), 400
+    if len(comment) < 2 or len(comment) > 1000:
+        return jsonify({'error': 'Το σχόλιο πρέπει να έχει 2-1000 χαρακτήρες.'}), 400
+
+    try:
+        now = datetime.utcnow().isoformat()
+        conn = get_db_conn()
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO recipe_comments (recipe_id, user_id, comment, created_at)
+            VALUES (?, ?, ?, ?)
+        ''', (recipe_id, user_id, comment, now))
+        conn.commit()
+        new_id = c.lastrowid
+        conn.close()
+        return jsonify({'ok': True, 'id': new_id, 'created_at': now})
+    except Exception as e:
+        print('[ERROR] add_recipe_comment:', e)
+        return jsonify({'error': 'DB error'}), 500
+
+# ----------- DELETE COMMENT -----------
+@app.route('/api/recipe_comments/<int:comment_id>', methods=['DELETE'])
+def delete_recipe_comment(comment_id):
+    user_id = request.args.get('user_id')  # Πρέπει να περάσει το frontend τον user_id
+    if not user_id:
+        return jsonify({'error': 'Missing user_id'}), 400
+
+    try:
+        conn = get_db_conn()
+        c = conn.cursor()
+        # Πρώτα τσέκαρε αν ο user είναι ο owner του comment (ή αν είναι admin, μπορείς να προσθέσεις έλεγχο)
+        c.execute('SELECT user_id FROM recipe_comments WHERE id = ?', (comment_id,))
+        row = c.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'error': 'Not found'}), 404
+        if str(row['user_id']) != str(user_id):
+            conn.close()
+            return jsonify({'error': 'Δεν έχεις δικαίωμα διαγραφής'}), 403
+
+        c.execute('DELETE FROM recipe_comments WHERE id = ?', (comment_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'ok': True})
+    except Exception as e:
+        print('[ERROR] delete_recipe_comment:', e)
+        return jsonify({'error': 'DB error'}), 500
+
+@app.route('/api/similar')
+def api_similar():
+    recipe_id = request.args.get("recipe_id", type=int)
+    max_time = request.args.get("max_time", type=int) # π.χ. 120
+    
+    if not recipe_id or not max_time:
+        return {"success": False, "error": "Missing recipe_id or max_time"}, 400
+
     conn = sqlite3.connect(DB)
-    c = conn.cursor()
-    c.execute("SELECT user_id, comment, created_at FROM recipe_comments WHERE recipe_id = ? ORDER BY created_at DESC", (recipe_id,))
-    results = [{'user_id': r[0], 'comment': r[1], 'created_at': r[2]} for r in c.fetchall()]
-    conn.close()
-    return jsonify({'success': True, 'comments': results})
+    conn.row_factory = sqlite3.Row
+
+    base_row = conn.execute("""
+        SELECT main_ingredient FROM recipes WHERE id = ?
+    """, (recipe_id,)).fetchone()
+
+    if not base_row or not base_row["main_ingredient"]:
+        print("[DEBUG] Δεν βρέθηκε main_ingredient για το recipe_id:", recipe_id)
+        return {"success": False, "error": "No main_ingredient for this recipe"}, 404
+
+    main_ingredient = base_row["main_ingredient"].strip().lower()
+    print("[DEBUG] main_ingredient (normalized):", main_ingredient)
+
+    sql = """
+        SELECT id, title, chef, COALESCE(image_path, '') as image_path, total_time
+        FROM recipes
+        WHERE id != ?
+          AND (
+            LOWER(ingredients) LIKE ?
+            OR LOWER(title) LIKE ?
+            OR LOWER(main_ingredient) LIKE ?
+          )
+          AND total_time IS NOT NULL AND total_time != ''
+    """
+    param = f'%{main_ingredient}%'
+    params = (recipe_id, param, param, param)
+
+    # Φέρνεις όλα τα πιθανά, κάνεις sort στην Python γιατί δεν μπορείς να βάλεις απόλυτο σε SQL LIMIT
+    similar = conn.execute(sql, params).fetchall()
+
+    # Κάνεις parse τα total_time (αν είναι string, κάνε int), skip όσα δεν έχουν σωστό χρόνο
+    recipes = []
+    for row in similar:
+        try:
+            tt = int(row["total_time"])
+        except Exception:
+            continue
+        recipes.append({
+            "id": row["id"],
+            "title": row["title"],
+            "chef": row["chef"],
+            "total_time": tt,
+            "image_path": row["image_path"]
+        })
+
+    # Ταξινόμηση: πρώτα όσα είναι στο εύρος max_time±20 (τα βάζεις πρώτα), μετά όλα τα υπόλοιπα κατά εγγύτητα
+    close = []
+    others = []
+    for r in recipes:
+        if abs(r["total_time"] - max_time) <= 20:
+            close.append(r)
+        else:
+            others.append(r)
+    # Κάνε sort και τα δυο arrays με βάση το abs διαφορά
+    close = sorted(close, key=lambda r: abs(r["total_time"] - max_time))
+    others = sorted(others, key=lambda r: abs(r["total_time"] - max_time))
+
+    # Βάλε τα 3 πρώτα, από close πρώτα
+    top = close[:6]
+    if len(top) < 6:
+        top += others[:(6-len(top))]
+
+    # Προετοιμασία για απάντηση
+    data = []
+    for row in top:
+        if row["image_path"] and row["image_path"].strip() != "":
+            image_url = url_for('static', filename=f'images/recipes/{row["image_path"]}')
+        else:
+            image_url = url_for('static', filename='images/placeholder.jpg')
+        data.append({
+            "id": row["id"],
+            "title": row["title"],
+            "chef": row["chef"],
+            "total_time": row["total_time"],
+            "image_url": image_url
+        })
+
+    print("[DEBUG] /api/similar ->", data)
+    return {"success": True, "recipes": data}
+
 
 
 
@@ -427,37 +593,7 @@ def ai_reply_test():
 def test_ai():
     return render_template("test_ai.html")
 
-@app.route('/api/similar')
-def api_similar():
-    recipe_id = request.args.get("recipe_id", type=int)
-    if not recipe_id:
-        return {"success": False, "error": "Missing recipe_id"}, 400
 
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    similar = conn.execute("""
-        SELECT id, title, chef, COALESCE(image_path, '') as image_path
-        FROM recipes
-        WHERE dish_category = (SELECT dish_category FROM recipes WHERE id = ?)
-          AND id != ?
-        ORDER BY RANDOM()
-        LIMIT 3
-    """, (recipe_id, recipe_id)).fetchall()
-
-    data = []
-    for row in similar:
-        if row["image_path"] and row["image_path"].strip() != "":
-            image_url = url_for('static', filename=f'images/recipes/{row["image_path"]}')
-        else:
-            image_url = url_for('static', filename='images/placeholder.jpg')
-        data.append({
-            "id": row["id"],
-            "title": row["title"],
-            "chef": row["chef"],
-            "image_url": image_url
-        })
-
-    return {"success": True, "recipes": data}
 
 @app.route('/api/dish_categories')
 def get_dish_categories():
@@ -932,6 +1068,13 @@ def ai_suggest_dish():
                 q_base += " AND remove_tonos(LOWER(main_ingredient)) LIKE ?"
                 params.append(f"%{remove_tonos(main_ingredient.lower())}%")
 
+            if max_time:
+                try:
+                    q_base += " AND total_time <= ?"
+                    params.append(int(max_time))
+                except Exception as e:
+                    print("[WARN] Invalid max_time (branch 0):", e)
+
             # Excluded ηδη προτεινόμενα!
             if already_suggested:
                 placeholders = ",".join("?" * len(already_suggested))
@@ -1151,6 +1294,8 @@ def ai_suggest_dish():
     except Exception as e:
         print("[ERROR]", e)
         return jsonify({"error": str(e)}), 500
+
+
 
 @app.route("/")
 def index():
