@@ -1,0 +1,696 @@
+{% extends "base.html" %}
+{% block title %}Το προφίλ μου • Family Food{% endblock %}
+{% block content %}
+
+
+<!-- === Header Card === -->
+<style>
+
+.profile-header-card {
+  background: #fff;
+  box-shadow: var(--shadow, 0 2px 9px rgba(33,142,70,0.06));
+  border-radius: 2.2rem;
+  margin: 16px auto 0 auto;
+  padding: 28px 16px 22px 16px;
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.profile-avatar-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: 7px;
+  position: relative;
+}
+.profile-avatar-img {
+  width: 100px; height: 100px;
+  border-radius: 50%; object-fit: cover;
+  border: 2.2px solid var(--brand);
+  box-shadow: 0 3px 15px #eafbe7;
+  background: #f7faf7;
+}
+.profile-username {
+  font-size: 2.2rem; font-weight: 800;
+  color: var(--text);
+  letter-spacing: 1.5px; line-height: 1.12;
+  margin: 10px 20px 2px 20px;
+  text-align: center;
+  word-break: break-word;
+}
+.profile-email {
+  font-size: 1rem;
+  color: var(--text-dim);
+  opacity: 0.82;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.profile-edit-btn {
+  margin-top: 7px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 7px 18px;
+  font-size: 0.99rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(33,142,70,0.08);
+  transition: background 0.14s;
+}
+.profile-edit-btn:hover { background: var(--brand-hover); }
+
+</style>
+
+<!-- === Status Bar === -->
+<style>
+.profile-status-bar {
+  width: 100%; max-width: 420px; margin: 0 auto;
+  display: flex; align-items: stretch; justify-content: center;
+  gap: 0;
+  margin-top: 30px; margin-bottom: 30px;
+  background: #f6fbf7;
+  border-radius: 16px;
+  box-shadow: 0 1.5px 7px rgba(33,142,70,0.07);
+  border: 1.2px solid #e6efe9;
+  padding: 6px 0;
+  overflow: hidden;
+}
+.profile-status-item {
+  flex: 1 1 0;
+  text-align: center;
+  padding: 0;
+  color: var(--brand-hover);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: default;
+  border: none;
+  background: none;
+  transition: none;
+  min-width: 66px;
+  font-weight: 600;
+  border-right: 1.5px solid #e1e9e1;
+  font-size: clamp(0.97rem, 2vw, 1.09rem);
+}
+.profile-status-item:last-child { border-right: none; }
+
+.profile-status-value {
+  font-size: 4.5vw;
+  font-weight: 800;
+  color: var(--brand);
+  margin-bottom: 1px;
+  line-height: 1.17;
+}
+.profile-status-label {
+  font-size: clamp(0.85rem, 3.5vw, 1.12rem);
+  color: var(--brand-hover);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  opacity: 0.89;
+  line-height: 1.13;
+}
+
+</style>
+
+<!-- === Tabs === -->
+<style>
+.profile-tabs-row {
+  width: 100%; max-width: 520px; margin: 0 auto;
+  display: flex; gap: 0px;
+  overflow-x: auto;
+  padding: 6px 0 0 0;
+  margin-bottom: 0px;
+  border-bottom: 2.5px solid #e7eae7;
+  border-radius: 15px 15px 0 0;
+  background: none;
+}
+.profile-tab-btn {
+  flex: 1 0 0;
+  padding: 0px 10px 0px 10px;
+  border: none;
+  background: #f7faf7;
+  color: var(--brand-hover);
+  font-size: 1.07rem;
+  font-weight: 700;
+  border-radius: 14px 14px 0 0;
+  cursor: pointer;
+  margin-right: 4px;
+  margin-bottom: -2px;
+  opacity: 0.93;
+  transition: color 0.15s, background 0.13s, box-shadow 0.17s;
+  position: relative;
+  z-index: 1;
+  box-shadow: none;
+}
+.profile-tab-btn.active,
+.profile-tab-btn:focus {
+  color: #fff;
+  background: var(--brand);
+  opacity: 1;
+  box-shadow: 0 2px 12px #a0deb566;
+  z-index: 2;
+}
+
+</style>
+
+<!-- === Cards === -->
+<style>
+.profile-card-list {
+  column-count: 2;
+  column-gap: 14px;
+  width: auto;
+  max-width: 580px;
+  padding: 0 2px;
+  margin: 20px 10px 30px 10px;
+}
+
+
+.profile-card-item {
+  width: 100% !important;          /* Απαραίτητο για να γεμίζει τη στήλη */
+  background: var(--surface) !important;
+  border: 1.2px solid #eee !important;
+  border-radius: 15px !important;
+  box-shadow: 0 2px 8px rgba(33,142,70,0.07) !important;
+  display: block !important;      /* Αυτό κάνει το masonry να δουλεύει σωστά */
+  position: relative !important;
+  margin: 0 0 14px 0 !important;  /* Το μόνο κάθετο gap, το οριζόντιο το ελέγχει column-gap */
+  cursor: pointer !important;
+  overflow: visible !important;
+  padding: 0 0 7px 0 !important;
+  scroll-snap-align: start !important;
+  box-sizing: border-box !important;
+  break-inside: avoid;            /* Masonry behavior, να μη σπάνε οι κάρτες ανάμεσα σε στήλες */
+}
+
+
+.profile-card-item img.card-main-img {
+  width: 100% !important;
+  max-width: 100% !important;
+  /* ΜΗΝ βάζεις height/min-height/max-height */
+  display: block !important;
+  object-fit: contain !important;  /* ή cover αν θες "γεμάτο" */
+  border-radius: 14px 14px 0 0 !important;
+  background: var(--surface) !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.profile-card-item img.chef-avatar-inline {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  max-width: 22px !important;
+  max-height: 22px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  background: #fff !important;
+  margin: 0 !important;
+  box-shadow: 0 2px 8px rgba(67,185,106,0.11) !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  padding: 0 !important;
+}
+
+.profile-card-item-title {
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 4px 0 !important;
+  text-align: center !important;
+  line-height: 1.22 !important;
+  word-break: break-word !important;
+  color: #17221b !important;
+  padding: 0 2px;
+}
+.profile-card-item-chef {
+  font-size: 0.89rem !important;
+  font-weight: 500 !important;
+  color: #767676 !important;
+  text-align: center !important;
+  margin-top: 2px !important;
+  margin-bottom: 1px !important;
+  padding: 0 2px;
+}
+.profile-card-item span[style*="position: absolute"] {
+  right: 7px !important;
+  top: 6px !important;
+}
+
+/* ======== Meta row: χρόνος, by, avatar ======== */
+.profile-card-item-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  max-width: 120px;
+  margin: 0 auto 2px auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-height: 20px;
+}
+.profile-card-item-meta .fa-clock {
+  font-size: 1.02rem;
+  color: #218e46;
+  margin-right: 1px;
+  vertical-align: middle;
+  display: inline-block;
+  line-height: 1;
+}
+.profile-card-item-time-val {
+  font-size: 0.85rem;
+  color: #1a6e38;
+  font-weight: 500;
+  margin-right: 1px;
+  margin-left: 2px;
+  letter-spacing: 0.4px;
+  font-family: inherit;
+}
+.chef-by-label {
+  font-family: 'Indie Flower', cursive;
+  font-size: 0.85rem;
+  color: #bdbdbd;
+  margin-right: 2px;
+  margin-left: 15px;
+  font-style: italic;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  position: relative;
+  top: 0.5px;
+}
+
+</style>
+
+<!-- === Activity Card === -->
+<style>
+.profile-activity-list {
+  width: 100%;
+  max-width: 650px;
+  margin: 0 auto 24px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 3px;
+}
+
+.activity-card {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  border-radius: 15px;
+  border: 1.2px solid #edecec;
+  box-shadow: 0 2px 8px rgba(33,142,70,0.08);
+  overflow: hidden;
+  min-height: 108px;
+  background: #fff;
+}
+.activity-card-bg-comment  { background: #eafbe7 !important; }
+.activity-card-bg-rating   { background: #fffbe9 !important; }
+.activity-card-bg-cooked   { background: #fff7f2 !important; }
+
+.activity-card-left {
+  width: 110px;
+  min-width: 66px;
+  padding: 0 0 10px 0px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  gap: 8px;
+}
+.activity-card-img {
+  width: 100%;
+  border-radius: 13px;
+
+}
+.activity-card-meta {
+  display: flex;
+  align-items: center;
+  font-size: 0.94rem;
+  color: #295f37;
+}
+.profile-card-item-time-val { font-size: 0.94rem; color: #1a6e38; font-weight: 500; }
+.chef-by-label {
+  font-family: 'Indie Flower', cursive, sans-serif;
+  font-size: 0.85rem;
+  color: #bdbdbd;
+  margin-right: 2px;
+  margin-left: 13px;
+  font-style: italic;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  position: relative;
+  top: 0.5px;
+}
+.activity-card-chef-img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  border: 1px solid #e2e2e2;
+}
+.activity-card-right {
+  flex: 1;
+  padding: 5px 5px 5px 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.activity-type-label {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.activity-type-label .fa-comment  { color: #19a147; }
+.activity-type-label .fa-star     { color: #e6ba08; }
+.activity-type-label .fa-utensils { color: #ee7642; }
+
+.activity-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #283228;
+  margin-bottom: 2px;
+  line-height: 1.18;
+}
+.activity-timestamp {
+  font-size: 0.95rem;
+  color: #b7b7b7;
+  margin-bottom: 10px;
+}
+.activity-content {
+  font-size: 1.1rem;
+  color: #233320;
+  margin-bottom: 5px;
+  word-break: break-word;
+}
+
+
+
+</style>
+
+
+
+<!-- ========= CONTENT ========= -->
+
+<div class="recipe-topbar" id="profileTopbar">
+  <button class="icon-btn" id="backBtn"><i class="fa fa-arrow-left"></i></button>
+  <span class="topbar-title">Το προφίλ μου</span>
+  <button class="icon-btn" title="Ρυθμίσεις">
+    <i class="fa fa-cog"></i>
+  </button>
+</div>
+
+<div class="profile-header-card">
+  <div class="profile-avatar-wrap">
+    <img class="profile-avatar-img" src="{{ avatar_path }}" alt="Avatar">
+  </div>
+  <div class="profile-username">{{ first_name }}</div>
+</div>
+
+<div class="profile-status-bar">
+  <div class="profile-status-item" id="status-favorites">
+    <div class="profile-status-value">{{ stats.favorites }}</div>
+    <div class="profile-status-label">Αγαπημένες Συνταγές</div>
+  </div>
+  <div class="profile-status-item" id="status-cooked">
+    <div class="profile-status-value">{{ stats.cooked }}</div>
+    <div class="profile-status-label">Μαγειρεμένα Πιάτα</div>
+  </div>
+  <div class="profile-status-item" id="status-ratings">
+    <div class="profile-status-value">{{ stats.ratings }}</div>
+    <div class="profile-status-label">Αξιολογήσεις</div>
+  </div>
+  <div class="profile-status-item" id="status-comments">
+    <div class="profile-status-value">{{ stats.comments }}</div>
+    <div class="profile-status-label">Σχόλια</div>
+  </div>
+</div>
+
+<div class="profile-tabs-row" id="profileTabs">
+  <button class="profile-tab-btn active" data-tab="favoritesList">Αγαπημένες Συνταγές</button>
+  <button class="profile-tab-btn" data-tab="lastSeenList">Είδες πρόσφατα</button>
+  <button class="profile-tab-btn" data-tab="activityList">Δραστηριότητα</button>
+</div>
+
+<div class="profile-card-list" id="favoritesList">
+  <!-- Τα αγαπημένα πιάτα θα μπουν εδώ από JS -->
+</div>
+
+<div class="profile-card-list" id="lastSeenList" style="display:none;">
+  <!-- Τα last seen πιάτα θα μπουν εδώ από JS -->
+</div>
+
+<div class="profile-activity-list" id="activityList" style="display:none;">
+  <!-- H δραστηριοτητα θα μπει εδώ από JS -->
+</div>
+
+
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+document.getElementById('backBtn').onclick = function() {
+  window.location.href = '/main'; // ή βάλε όπου θες να επιστρέφει
+};
+</script>
+
+<script>
+document.querySelectorAll('.profile-tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.profile-tab-btn').forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    ['favoritesList', 'lastSeenList', 'activityList'].forEach(tabId => {
+      document.getElementById(tabId).style.display = (btn.dataset.tab === tabId) ? '' : 'none';
+    });
+  });
+});
+
+
+</script>
+
+
+<!-------------- Favorites cards ---------------->
+<script>
+
+window.favorites = {{ favorites|tojson }};
+
+function renderFavoritesCards(favorites) {
+  const wrapper = document.getElementById('favoritesList');
+  wrapper.innerHTML = "";
+  if (!favorites || favorites.length === 0) {
+    wrapper.innerHTML = '<div class="profile-card-empty">Δεν έχεις αποθηκεύσει αγαπημένες συνταγές ακόμα!</div>';
+    return;
+  }
+  favorites.forEach(dish => {
+    const item = document.createElement('div');
+    item.className = 'profile-card-item';
+    item.setAttribute('data-recipe-id', dish.id);
+    item.style.position = "relative";
+    item.onclick = function() {
+      window.location = '/recipe_page/' + dish.id;
+    };
+
+    var imgSrc = dish.image ? '/static/images/recipes/' + dish.image : '/static/images/placeholder.jpg';
+    var html = ''
+      + '<img class="card-main-img" src="' + imgSrc + '" alt="' + dish.title + '" onerror="this.src=\'/static/images/placeholder.jpg\'">'
+      + '<div class="profile-card-item-title">' + dish.title + '</div>'
+      + '<div class="profile-card-item-meta">'
+        + '<i class="fa fa-clock"></i>'
+        + '<span class="profile-card-item-time-val">' + (dish.total_time ? dish.total_time + "'" : "-") + '</span>'
+        + '<span class="chef-by-label">by</span>'
+        + '<img class="chef-avatar-inline" src="' + (dish.chef_avatar || '/static/images/avatars/default.jpg') + '" alt="Chef">'
+      + '</div>';
+
+    item.innerHTML = html;
+
+    // Αν θες να έχει καρδούλα favorite (όπως στο carousel), βάλε εδώ το δικό σου toggleFavorite:
+    /*
+    const favWrapper = document.createElement("span");
+    favWrapper.style.position = "absolute";
+    favWrapper.style.top = "7px";
+    favWrapper.style.right = "11px";
+    favWrapper.style.zIndex = "10";
+    favWrapper.style.cursor = "pointer";
+    favWrapper.innerHTML =
+      '<i class="' + (isFavorite(dish.id) ? 'fas' : 'far') + ' fa-heart" style="color: #1a6e38; font-size: 20px; filter: drop-shadow(0 2px 5px #fff2);"></i>';
+    favWrapper.onclick = function(e) {
+      e.stopPropagation();
+      toggleFavorite(favWrapper, dish.id);
+    };
+    item.appendChild(favWrapper);
+    */
+
+    wrapper.appendChild(item);
+  });
+}
+  
+renderFavoritesCards(window.favorites);
+
+</script>
+
+
+<!-------------- Last seen cards ---------------->
+<script>
+
+window.last_seen = {{ last_seen|tojson }};
+
+function renderLastSeenCards(last_seen) {
+  const wrapper = document.getElementById('lastSeenList');
+  wrapper.innerHTML = "";
+  if (!last_seen || last_seen.length === 0) {
+    wrapper.innerHTML = '<div class="profile-card-empty">Δεν έχεις αποθηκεύσει αγαπημένες συνταγές ακόμα!</div>';
+    return;
+  }
+  last_seen.forEach(dish => {
+    const item = document.createElement('div');
+    item.className = 'profile-card-item';
+    item.setAttribute('data-recipe-id', dish.id);
+    item.style.position = "relative";
+    item.onclick = function() {
+      window.location = '/recipe_page/' + dish.id;
+    };
+
+    var imgSrc = dish.image ? '/static/images/recipes/' + dish.image : '/static/images/placeholder.jpg';
+    var html = ''
+      + '<img class="card-main-img" src="' + imgSrc + '" alt="' + dish.title + '" onerror="this.src=\'/static/images/placeholder.jpg\'">'
+      + '<div class="profile-card-item-title">' + dish.title + '</div>'
+      + '<div class="profile-card-item-meta">'
+        + '<i class="fa fa-clock"></i>'
+        + '<span class="profile-card-item-time-val">' + (dish.total_time ? dish.total_time + "'" : "-") + '</span>'
+        + '<span class="chef-by-label">by</span>'
+        + '<img class="chef-avatar-inline" src="' + (dish.chef_avatar || '/static/images/avatars/default.jpg') + '" alt="Chef">'
+      + '</div>';
+
+    item.innerHTML = html;
+
+    // Αν θες να έχει καρδούλα favorite (όπως στο carousel), βάλε εδώ το δικό σου toggleFavorite:
+    /*
+    const favWrapper = document.createElement("span");
+    favWrapper.style.position = "absolute";
+    favWrapper.style.top = "7px";
+    favWrapper.style.right = "11px";
+    favWrapper.style.zIndex = "10";
+    favWrapper.style.cursor = "pointer";
+    favWrapper.innerHTML =
+      '<i class="' + (isFavorite(dish.id) ? 'fas' : 'far') + ' fa-heart" style="color: #1a6e38; font-size: 20px; filter: drop-shadow(0 2px 5px #fff2);"></i>';
+    favWrapper.onclick = function(e) {
+      e.stopPropagation();
+      toggleFavorite(favWrapper, dish.id);
+    };
+    item.appendChild(favWrapper);
+    */
+
+    wrapper.appendChild(item);
+  });
+}
+  
+renderLastSeenCards(window.last_seen);
+
+</script>
+
+
+<script>
+// Δεδομένα από backend: window.activity = {{ activity|tojson }};
+function getActivityBg(type) {
+  if (type === "comment")   return "activity-bg-comment";
+  if (type === "rating")    return "activity-bg-rating";
+  if (type === "cooked")    return "activity-bg-cooked";
+  return "";
+}
+function formatTimestamp(ts) {
+  // Γρήγορη μετατροπή για demo. Βάλε την formatDate που προτιμάς!
+  return ts ? ts.split(" ")[0] : "";
+}
+window.activity = {{ activity|tojson }};
+
+function activityActionText(type) {
+  if (type === "comment") return "Σχολίασες το πιάτο";
+  if (type === "rating")  return "Αξιολόγησες το πιάτο";
+  if (type === "cooked")  return "Μαγείρεψες το πιάτο";
+  return "";
+}
+
+function renderActivityCards(activity) {
+  const wrapper = document.getElementById('activityList');
+  wrapper.innerHTML = "";
+  if (!activity || activity.length === 0) {
+    wrapper.innerHTML = '<div class="profile-card-empty">Δεν έχεις δραστηριότητα ακόμα!</div>';
+    return;
+  }
+  activity.forEach(act => {
+    const item = document.createElement('div');
+    item.className = 'activity-card activity-card-bg-' + act.type;
+
+    var imgSrc = act.image_url ? '/static/images/recipes/' + act.image_url : '/static/images/placeholder.jpg';
+    var chefSrc = act.chef_avatar || '/static/images/avatars/default.jpg';
+    var timeVal = act.total_time ? act.total_time + "'" : "-";
+    var activityContent = '';
+    var activityIcon = '';
+    var activityLabel = '';
+
+    if (act.type === "comment") {
+      activityIcon = '<i class="fa fa-comment"></i>';
+      activityLabel = 'Σχόλιο';
+      activityContent = '<div class="activity-content">' + (act.comment || '') + '</div>';
+    } else if (act.type === "rating") {
+      activityIcon = '<i class="fa fa-star"></i>';
+      activityLabel = 'Αξιολόγηση';
+      activityContent = '<div class="activity-content">Βαθμολογία: <b>' + act.rating + '/5</b></div>';
+    } else if (act.type === "cooked") {
+      activityIcon = '<i class="fa fa-utensils"></i>';
+      activityLabel = 'Μαγείρεμα';
+      activityContent = '<div class="activity-content">Έφτιαξες το πιάτο!</div>';
+    }
+
+    let activityDate = act.timestamp ? `<div class="activity-timestamp"><i class="fa fa-clock"></i> ${act.timestamp.split(" ")[0]}</div>` : "";
+
+    item.innerHTML = `
+	  <div class="activity-card-left">
+		<img class="activity-card-img" src="${imgSrc}" alt="${act.recipe_title}" onerror="this.src='/static/images/placeholder.jpg'">
+		<div class="activity-card-meta">
+		  <i class="fa fa-clock"></i>
+		  <span class="profile-card-item-time-val">${act.total_time ? act.total_time + "'" : "-"}</span>
+		  <span class="chef-by-label">by</span>
+		  <img class="activity-card-chef-img" src="${chefSrc}" alt="Chef">
+		</div>
+	  </div>
+	  <div class="activity-card-right">
+		<div class="activity-type-label">${activityIcon} ${activityActionText(act.type)}</div>
+		<div class="activity-card-title">${act.recipe_title}</div>
+		<div class="activity-timestamp">Στις: ${act.timestamp || ''}</div>
+		<div class="activity-content">
+		  ${act.type === "rating" ? "Βαθμολογία: <b>" + act.rating + "/5</b>"
+			: act.type === "comment" ? (act.comment || "")
+			: act.type === "cooked" ? (act.notes ? 'Σημείωση: ' + act.notes : '')
+			: ''}
+		</div>
+	  </div>
+	`;
+
+
+//    item.querySelector('.activity-edit-btn').onclick = function(e) {
+//      e.stopPropagation();
+      // Edit action εδώ
+//    };
+//    item.querySelector('.activity-delete-btn').onclick = function(e) {
+//      e.stopPropagation();
+      // Delete action εδώ
+//    };
+    wrapper.appendChild(item);
+  });
+}
+
+console.log(window.activity);
+renderActivityCards(window.activity);
+</script>
+
+{% endblock %}
