@@ -1304,6 +1304,20 @@ def index():
     else:
         return redirect(url_for("welcome"))
 
+
+@app.route("/welcome")
+def welcome_v2():
+    hour = datetime.now().hour
+    greeting = "Καλημέρα" if hour < 12 else "Καλησπέρα"
+    day_idx = datetime.now().weekday()  # 0 = Δευτέρα
+    day_name = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"][day_idx]
+    return render_template(
+        "welcome.html",
+        greeting=greeting,
+        day_name=day_name
+    )
+
+
 @app.route("/login/google/callback")
 def google_login_callback():
     if not google.authorized:
@@ -1532,57 +1546,6 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
-@app.route("/welcome")
-def welcome():     
-    user, _ = get_user()
-    hour = datetime.now().hour
-    greeting = "Καλημέρα" if hour < 12 else "Καλησπέρα"
-    day_idx = datetime.now().weekday()  # 0 = Δευτέρα
-    day_name = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"][day_idx]
-
-    # Βρες το τρέχον εβδομαδιαίο μενού του χρήστη
-    week_start = (datetime.now() - timedelta(days=day_idx)).date()
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    c = conn.execute(
-        "SELECT * FROM weekly_menu WHERE user_id=? AND week_start_date=? ORDER BY day_of_week ASC",
-        (user["id"], str(week_start))
-    )
-    weekly_menu = c.fetchall()
-
-    # Ορισμοί για σήμερα & αύριο
-    today_menu = "-"
-    today_menu_id = ""
-    tomorrow_menu = "-"
-    tomorrow_menu_id = ""
-
-    if len(weekly_menu) == 7:
-        recipe_today, recipe_tomorrow = None, None
-        if weekly_menu[day_idx]["recipe_id"]:
-            recipe_today = conn.execute("SELECT * FROM recipes WHERE id=?", (weekly_menu[day_idx]["recipe_id"],)).fetchone()
-        if weekly_menu[(day_idx+1)%7]["recipe_id"]:
-            recipe_tomorrow = conn.execute("SELECT * FROM recipes WHERE id=?", (weekly_menu[(day_idx+1)%7]["recipe_id"],)).fetchone()
-        if recipe_today:
-            t = recipe_today["total_time"] if recipe_today["total_time"] else "-"
-            today_menu = f'{recipe_today["title"]} – χρόνος μαγειρέματος: {t}′'
-            today_menu_id = recipe_today["id"]   # <--- Σωστά περνάμε το ID
-        if recipe_tomorrow:
-            t = recipe_tomorrow["total_time"] if recipe_tomorrow["total_time"] else "-"
-            tomorrow_menu = f'{recipe_tomorrow["title"]} – χρόνος μαγειρέματος: {t}′'
-            tomorrow_menu_id = recipe_tomorrow["id"]
-
-    conn.close()
-    
-    return render_template(
-        "welcome.html",
-        greeting=greeting,
-        user_name=user["first_name"],
-        day_name=day_name,
-        today_menu=today_menu,
-        today_menu_id=today_menu_id,
-        tomorrow_menu=tomorrow_menu,
-        tomorrow_menu_id=tomorrow_menu_id,
-    )
 
 @app.route("/main")
 @login_required
