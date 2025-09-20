@@ -218,6 +218,13 @@ def fix_ai_ingredient(ai_result, known_ingredients):
     # Αν όχι, γύρνα το AI core (έστω και αν είναι κομμένο)
     return ai_result
 
+def fmt_ts(ts):
+    # Μετατρέπει '2025-09-19T19:21:16.162959' σε '2025-09-19 19:21'
+    try:
+        return datetime.fromisoformat(ts).strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return ts or ""
+
 @app.route('/api/normalize_ingredient', methods=['POST'])
 def normalize_ingredient_route():
     data = request.get_json()
@@ -553,6 +560,177 @@ def api_similar():
     return {"success": True, "recipes": data}
 
 
+@app.route("/profile")
+def profile():
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    # --- User Info ---
+    cur.execute("SELECT first_name FROM users WHERE id = ?", (user_id,))
+    row = cur.fetchone()
+    if not row:
+        return "User not found", 404
+    first_name = row[0]
+    avatar_path = f"/static/images/avatars/{user_id}.jpg"
+
+    # --- User Stats ---
+    cur.execute("SELECT COUNT(*) FROM favorite_recipes WHERE user_id = ?", (user_id,))
+    favorites_count = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM cooked_dishes WHERE user_id = ?", (user_id,))
+    cooked_count = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM recipe_ratings WHERE user_id = ?", (user_id,))
+    ratings_count = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM recipe_comments WHERE user_id = ?", (user_id,))
+    comments_count = cur.fetchone()[0]
+
+    # --- Αγαπημένα ---
+    
+    
+    def get_chef_avatar(chef_name):
+        filename = CHEF_AVATAR_MAP.get(chef_name, 'default.jpg')
+        return f"/static/images/avatars/{filename}"
+        
+    cur.execute("""
+    SELECT r.id, r.title, r.image_path, r.chef, r.total_time
+    FROM favorite_recipes f
+    JOIN recipes r ON f.recipe_id = r.id
+    WHERE f.user_id = ?
+    ORDER BY f.id DESC
+    LIMIT 12
+    """, (user_id,))
+    favorites = []
+    for row in cur.fetchall():
+        chef_avatar = get_chef_avatar(row[3])  # row[3] είναι το r.chef
+        favorites.append({
+            "id": row[0],
+            "title": row[1],
+            "image": row[2],
+            "chef_name": row[3],
+            "chef_avatar": chef_avatar,
+            "total_time": row[4]
+        })
+
+    # --- Είδες πρόσφατα (last seen) ---
+    cur.execute("""
+        SELECT r.id, r.title, r.image_path, r.chef, r.total_time, lsr.seen_at
+        FROM last_seen_recipes lsr
+        JOIN recipes r ON lsr.recipe_id = r.id
+        WHERE lsr.user_id = ?
+        ORDER BY lsr.seen_at DESC
+        LIMIT 12
+    """, (user_id,))
+    last_seen = []
+    for row in cur.fetchall():
+        chef_avatar = get_chef_avatar(row[3])
+        last_seen.append({
+            "id": row[0],
+            "title": row[1],
+            "image": row[2],
+            "chef_name": row[3],
+            "chef_avatar": chef_avatar,
+            "total_time": row[4],
+            "seen_at": row[5]
+        })
+
+
+    # --- Δραστηριότητα (comments, ratings, cooked) ---
+    
+    # Comments
+    cur.execute("""
+        SELECT rc.recipe_id, r.title, r.image_path, r.total_time, r.chef, rc.created_at, 'comment' as type, rc.comment, NULL as rating
+        FROM recipe_comments rc
+        JOIN recipes r ON rc.recipe_id = r.id
+        WHERE rc.user_id = ?
+    """, (user_id,))
+    comments = [
+        {
+            "recipe_id": row[0],
+            "recipe_title": row[1],
+            "image_url": row[2],
+            "total_time": row[3],
+            "chef_name": row[4],
+            "chef_avatar": get_chef_avatar(row[4]),
+            "timestamp": fmt_ts(row[5]),
+            "type": row[6],
+            "comment": row[7],
+            "rating": None
+        }
+        for row in cur.fetchall()
+    ]
+
+    # Ratings
+    cur.execute("""
+        SELECT rr.recipe_id, r.title, r.image_path, r.total_time, r.chef, rr.updated_at, 'rating' as type, NULL as comment, rr.rating
+        FROM recipe_ratings rr
+        JOIN recipes r ON rr.recipe_id = r.id
+        WHERE rr.user_id = ?
+    """, (user_id,))
+    ratings = [
+        {
+            "recipe_id": row[0],
+            "recipe_title": row[1],
+            "image_url": row[2],
+            "total_time": row[3],
+            "chef_name": row[4],
+            "chef_avatar": get_chef_avatar(row[4]),
+            "timestamp": row[5],
+            "type": row[6],
+            "comment": None,
+            "rating": row[8]
+        }
+        for row in cur.fetchall()
+    ]
+
+
+    # Cooked
+    cur.execute("""
+        SELECT cd.recipe_id, r.title, r.image_path, r.total_time, r.chef, cd.cooked_at, 'cooked' as type, NULL as comment, NULL as rating
+        FROM cooked_dishes cd
+        JOIN recipes r ON cd.recipe_id = r.id
+        WHERE cd.user_id = ?
+    """, (user_id,))
+    cooked_activity = [
+        {
+            "recipe_id": row[0],
+            "recipe_title": row[1],
+            "image_url": row[2],
+            "total_time": row[3],
+            "chef_name": row[4],
+            "chef_avatar": get_chef_avatar(row[4]),
+            "timestamp": row[5],
+            "type": row[6],
+            "comment": None,
+            "rating": None
+        }
+        for row in cur.fetchall()
+    ]
+
+    # Ταξινόμηση όλης της activity κατά timestamp (πιο πρόσφατα πρώτα)
+    activity = comments + ratings + cooked_activity
+    activity.sort(key=lambda x: x['timestamp'], reverse=True)
+
+    # --- Render σελίδας με Jinja2 ---
+    return render_template(
+        "profile.html",
+        avatar_path=avatar_path,
+        first_name=first_name,
+        stats={
+            "favorites": favorites_count,
+            "cooked": cooked_count,
+            "ratings": ratings_count,
+            "comments": comments_count
+        },
+        favorites=favorites,
+        last_seen=last_seen,
+        activity=activity
+    )
 
 
 
@@ -592,7 +770,6 @@ def ai_reply_test():
 @app.route("/test_ai")
 def test_ai():
     return render_template("test_ai.html")
-
 
 
 @app.route('/api/dish_categories')
@@ -1294,7 +1471,6 @@ def ai_suggest_dish():
     except Exception as e:
         print("[ERROR]", e)
         return jsonify({"error": str(e)}), 500
-
 
 
 @app.route("/")
@@ -2162,51 +2338,6 @@ def get_all_allergens():
                 all_allergs.add(a)
     return sorted(all_allergs)
 
-@app.route("/profile")
-@login_required
-def profile():
-    user, members = get_user()
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-
-    # Φέρε τους weekly_goals του χρήστη
-    goals = conn.execute(
-        "SELECT * FROM weekly_goals WHERE user_id=? ORDER BY id",
-        (user["id"],)
-    ).fetchall()
-
-    # Κατηγορίες διαθέσιμες για στόχους
-    categories = [
-        'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα', 'Delivery'
-    ]
-    comparisons = ['τουλάχιστον', 'το πολύ']
-
-    # Βρες όλους τους chef που έχουν πάνω από 1 συνταγή
-    chefs = conn.execute("""
-        SELECT chef, COUNT(*) as cnt
-        FROM recipes
-        WHERE chef IS NOT NULL AND chef != ''
-        GROUP BY chef
-        HAVING cnt > 1
-        ORDER BY chef COLLATE NOCASE
-    """).fetchall()
-    chef_options = [r["chef"] for r in chefs]
-    chef_options = sorted(set(chef_options), key=lambda x: x.lower())
-    if "Κανένας" not in chef_options:
-        chef_options = ["Κανένας"] + chef_options  # Βάλε πάντα πρώτο το "Κανένας"
-
-    conn.close()
-
-    return render_template(
-        "profile_view.html",
-        profile=user,
-        members=members,
-        weekly_goals=goals,
-        categories=categories,
-        comparisons=comparisons,
-        all_allergs=get_all_allergens(),    
-        chef_options=chef_options,
-    )
 
 
 @app.route("/settings", methods=["GET", "POST"])
