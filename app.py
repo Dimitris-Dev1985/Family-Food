@@ -252,7 +252,7 @@ def normalize_ingredient_route():
 
 
 @app.route("/welcome")
-def welcome_v2():
+def welcome():
     hour = datetime.now().hour
     greeting = "Καλημέρα" if hour < 12 else "Καλησπέρα"
     day_idx = datetime.now().weekday()  # 0 = Δευτέρα
