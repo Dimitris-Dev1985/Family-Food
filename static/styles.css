@@ -204,12 +204,12 @@ body.menu-onboarding-active nav.navbar a.nav-link {
    ✦ BASE STYLING & CONTAINER
    ================================================== */
 body {
-  background: #f5f6fa;
+  
   min-height: 100vh;
 }
 
 .container, .main-welcome-container {
-  padding-bottom: 70px;
+  padding-bottom: 1rem;
   padding-top: 1rem;
 }
 
@@ -218,7 +218,8 @@ body {
     padding-left: 5px;
     padding-right: 5px;
     max-width: 100vw;
-    overflow-x: hidden;
+	overflow-x: hidden;
+
   }
 }
 
@@ -296,11 +297,14 @@ body {
   }
 
   .modal-content {
+	width: 90%;
+	left: 50%;
+    transform: translateX(-50%);
     display: flow;
     border-radius: 1rem;
     padding: 0.5em;
     overflow: visible !important;
-    max-height: 90vh;
+    max-width: 90vh;
     align-items: center;
     z-index: 1005;
   }
@@ -357,6 +361,7 @@ body {
   height: fit-content;
   margin-top: 10px;
   background: #a8ffd3;
+  z-index: 2000;
 }
 
 .list-group-item {
@@ -419,7 +424,7 @@ body {
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 18px 18px;
-  padding-right: 36px;
+  padding-right: 5px;
   cursor: text;
 }
 
