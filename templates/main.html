@@ -941,16 +941,18 @@ function renderDishCards(dishes = []) {
       window.location = '/recipe_page/' + dish.id;
     };
 
-    var imgSrc = dish.image_url || '/static/images/placeholder.jpg';
-    var html = ''
-      + '<img class="card-main-img" src="' + imgSrc + '" alt="' + dish.title + '" onerror="this.src=\'/static/images/placeholder.jpg\'">'
-      + '<div class="similar-card-item-title">' + dish.title + '</div>'
-      + '<div class="similar-card-item-meta">'
-        + '<i class="fa fa-clock"></i>'
-        + '<span class="similar-card-item-time-val">' + (dish.total_time ? dish.total_time + "'" : "-") + '</span>'
-        + '<span class="chef-by-label">by</span>'
-        + '<img class="chef-avatar-inline" src="/static/images/avatars/default.jpg" alt="Chef">'
-      + '</div>';
+	var imgSrc = dish.image_url || '/static/images/placeholder.jpg';
+	var chefAvatar = dish.chef_avatar || '/static/images/avatars/default.jpg';
+	var html = ''
+	  + '<img class="card-main-img" src="' + imgSrc + '" alt="' + dish.title + '" onerror="this.src=\'/static/images/placeholder.jpg\'">'
+	  + '<div class="similar-card-item-title">' + dish.title + '</div>'
+	  + '<div class="similar-card-item-meta">'
+		+ '<i class="fa fa-clock"></i>'
+		+ '<span class="similar-card-item-time-val">' + (dish.total_time ? dish.total_time + "'" : "-") + '</span>'
+		+ '<span class="chef-by-label">by</span>'
+		+ '<img class="chef-avatar-inline" src="' + chefAvatar + '" alt="Chef" onerror="this.src=\'/static/images/avatars/default.jpg\'">'
+	  + '</div>';
+
 
     item.innerHTML = html;
 
@@ -1079,6 +1081,7 @@ function callAISuggest(userMessage = "", step) {
         return;
       }
       if (data.message) renderAIBubble(data.message);
+	  console.log("dishes = ",data.dishes);
       if (data.dishes?.length) renderDishCards(data.dishes);
       if (!data.dishes || data.dishes.length === 0) {
         //localStorage.clear();

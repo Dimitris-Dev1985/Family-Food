@@ -230,7 +230,7 @@ html {font-size: 15px;}
 }
 .similar-card-item-meta .fa-clock {
   font-size: 1.02rem;
-  color: #218e46;
+  color: var(--brand);
   margin-right: 1px;
   vertical-align: middle;
   display: inline-block;
@@ -280,6 +280,17 @@ html {font-size: 15px;}
 
 
 <script>
+
+function normalize(str) {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "") // αφαιρεί τόνους
+    .replace(/[·.,;!?]/g, "") // αφαιρεί σημεία στίξης
+    .trim();
+}
+
+
 function openRecipePage(id) {
   // π.χ. πάρε από local array ή fetch(`/api/recipe/${id}`)
   const recipeData = recipesArr.find(r => r.id == id); // παράδειγμα με local array

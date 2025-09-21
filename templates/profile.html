@@ -125,7 +125,7 @@
 }
 .profile-tab-btn {
   flex: 1 0 0;
-  padding: 0px 10px 0px 10px;
+  padding: 5px;
   border: none;
   background: #f7faf7;
   color: var(--brand-hover);
@@ -149,6 +149,53 @@
   box-shadow: 0 2px 12px #a0deb566;
   z-index: 2;
 }
+
+<style>
+.activity-subtabs-row {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto 0 auto;
+  display: flex;
+  gap: 0px;
+  overflow-x: auto;
+  padding: 4px 0 0 0;
+  border-bottom: 2px solid #e7eae7;
+  border-radius: 15px 15px 0 0;
+  background: none;
+}
+
+.activity-subtab-btn {
+  flex: 1 0 0;
+  padding: 5px;
+  border: none;
+  background: #f7faf7;
+  color: var(--brand-hover);
+  font-size: 1.06rem;
+  font-weight: 700;
+  border-radius: 14px;
+  cursor: pointer;
+  margin-right: 4px;
+  margin-bottom: -2px;
+  opacity: 0.93;
+  transition: color 0.15s, background 0.13s, box-shadow 0.17s;
+  position: relative;
+  z-index: 1;
+  box-shadow: none;
+}
+.activity-subtab-btn:last-child { margin-right: 0; }
+
+.activity-subtab-btn.active,
+.activity-subtab-btn:focus {
+  color: #fff;
+  background: var(--brand);
+  opacity: 1;
+  box-shadow: 0 2px 12px #a0deb566;
+  z-index: 2;
+  outline: none;
+}
+
+</style>
+
 
 </style>
 
@@ -252,7 +299,7 @@
 }
 .profile-card-item-meta .fa-clock {
   font-size: 1.02rem;
-  color: #218e46;
+  color: var(--brand);
   margin-right: 1px;
   vertical-align: middle;
   display: inline-block;
@@ -263,7 +310,7 @@
   color: #1a6e38;
   font-weight: 500;
   margin-right: 1px;
-  margin-left: 2px;
+  margin-left: 5px;
   letter-spacing: 0.4px;
   font-family: inherit;
 }
@@ -271,7 +318,7 @@
   font-family: 'Indie Flower', cursive;
   font-size: 0.85rem;
   color: #bdbdbd;
-  margin-right: 2px;
+  margin-right: 5px;
   margin-left: 15px;
   font-style: italic;
   letter-spacing: 0.1em;
@@ -298,6 +345,7 @@
   display: flex;
   flex-direction: row;
   align-items: stretch;
+  margin-bottom: 10px;
   width: 100%;
   border-radius: 15px;
   border: 1.2px solid #edecec;
@@ -329,21 +377,10 @@
   display: flex;
   align-items: center;
   font-size: 0.94rem;
-  color: #295f37;
+  color: var(--brand);
 }
-.profile-card-item-time-val { font-size: 0.94rem; color: #1a6e38; font-weight: 500; }
-.chef-by-label {
-  font-family: 'Indie Flower', cursive, sans-serif;
-  font-size: 0.85rem;
-  color: #bdbdbd;
-  margin-right: 2px;
-  margin-left: 13px;
-  font-style: italic;
-  letter-spacing: 0.07em;
-  line-height: 1;
-  position: relative;
-  top: 0.5px;
-}
+.profile-card-item-time-val { font-size: 0.94rem; color: var(--brand); font-weight: 500; }
+
 .activity-card-chef-img {
   width: 22px;
   height: 22px;
@@ -373,17 +410,20 @@
 .activity-type-label .fa-utensils { color: #ee7642; }
 
 .activity-card-title {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #283228;
-  margin-bottom: 2px;
+  margin-bottom: 10px;
   line-height: 1.18;
 }
 .activity-timestamp {
-  font-size: 0.95rem;
-  color: #b7b7b7;
-  margin-bottom: 10px;
+  font-size: 0.93em;
+  color: #a8aba2;
+  margin-top: 4px;
+  font-style: italic;
+  letter-spacing: 0.01em;
 }
+
 .activity-content {
   font-size: 1.1rem;
   color: #233320;
@@ -393,7 +433,259 @@
 
 
 
+.activity-user-content {
+  background: #fff;
+  padding: 8px;
+  margin: 4px 0 6px 0;
+  font-size: 1.07em;
+  box-shadow: 0 2px 9px #d8b1d977;
+  border-left: 5px solid var(--brand);
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  color: #18381a;
+  font-weight: 500;
+  word-break: break-word;
+  transition: box-shadow 0.12s;
+}
+
+.activity-card-bg-comment .activity-user-content {
+  background: #eafbe7;
+  border-left-color: #19a147;
+}
+
+.activity-card-bg-rating .activity-user-content {
+  background: #fffbe9;
+  border-left-color: #e6ba08;
+}
+
+.activity-card-bg-cooked .activity-user-content {
+  background: #fff7f2;
+  border-left-color: #ee7642;
+}
+.activity-user-content b {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+
+
 </style>
+
+<!-- === Filters and Search section === -->
+<style>
+/* === Filters and Search section (profile) === */
+#favorites-filters-section {
+  background: #fcfdfb;
+  border-radius: 16px;
+  margin: 16px auto 8px auto;
+  max-width: 580px;
+  box-shadow: 0 1.5px 7px rgba(33,142,70,0.04);
+  padding: 14px 15px 9px 15px;
+  border: 1.2px solid #e7efea;
+  animation: fadeIn 0.25s;
+}
+.profile-filters-row .form-select-sm {
+  min-height: 35px;
+  font-size: 1.04em;
+  border-radius: 8px;
+  background: #f8fcf9;
+  padding: 4px;
+  color: #1a6e38;
+  border: 1.1px solid #d6ead8;
+  transition: border 0.13s, box-shadow 0.13s;
+}
+.profile-filters-row .form-select-sm:focus {
+  border: 1.2px solid var(--brand);
+  box-shadow: 0 0 0 1.5px #eafbe7;
+}
+.profile-search-row input[type="text"].form-control-sm {
+  font-size: 1.07em;
+  border-radius: 10px;
+  background: #f8fcf9;
+  color: #1a6e38;
+  border: 1.1px solid #d6ead8;
+  min-height: 35px;
+  transition: border 0.13s, box-shadow 0.13s;
+}
+.profile-search-row input[type="text"].form-control-sm:focus {
+  border: 1.2px solid var(--brand);
+  box-shadow: 0 0 0 1.5px #eafbe7;
+}
+.profile-search-row .btn-sm {
+  font-size: 1.13em;
+  border-radius: 50%;
+  min-width: 35px;
+  min-height: 35px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-search-row .btn-outline-secondary {
+  border: 1.1px solid #e1e5e1;
+  background: #f7fdf8;
+  color: var(--brand);
+}
+.profile-search-row .btn-outline-secondary:hover {
+  background: #eafbe7;
+  color: #1a6e38;
+}
+.profile-search-row .btn-light {
+  background: #f4fbf5;
+  color: var(--brand);
+  border: 1.1px solid #e1e5e1;
+}
+.profile-search-row .btn-light:hover {
+  background: #eafbe7;
+  color: #1a6e38;
+}
+@media (max-width: 600px) {
+  #favorites-filters-section { padding: 10px 3vw 8px 3vw; }
+  .profile-search-row input[type="text"].form-control-sm { min-height: 34px; font-size: 1em; }
+  .profile-filters-row .form-select-sm { min-height: 32px; font-size: 0.98em; }
+}
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(18px);}
+  100% { opacity: 1; transform: none;}
+}
+</style>
+
+<!-- === Activity Card action buttons === -->
+<style>
+.activity-card {
+  position: relative;
+  /* ...τα υπόλοιπα styles σου... */
+}
+.activity-action-btns {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  flex-direction: row;
+  gap: 10px;
+  border-radius: 16px;
+  padding: 13px 23px;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.18s;
+  transition: opacity 0.18s, visibility 0.18s;
+  display: flex;
+}
+.activity-action-btns.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+.action-btn {
+  width: 44px; height: 44px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.45em;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 11px #9fe4b880;
+  margin: 0 5px;
+  transition: background 0.13s, color 0.13s, transform 0.13s;
+  outline: none;
+}
+.action-btn:active {
+  background: var(--brand);
+  color: #fff;
+  transform: scale(0.93);
+}
+</style>
+
+
+<!-- =================== DELETE CONFIRM MODAL =================== -->
+<style>
+
+.modal-logout {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  position: fixed;
+  z-index: 250;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  background: #fffaf5;
+  border-radius: 15px;
+  box-shadow: 0 6px 24px rgba(33,142,70,0.17);
+  min-width: 288px; max-width: 95vw;
+  padding: 28px 20px 20px 20px;
+  animation: fadeIn 0.17s;
+  transition: opacity 0.18s, visibility 0.18s;
+}
+.modal-logout.open {
+  visibility: visible;
+  opacity: 1;
+}
+
+.modal-logout-content { text-align: center; }
+.modal-logout-title {
+  font-size: 1.17rem;
+  font-weight: 700;
+  color: var(--brand, #218e46);
+  margin-bottom: 7px;
+}
+.modal-logout-title i { color: #e34056; margin-right: 7px; }
+.modal-logout-msg {
+  color: var(--text-dim, #444);
+  font-size: 1.04rem;
+  margin-bottom: 19px;
+  font-family: 'Inter', sans-serif;
+}
+.modal-logout-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+.btn-logout-cancel {
+  background: #f3f3f3;
+  color: #555;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.13s;
+}
+.btn-logout-cancel:hover { background: #eafbe7; color: var(--brand-hover, #1a6e38); }
+.btn-logout-confirm {
+  background: var(--pink, #ef2d6a);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.btn-logout-confirm:hover { background: #c5163e; }
+
+.modal-logout-backdrop {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  position: fixed; inset: 0;
+  z-index: 200;
+  background: rgba(44, 44, 44, 0.15);
+  backdrop-filter: blur(1.5px);
+  animation: fadeIn 0.17s;
+  transition: opacity 0.18s, visibility 0.18s;
+}
+.modal-logout-backdrop.open {
+  visibility: visible;
+  opacity: 1;
+}
+
+</style>
+
+
 
 
 
@@ -416,28 +708,78 @@
 
 <div class="profile-status-bar">
   <div class="profile-status-item" id="status-favorites">
-    <div class="profile-status-value">{{ stats.favorites }}</div>
+    <div class="profile-status-value" id="stats-favorites">{{ stats.favorites }}</div>
     <div class="profile-status-label">Αγαπημένες Συνταγές</div>
   </div>
   <div class="profile-status-item" id="status-cooked">
-    <div class="profile-status-value">{{ stats.cooked }}</div>
+    <div class="profile-status-value" id="stats-cooked">{{ stats.cooked }}</div>
     <div class="profile-status-label">Μαγειρεμένα Πιάτα</div>
   </div>
   <div class="profile-status-item" id="status-ratings">
-    <div class="profile-status-value">{{ stats.ratings }}</div>
+    <div class="profile-status-value" id="stats-ratings">{{ stats.ratings }}</div>
     <div class="profile-status-label">Αξιολογήσεις</div>
   </div>
   <div class="profile-status-item" id="status-comments">
-    <div class="profile-status-value">{{ stats.comments }}</div>
+    <div class="profile-status-value" id="stats-comments">{{ stats.comments }}</div>
     <div class="profile-status-label">Σχόλια</div>
   </div>
 </div>
+
 
 <div class="profile-tabs-row" id="profileTabs">
   <button class="profile-tab-btn active" data-tab="favoritesList">Αγαπημένες Συνταγές</button>
   <button class="profile-tab-btn" data-tab="lastSeenList">Είδες πρόσφατα</button>
   <button class="profile-tab-btn" data-tab="activityList">Δραστηριότητα</button>
 </div>
+
+
+<!-- === Φίλτρα & Search για Αγαπημένες === -->
+<div id="favorites-filters-section" style="display:;">
+  <div class="row g-2 mb-2 profile-filters-row">
+    <div class="col-6">
+      <select id="filter-chef" class="form-select form-select-sm">
+        <option value="">Όλοι οι σεφ</option>
+        <option value="Άκης Πετρετζίκης">Άκης Πετρετζίκης</option>
+        <option value="Ντίνα Νικολάου">Ντίνα Νικολάου</option>
+        <!-- ...και άλλοι δυναμικά JS... -->
+      </select>
+    </div>
+    <div class="col-6">
+      <select id="filter-time" class="form-select form-select-sm">
+        <option value="">Όλοι οι χρόνοι</option>
+        <option value="30">Έως 30'</option>
+        <option value="60">Έως 60'</option>
+        <option value="120">Έως 2 ώρες</option>
+      </select>
+    </div>
+    <div class="col-6">
+      <select id="filter-category" class="form-select form-select-sm">
+        <option value="">Όλες οι κατηγορίες</option>
+        <option value="Vegan">Vegan</option>
+        <option value="Κρεατικά">Κρεατικά</option>
+        <option value="Θαλασσινά">Θαλασσινά</option>
+      </select>
+    </div>
+    <div class="col-6">
+      <select id="filter-method" class="form-select form-select-sm">
+        <option value="">Όλες οι μέθοδοι</option>
+        <option value="Φούρνος">Φούρνος</option>
+        <option value="Κατσαρόλα">Κατσαρόλα</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="mb-3 d-flex profile-search-row">
+    <input type="text" id="search-term" class="form-control form-control-sm voice-enabled" placeholder="Αναζήτησε... ή πάτα το μικρόφωνο:" data-voice-target="favorites">
+    <button class="btn btn-outline-secondary btn-sm ms-2" id="reset-filters-btn" type="button">
+      <i class="fa fa-rotate-left"></i>
+    </button>
+    <button class="btn btn-light btn-sm ms-2" type="button" id="voice-search-btn" title="Αναζήτηση με φωνή">
+      <i class="fa fa-microphone"></i>
+    </button>
+  </div>
+</div>
+
 
 <div class="profile-card-list" id="favoritesList">
   <!-- Τα αγαπημένα πιάτα θα μπουν εδώ από JS -->
@@ -451,32 +793,90 @@
   <!-- H δραστηριοτητα θα μπει εδώ από JS -->
 </div>
 
+{% endblock %}
 
+
+
+{% block modals %}
+
+<!-- === DELETE CONFIRM MODAL === -->
+<div id="deleteConfirmModal" class="modal-logout">
+  <div class="modal-logout-content">
+    <div class="modal-logout-title">
+      <i class="fa fa-trash"></i> Διαγραφή;
+    </div>
+    <div class="modal-logout-msg" id="deleteConfirmMsg">
+      Θέλεις σίγουρα να διαγράψεις αυτή τη δραστηριότητα;
+    </div>
+    <div class="modal-logout-actions">
+      <button class="btn-logout-cancel" onclick="closeDeleteModal()">Ακύρωση</button>
+      <button class="btn-logout-confirm" id="confirmDeleteBtn">Διαγραφή</button>
+    </div>
+  </div>
+</div>
+<div id="deleteModalBackdrop" class="modal-logout-backdrop" onclick="closeDeleteModal()"></div>
 
 {% endblock %}
 
+
 {% block scripts %}
 
+<script>
+window.current_user_id = {{ user_id }};
+
+function updateProfileStat(stat) {
+  var el = document.getElementById("stats-" + stat);
+  if (!el) return;
+  var n = parseInt(el.textContent, 10);
+  if (!isNaN(n) && n > 0) {
+    el.textContent = n - 1;
+  }
+}
+
+
+</script>
+
+<!-------------- TopBar buttons ---------------->
 <script>
 document.getElementById('backBtn').onclick = function() {
   window.location.href = '/main'; // ή βάλε όπου θες να επιστρέφει
 };
 </script>
 
+<!-------------- Tab changing ---------------->
 <script>
-document.querySelectorAll('.profile-tab-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.profile-tab-btn').forEach(x => x.classList.remove('active'));
-    btn.classList.add('active');
-    ['favoritesList', 'lastSeenList', 'activityList'].forEach(tabId => {
-      document.getElementById(tabId).style.display = (btn.dataset.tab === tabId) ? '' : 'none';
+document.addEventListener("DOMContentLoaded", function () {
+  var filtersSection = document.getElementById("favorites-filters-section");
+
+  document.querySelectorAll('.profile-tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      // Tabs logic
+      document.querySelectorAll('.profile-tab-btn').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      ['favoritesList', 'lastSeenList', 'activityList'].forEach(tabId => {
+        document.getElementById(tabId).style.display = (btn.dataset.tab === tabId) ? '' : 'none';
+      });
+
+      // Filters show/hide logic
+      var activeTab = btn.dataset.tab;
+      if (filtersSection) {
+        if (activeTab === "favoritesList" || activeTab === "lastSeenList") {
+          filtersSection.style.display = "";
+        } else {
+          filtersSection.style.display = "none";
+        }
+      }
     });
   });
+
+  // On load, show/hide filters depending on active tab
+  var firstActive = document.querySelector(".profile-tab-btn.active");
+  if (filtersSection && firstActive) {
+    var tab = firstActive.getAttribute("data-tab");
+    filtersSection.style.display = (tab === "favoritesList" || tab === "lastSeenList") ? "" : "none";
+  }
 });
-
-
 </script>
-
 
 <!-------------- Favorites cards ---------------->
 <script>
@@ -532,11 +932,11 @@ function renderFavoritesCards(favorites) {
     wrapper.appendChild(item);
   });
 }
-  
+
+console.log("favorites = ",window.favorites);  
 renderFavoritesCards(window.favorites);
 
 </script>
-
 
 <!-------------- Last seen cards ---------------->
 <script>
@@ -592,14 +992,16 @@ function renderLastSeenCards(last_seen) {
     wrapper.appendChild(item);
   });
 }
-  
+
+console.log("last_seen = ",window.last_seen);    
 renderLastSeenCards(window.last_seen);
 
 </script>
 
-
+<!-------------- Activity cards ---------------->
 <script>
-// Δεδομένα από backend: window.activity = {{ activity|tojson }};
+window.activity = {{ activity|tojson }};
+
 function getActivityBg(type) {
   if (type === "comment")   return "activity-bg-comment";
   if (type === "rating")    return "activity-bg-rating";
@@ -607,11 +1009,8 @@ function getActivityBg(type) {
   return "";
 }
 function formatTimestamp(ts) {
-  // Γρήγορη μετατροπή για demo. Βάλε την formatDate που προτιμάς!
   return ts ? ts.split(" ")[0] : "";
 }
-window.activity = {{ activity|tojson }};
-
 function activityActionText(type) {
   if (type === "comment") return "Σχολίασες το πιάτο";
   if (type === "rating")  return "Αξιολόγησες το πιάτο";
@@ -619,78 +1018,496 @@ function activityActionText(type) {
   return "";
 }
 
+
+
 function renderActivityCards(activity) {
   const wrapper = document.getElementById('activityList');
   wrapper.innerHTML = "";
+
+  const subtabsHTML = `
+    <div class="activity-subtabs-row" style="display:flex;gap:0px;justify-content:center;margin-bottom:12px;">
+      <button class="activity-subtab-btn active" data-activity-type="all">Όλα</button>
+      <button class="activity-subtab-btn" data-activity-type="rating">Αξιολογήσεις</button>
+      <button class="activity-subtab-btn" data-activity-type="comment">Σχόλια</button>
+      <button class="activity-subtab-btn" data-activity-type="cooked">Μαγειρέματα</button>
+    </div>
+    <div id="activityCardsWrapper"></div>
+  `;
+  wrapper.insertAdjacentHTML("beforeend", subtabsHTML);
+  const cardsWrapper = document.getElementById('activityCardsWrapper');
+
   if (!activity || activity.length === 0) {
-    wrapper.innerHTML = '<div class="profile-card-empty">Δεν έχεις δραστηριότητα ακόμα!</div>';
+    cardsWrapper.innerHTML = '<div class="profile-card-empty">Δεν έχεις δραστηριότητα ακόμα!</div>';
     return;
   }
+
   activity.forEach(act => {
     const item = document.createElement('div');
     item.className = 'activity-card activity-card-bg-' + act.type;
+    item.setAttribute('data-activity-type', act.type);
+
+    if (act.type === "rating" && act.rating_id) {
+      item.setAttribute('data-activity-id', act.rating_id);
+    } else if (act.type === "comment" && act.comment_id) {
+      item.setAttribute('data-activity-id', act.comment_id);
+    } else if (act.type === "cooked" && act.cooked_id) {
+      item.setAttribute('data-activity-id', act.cooked_id);
+    }
+
+    const actionsHTML = `
+      <div class="activity-action-btns">
+        <button class="action-btn btn-edit" title="Επεξεργασία"><i class="fa fa-pencil"></i></button>
+        <button class="action-btn btn-delete" title="Διαγραφή"><i class="fa fa-trash"></i></button>
+      </div>
+    `;
 
     var imgSrc = act.image_url ? '/static/images/recipes/' + act.image_url : '/static/images/placeholder.jpg';
     var chefSrc = act.chef_avatar || '/static/images/avatars/default.jpg';
-    var timeVal = act.total_time ? act.total_time + "'" : "-";
-    var activityContent = '';
-    var activityIcon = '';
-    var activityLabel = '';
-
-    if (act.type === "comment") {
-      activityIcon = '<i class="fa fa-comment"></i>';
-      activityLabel = 'Σχόλιο';
-      activityContent = '<div class="activity-content">' + (act.comment || '') + '</div>';
-    } else if (act.type === "rating") {
-      activityIcon = '<i class="fa fa-star"></i>';
-      activityLabel = 'Αξιολόγηση';
-      activityContent = '<div class="activity-content">Βαθμολογία: <b>' + act.rating + '/5</b></div>';
-    } else if (act.type === "cooked") {
-      activityIcon = '<i class="fa fa-utensils"></i>';
-      activityLabel = 'Μαγείρεμα';
-      activityContent = '<div class="activity-content">Έφτιαξες το πιάτο!</div>';
-    }
-
-    let activityDate = act.timestamp ? `<div class="activity-timestamp"><i class="fa fa-clock"></i> ${act.timestamp.split(" ")[0]}</div>` : "";
 
     item.innerHTML = `
-	  <div class="activity-card-left">
-		<img class="activity-card-img" src="${imgSrc}" alt="${act.recipe_title}" onerror="this.src='/static/images/placeholder.jpg'">
-		<div class="activity-card-meta">
-		  <i class="fa fa-clock"></i>
-		  <span class="profile-card-item-time-val">${act.total_time ? act.total_time + "'" : "-"}</span>
-		  <span class="chef-by-label">by</span>
-		  <img class="activity-card-chef-img" src="${chefSrc}" alt="Chef">
+      ${actionsHTML}
+      <div class="activity-card-left">
+        <img class="activity-card-img" src="${imgSrc}" alt="${act.recipe_title}" onerror="this.src='/static/images/placeholder.jpg'">
+        <div class="activity-card-meta">
+          <i class="fa fa-clock"></i>
+          <span class="profile-card-item-time-val">${act.total_time ? act.total_time + "'" : "-"}</span>
+          <span class="chef-by-label">by</span>
+          <img class="activity-card-chef-img" src="${chefSrc}" alt="Chef">
+        </div>
+      </div>
+      <div class="activity-card-right">
+        <div class="activity-type-label">${
+            act.type === "comment" ? '<i class="fa fa-comment"></i> Σχολίασες το πιάτο' :
+            act.type === "rating" ? '<i class="fa fa-star"></i> Αξιολόγησες το πιάτο' :
+            act.type === "cooked" ? '<i class="fa fa-utensils"></i> Μαγείρεψες το πιάτο' : ''
+        }</div>
+        <div class="activity-card-title">${act.recipe_title}</div>
+        
+		<div class="activity-user-content">
+		  ${
+			act.type === "rating"
+			  ? '<span style="color:#e6ba08;"><i class="fa fa-star"></i></span> <b>Βαθμολογία:</b> ' + act.rating + '/5'
+			  : act.type === "comment"
+			  ? '<span style="color:#19a147;"><i class="fa fa-comment"></i></span> <b>Σχόλιο:</b> ' + (act.comment || '')
+			  : act.type === "cooked"
+			  ? '<span style="color:#ee7642;"><i class="fa fa-utensils"></i></span> <b>Σημείωση:</b> ' + (act.notes || 'Έφτιαξες το πιάτο!')
+			  : ''
+		  }
 		</div>
-	  </div>
-	  <div class="activity-card-right">
-		<div class="activity-type-label">${activityIcon} ${activityActionText(act.type)}</div>
-		<div class="activity-card-title">${act.recipe_title}</div>
 		<div class="activity-timestamp">Στις: ${act.timestamp || ''}</div>
-		<div class="activity-content">
-		  ${act.type === "rating" ? "Βαθμολογία: <b>" + act.rating + "/5</b>"
-			: act.type === "comment" ? (act.comment || "")
-			: act.type === "cooked" ? (act.notes ? 'Σημείωση: ' + act.notes : '')
-			: ''}
-		</div>
-	  </div>
-	`;
+      </div>
+    `;
+
+	item.addEventListener("click", function(e) {
+	  if (e.target.closest(".activity-action-btns")) {
+		return;
+	  }
+
+	  const btns = item.querySelector(".activity-action-btns");
+	  const isActive = btns && btns.classList.contains("active");
+
+	  if (isActive) {
+		btns.classList.remove("active");
+		return;
+	  }
+	  document.querySelectorAll(".activity-action-btns").forEach(el => el.classList.remove("active"));
+	  if (btns) btns.classList.add("active");
+	  e.stopPropagation();
+	});
 
 
-//    item.querySelector('.activity-edit-btn').onclick = function(e) {
-//      e.stopPropagation();
-      // Edit action εδώ
-//    };
-//    item.querySelector('.activity-delete-btn').onclick = function(e) {
-//      e.stopPropagation();
-      // Delete action εδώ
-//    };
-    wrapper.appendChild(item);
+
+    const editBtn = item.querySelector('.btn-edit');
+    const deleteBtn = item.querySelector('.btn-delete');
+    if (editBtn) editBtn.onclick = function(ev) {
+      ev.stopPropagation();
+      item.querySelector(".activity-action-btns").classList.remove("active");
+      alert("Edit: " + act.recipe_title);
+    };
+    if (deleteBtn) deleteBtn.onclick = function(ev) {
+      ev.stopPropagation();
+      item.querySelector(".activity-action-btns").classList.remove("active");
+      const activityType = item.getAttribute('data-activity-type');
+      const activityId = item.getAttribute('data-activity-id');
+      const user_id = window.current_user_id;
+      let url = "";
+      let options = { method: "DELETE" };
+      let confirmMsg = "Θέλεις σίγουρα να διαγράψεις αυτή τη δραστηριότητα;";
+      if (activityType === "comment") {
+        url = `/api/recipe_comments/${activityId}?user_id=${user_id}`;
+        confirmMsg = "Θέλεις σίγουρα να διαγράψεις αυτό το σχόλιο;";
+      }
+      else if (activityType === "rating") {
+        url = `/api/recipe_ratings/${activityId}?user_id=${user_id}`;
+        confirmMsg = "Θέλεις σίγουρα να διαγράψεις αυτή την αξιολόγηση;";
+      }
+      else if (activityType === "cooked") {
+        url = `/api/cooked_dishes/${activityId}?user_id=${user_id}`;
+        confirmMsg = "Θέλεις σίγουρα να διαγράψεις αυτό το μαγείρεμα πιάτου;";
+      }
+      if (!url) {
+        alert("Δεν βρέθηκε κατάλληλο endpoint για διαγραφή!");
+        return;
+      }
+      openDeleteModal(
+        confirmMsg,
+        function() {
+          fetch(url, options)
+            .then(res => res.json())
+            .then(data => {
+              if (data.ok) {
+                item.remove();
+                if (activityType === "comment") updateProfileStat("comments");
+                else if (activityType === "rating") updateProfileStat("ratings");
+                else if (activityType === "cooked") updateProfileStat("cooked");
+              } else {
+                alert(data.error || "Σφάλμα κατά τη διαγραφή.");
+              }
+            })
+            .catch(() => alert("Σφάλμα σύνδεσης."));
+        }
+      );
+    };
+
+    cardsWrapper.appendChild(item);
+  });
+
+  // 1 ΜΟΝΟ global handler για tap εκτός κάρτας: εξαφανίζει actions!
+  if (!window._activityGlobalCloseHandler) {
+  window._activityGlobalCloseHandler = function(event) {
+    if (event.target.closest('.activity-action-btns')) {
+      return;
+    }
+    document.querySelectorAll(".activity-action-btns").forEach(el => el.classList.remove("active"));
+  };
+  document.addEventListener("click", window._activityGlobalCloseHandler, false); // BUBBLE phase
+}
+
+
+  // Subtab filtering logic (πάντα κρύβει τα κουμπιά!)
+  const subtabs = wrapper.querySelectorAll(".activity-subtab-btn");
+  subtabs.forEach(function(btn) {
+    btn.addEventListener("click", function(e) {
+      subtabs.forEach(x => x.classList.remove("active"));
+      btn.classList.add("active");
+      var type = btn.dataset.activityType;
+      cardsWrapper.querySelectorAll(".activity-card").forEach(function(card) {
+        card.style.display = (type === "all" || card.dataset.activityType === type) ? "" : "none";
+        var btns = card.querySelector(".activity-action-btns");
+        if (btns) btns.classList.remove("active");
+      });
+      e.stopPropagation();
+    });
+  });
+
+  // Default: δείξε όλα & κρύψε τα actions
+  cardsWrapper.querySelectorAll(".activity-card").forEach(function(card) {
+    card.style.display = "";
+    var btns = card.querySelector(".activity-action-btns");
+    if (btns) btns.classList.remove("active");
   });
 }
 
-console.log(window.activity);
+
+// --- MODAL OPEN/CLOSE HELPERS για το νέο CSS ---
+function openDeleteModal(message, onConfirm) {
+  var modal = document.getElementById("deleteConfirmModal");
+  var backdrop = document.getElementById("deleteModalBackdrop");
+  document.getElementById("deleteConfirmMsg").innerHTML = message || "Θέλεις σίγουρα να διαγράψεις αυτή τη δραστηριότητα;";
+  if (modal && backdrop) {
+    modal.classList.add("open");
+    backdrop.classList.add("open");
+    window._deleteActionCallback = onConfirm;
+    // === Πάγωσε το background ===
+    document.body.style.overflow = "hidden";
+  }
+}
+
+function closeDeleteModal() {
+  var modal = document.getElementById("deleteConfirmModal");
+  var backdrop = document.getElementById("deleteModalBackdrop");
+  if (modal && backdrop) {
+    modal.classList.remove("open");
+    backdrop.classList.remove("open");
+  }
+  window._deleteActionCallback = null;
+  // === Ξανα-επέτρεψε το scroll ===
+  document.body.style.overflow = "";
+}
+
+
+// Οταν πατηθεί το "Διαγραφή" στο modal:
+document.getElementById("confirmDeleteBtn").onclick = function() {
+  if (typeof window._deleteActionCallback === "function") window._deleteActionCallback();
+  closeDeleteModal();
+};
+
+
+console.log("activity = ",window.activity);
 renderActivityCards(window.activity);
 </script>
+
+<!-------------- Filters ---------------->
+<script>
+// === Normalize: αγνοεί τόνους/case για το search ===
+function normalize(str) {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
+    .replace(/[·.,;!?]/g, "")
+    .trim();
+}
+
+// === Populate φίλτρων (dropdowns) ===
+function populateFilter(selectId, values, defaultLabel) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.innerHTML = "";
+  const opt = document.createElement("option");
+  opt.value = "";
+  opt.textContent = defaultLabel;
+  select.appendChild(opt);
+
+  (values || []).forEach(function(v) {
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = v;
+    select.appendChild(o);
+  });
+}
+function populateTimeFilter(selectId, timeList) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.innerHTML = "";
+  const opt = document.createElement("option");
+  opt.value = "";
+  opt.textContent = "Όλοι οι χρόνοι";
+  select.appendChild(opt);
+
+  const ranges = [
+    { label: "Έως 30'", max: 30 },
+    { label: "Έως 60'", max: 60 },
+    { label: "Έως 90'", max: 90 },
+    { label: "Έως 120'", max: 120 }
+  ];
+
+  ranges.forEach(function(r) {
+    if ((timeList || []).some(function(t) { return t <= r.max; })) {
+      const o = document.createElement("option");
+      o.value = r.max;
+      o.textContent = r.label;
+      select.appendChild(o);
+    }
+  });
+}
+
+// === Filtering function για Αγαπημένες ===
+function filterFavorites() {
+  const chef = document.getElementById("filter-chef").value;
+  const category = document.getElementById("filter-category").value;
+  const method = document.getElementById("filter-method").value;
+  const time = document.getElementById("filter-time").value;
+  const term = document.getElementById("search-term").value.trim();
+
+  let filtered = window.favorites.filter(function(dish) {
+    if (chef && dish.chef_name !== chef) return false;
+    if (category && dish.main_ingredient !== category) return false;
+    if (method && dish.method !== method) return false;
+    if (time && dish.total_time && parseInt(dish.total_time) > parseInt(time)) return false;
+    if (term) {
+      let inTitle = normalize(dish.title).includes(normalize(term));
+      let inTags = normalize(dish.tags || "").includes(normalize(term));
+      let inChef = normalize(dish.chef_name || "").includes(normalize(term));
+      let inMainIng = normalize(dish.main_ingredient || "").includes(normalize(term));
+      let inMethod = normalize(dish.method || "").includes(normalize(term));
+      if (!(inTitle || inTags || inChef || inMainIng || inMethod)) return false;
+    }
+    return true;
+  });
+  renderFavoritesCards(filtered);
+}
+
+// === Filtering function για Last Seen ===
+function filterLastSeen() {
+  const chef = document.getElementById("filter-chef").value;
+  const category = document.getElementById("filter-category").value;
+  const method = document.getElementById("filter-method").value;
+  const time = document.getElementById("filter-time").value;
+  const term = document.getElementById("search-term").value.trim();
+
+  let filtered = window.last_seen.filter(function(dish) {
+    if (chef && dish.chef_name !== chef) return false;
+    if (category && dish.main_ingredient !== category) return false;
+    if (method && dish.method !== method) return false;
+    if (time && dish.total_time && parseInt(dish.total_time) > parseInt(time)) return false;
+    if (term) {
+      let inTitle = normalize(dish.title).includes(normalize(term));
+      let inTags = normalize(dish.tags || "").includes(normalize(term));
+      let inChef = normalize(dish.chef_name || "").includes(normalize(term));
+      let inMainIng = normalize(dish.main_ingredient || "").includes(normalize(term));
+      let inMethod = normalize(dish.method || "").includes(normalize(term));
+      if (!(inTitle || inTags || inChef || inMainIng || inMethod)) return false;
+    }
+    return true;
+  });
+  renderLastSeenCards(filtered);
+}
+
+// === Επιστρέφει το ενεργό tab (αγαπημένες ή πρόσφατα) ===
+function getActiveTab() {
+  var active = document.querySelector(".profile-tab-btn.active");
+  return active ? active.dataset.tab : "favoritesList";
+}
+
+// === Καλεί το σωστό φίλτρο ανάλογα με το ενεργό tab ===
+function handleFilterChange() {
+  var tab = getActiveTab();
+  if (tab === "favoritesList") {
+    filterFavorites();
+  } else if (tab === "lastSeenList") {
+    filterLastSeen();
+  }
+}
+
+// === Dynamic fetch filters: κάθε φορά που αλλάζεις tab, φορτώνει ΤΑ ΔΙΚΑ ΤΟΥ options ===
+function loadTabFilters(tab) {
+  let url = null;
+  if (tab === "favoritesList") {
+    url = "/api/favorites/filters";
+  } else if (tab === "lastSeenList") {
+    url = "/api/last_seen/filters";
+  } else {
+    // Σε άλλα tabs δεν κάνεις populate
+    return;
+  }
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      populateFilter("filter-chef", data.chefs, "Όλοι οι σεφ");
+      populateFilter("filter-category", data.categories, "Όλες οι κατηγορίες");
+      populateFilter("filter-method", data.methods, "Όλες οι μέθοδοι");
+      populateTimeFilter("filter-time", data.times);
+      // Reset τα φίλτρα κάθε φορά που αλλάζεις tab με καινούργια options!
+      ["filter-chef","filter-category","filter-method","filter-time"].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.selectedIndex = 0;
+      });
+      var s = document.getElementById("search-term");
+      if(s) s.value="";
+      handleFilterChange(); // Να τρέξει άμεσα το φιλτράρισμα στο καινούργιο tab!
+    });
+}
+
+// === Main event binding για ΟΛΗ τη λειτουργία ===
+document.addEventListener("DOMContentLoaded", function () {
+  var filtersSection = document.getElementById("favorites-filters-section");
+
+  // 1. Bind filters/search/reset
+  ["filter-chef", "filter-category", "filter-method", "filter-time"].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener("change", handleFilterChange);
+  });
+  var searchInput = document.getElementById("search-term");
+  if (searchInput) searchInput.addEventListener("input", function() {
+    if (this.value.trim().length === 0 || this.value.trim().length >= 2) {
+      handleFilterChange();
+    }
+  });
+  var resetBtn = document.getElementById("reset-filters-btn");
+  if (resetBtn) resetBtn.addEventListener("click", function() {
+    ["filter-chef","filter-category","filter-method","filter-time"].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.selectedIndex = 0;
+    });
+    var s = document.getElementById("search-term"); if(s) s.value="";
+    handleFilterChange();
+  });
+
+  // 2. Tabs + show/hide filters section + fetch filters for correct tab
+  document.querySelectorAll('.profile-tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      // Tabs logic
+      document.querySelectorAll('.profile-tab-btn').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      ['favoritesList', 'lastSeenList', 'activityList'].forEach(tabId => {
+        document.getElementById(tabId).style.display = (btn.dataset.tab === tabId) ? '' : 'none';
+      });
+
+      // Show/hide & fetch right filters
+      var activeTab = btn.dataset.tab;
+      if (filtersSection) {
+        if (activeTab === "favoritesList" || activeTab === "lastSeenList") {
+          filtersSection.style.display = "";
+          loadTabFilters(activeTab); // <-- Αυτό κάνει όλα τα μαγικά
+        } else {
+          filtersSection.style.display = "none";
+        }
+      }
+    });
+  });
+
+  // 3. Στο πρώτο load, να δείχνει το σωστό filters section και να κάνει populate
+  var firstActive = document.querySelector(".profile-tab-btn.active");
+  if (filtersSection && firstActive) {
+    var tab = firstActive.getAttribute("data-tab");
+    filtersSection.style.display = (tab === "favoritesList" || tab === "lastSeenList") ? "" : "none";
+    loadTabFilters(tab);
+  }
+});
+</script>
+
+<!-------------- Voice recognition ---------------->
+<script>
+// === Φωνητική αναζήτηση στο search-term για όλα τα tabs ===
+document.addEventListener('DOMContentLoaded', function () {
+  var voiceBtn = document.getElementById("voice-search-btn");
+  var input = document.getElementById("search-term");
+
+  if (voiceBtn && input && 'webkitSpeechRecognition' in window) {
+    voiceBtn.addEventListener("click", function () {
+      try {
+        var recognition = new webkitSpeechRecognition();
+        recognition.lang = 'el-GR';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onaudiostart = function () {
+          input.classList.add('listening');
+          input.placeholderBackup = input.placeholder;
+          input.placeholder = "🎙️ Μιλήστε τώρα…";
+        };
+
+        recognition.onresult = function (event) {
+          var transcript = event.results[0][0].transcript.trim();
+          input.value = transcript;
+          input.classList.remove('listening');
+          if (input.placeholderBackup) {
+            input.placeholder = input.placeholderBackup;
+            delete input.placeholderBackup;
+          }
+          // === Trigger σωστό φίλτρο για το ενεργό tab ===
+          if (typeof handleFilterChange === "function") {
+            handleFilterChange();
+          }
+        };
+
+        recognition.onend = function () {
+          input.classList.remove('listening');
+          if (input.placeholderBackup) {
+            input.placeholder = input.placeholderBackup;
+            delete input.placeholderBackup;
+          }
+        };
+
+        recognition.start();
+      } catch (e) {
+        alert("Το μικρόφωνο δεν υποστηρίζεται σε αυτόν τον browser.");
+      }
+    });
+  }
+});
+</script>
+
 
 {% endblock %}

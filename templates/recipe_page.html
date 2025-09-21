@@ -61,10 +61,9 @@
   align-items: center;
   font-size: 1rem;
   font-family: 'Indie Flower', cursive, sans-serif;
-  margin: 0 10px;
+  margin: 5px 10px;
 }
 .chef-signature2 .chef-name {
-  margin-left: 4px;
   margin-right: 8px;
 }
 .chef-avatar-inline {
@@ -552,7 +551,7 @@
 }
 .similar-card-item-meta .fa-clock {
   font-size: 1.02rem;
-  color: #218e46;
+  color: var(--brand);
   margin-right: 1px;
   vertical-align: middle;
   display: inline-block;
@@ -947,7 +946,7 @@
   
   <form class="comment-form" id="comment-form" style="margin-top:16px; display:none;" autocomplete="off">
     <div class="comment-form-header">
-      <img src="/static/images/avatars/myuser.jpg" class="comment-avatar" id="current-user-avatar">
+      <img src="/static/images/avatars/default.jpg" class="comment-avatar" id="current-user-avatar">
       <span class="comment-form-hint">Το μαγείρεψες; Γράψε το σχόλιό σου!</span>
     </div>
     <textarea id="comment-input" placeholder="Το σχόλιό σας..." maxlength="500" required></textarea>
@@ -1219,6 +1218,7 @@ async function loadSimilar(recipeId) {
     const res = await fetch(`/api/similar?recipe_id=${recipeId}&max_time=${maxTime}`);
     const data = await res.json();
     if (data.success && data.recipes.length > 0) {
+	  console.log("data.recipes = ",data.recipes);
       renderDishCards(data.recipes, "similarSwiper");
     } else {
       document.getElementById('similarSwiper').innerHTML = '<p style="color:#666;">Δεν βρέθηκαν παρόμοιες συνταγές.</p>';
@@ -1283,7 +1283,7 @@ function toggleFavorite(wrapper, recipe_id) {
 
     // === Ενημέρωσε το εικονίδιο ===
     wrapper.innerHTML =
-      '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color:#218e46;font-size:18px;vertical-align:-2px;cursor:pointer;"></i>';
+      '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color:var(--brand);font-size:18px;vertical-align:-2px;cursor:pointer;"></i>';
     const icon = wrapper.querySelector("i");
     if (icon) {
       icon.onclick = function(e) {
@@ -1305,7 +1305,7 @@ if (favBtn) {
   function updateFavBtnState() {
     const fav = isFavorite(RECIPE_ID);
     favBtn.innerHTML =
-      '<i class="' + (fav ? 'fas' : 'far') + ' fa-heart" style="color:#218e46;font-size:18px;vertical-align:-2px;cursor:pointer;"></i>';
+      '<i class="' + (fav ? 'fas' : 'far') + ' fa-heart" style="color:var(--brand);font-size:18px;vertical-align:-2px;cursor:pointer;"></i>';
     const icon = favBtn.querySelector("i");
     if (icon) {
       icon.onclick = function(e) {
