@@ -225,6 +225,11 @@ def fmt_ts(ts):
     except Exception:
         return ts or ""
 
+def strip_tonos(text):
+    return ''.join(c for c in unicodedata.normalize('NFD', text)
+                   if unicodedata.category(c) != 'Mn').lower()
+
+
 @app.route('/api/normalize_ingredient', methods=['POST'])
 def normalize_ingredient_route():
     data = request.get_json()
@@ -242,6 +247,193 @@ def normalize_ingredient_route():
         cache_ingredient(raw, fixed_core)
         core = fixed_core
     return jsonify({'core': core})
+
+# ----------- APP PAGES -----------
+
+
+@app.route("/welcome")
+def welcome_v2():
+    hour = datetime.now().hour
+    greeting = "Καλημέρα" if hour < 12 else "Καλησπέρα"
+    day_idx = datetime.now().weekday()  # 0 = Δευτέρα
+    day_name = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"][day_idx]
+    return render_template(
+        "welcome.html",
+        greeting=greeting,
+        day_name=day_name
+    )
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "").strip()
+        first_name = request.form.get("first_name", "").strip()
+
+        if not email or not password:
+            flash("Email και κωδικός είναι υποχρεωτικά!", "danger")
+            return redirect(url_for("signup"))
+
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+        existing = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        if existing:
+            flash("Υπάρχει ήδη χρήστης με αυτό το email!", "warning")
+            conn.close()
+            return redirect(url_for("signup"))
+
+        # Κωδικοποίηση κωδικού
+        hashed_password = generate_password_hash(password)
+
+        # Προσθήκη νέου χρήστη
+        conn.execute("""
+            INSERT INTO users (email, password, first_name)
+            VALUES (?, ?, ?)
+        """, (email, hashed_password, first_name))
+        conn.commit()
+
+        # Ανάκτηση του νέου id
+        user_id = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()["id"]
+        conn.close()
+
+        session["user_id"] = user_id
+        session['signup_success'] = True
+        return redirect(url_for("login"))
+
+    return render_template("signup.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "GET":
+        if not get_flashed_messages() and not session.get("signup_success"):
+            session.clear()
+        return render_template("login.html")
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+
+        # ✅ Debug login bypass
+        if action == "debug":
+            user = conn.execute("SELECT * FROM users ORDER BY id LIMIT 1").fetchone()
+            conn.close()
+            if user:
+                session["user_id"] = user["id"]
+                return redirect(url_for("main"))
+            else:
+                flash("Δεν βρέθηκε χρήστης για debug login!", "danger")
+                return redirect(url_for("login"))
+
+        # ✅ Κανονικό login
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "").strip()
+
+        # 1. Βρες τον χρήστη με βάση το email
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        conn.close()
+
+        if not user:
+            flash("Δεν υπάρχει χρήστης με αυτό το email.", "danger")
+            return redirect(url_for("login"))
+
+        # 2. Έλεγχος κωδικού (hashed)
+        stored_hash = user["password"]  # ή "password_hash" αν το πεδίο λέγεται αλλιώς
+        if check_password_hash(stored_hash, password):
+            session["user_id"] = user["id"]
+            session['login_success'] = True
+            return redirect(url_for("main"))
+        else:
+            flash("Λανθασμένος κωδικός!", "danger")
+            print("λαθος κωδικος")
+            return redirect(url_for("login"))
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form["email"].strip().lower()
+
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        conn.close()
+
+        if user:
+            s = URLSafeTimedSerializer(app.secret_key)
+            token = s.dumps(user["email"], salt='password-reset')
+            reset_link = url_for('reset_password', token=token, _external=True)
+
+            msg = Message(
+                subject="Επαναφορά Κωδικού – Family Food",
+                sender=("Family Food", app.config['MAIL_USERNAME']),
+                recipients=[email]
+            )
+            msg.body = f"Για να επαναφέρεις τον κωδικό σου, κάνε κλικ στον παρακάτω σύνδεσμο:\n\n{reset_link}\n\nΑν δεν ζήτησες επαναφορά, αγνόησέ το."
+
+            try:
+                mail.send(msg)
+                flash("✅ Σου στείλαμε email με οδηγίες επαναφοράς.", "success")
+            except Exception:
+                flash("❌ Σφάλμα κατά την αποστολή email. Δοκίμασε ξανά.", "danger")
+        else:
+            flash("⚠️ Δεν βρέθηκε λογαριασμός με αυτό το email.", "warning")
+
+        return redirect(url_for("forgot_password"))
+
+    return render_template("forgot_password.html")
+
+@app.route("/reset_password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    try:
+        s = URLSafeTimedSerializer(app.secret_key)
+        email = s.loads(token, salt='password-reset', max_age=7200)  # 2 ώρες
+    except SignatureExpired:
+        flash("⏰ Ο σύνδεσμος έληξε. Ζήτησε νέο από τη σελίδα επαναφοράς.", "danger")
+        return redirect(url_for("forgot_password"))
+    except BadSignature:
+        flash("❌ Μη έγκυρος σύνδεσμος επαναφοράς.", "danger")
+        return redirect(url_for("forgot_password"))
+
+    # Αναζητάμε τον χρήστη στη βάση
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    conn.close()
+
+    if not user:
+        flash("Ο λογαριασμός δεν βρέθηκε.", "danger")
+        return redirect(url_for("forgot_password"))
+
+    if request.method == "POST":
+        pwd1 = request.form.get("password", "").strip()
+        pwd2 = request.form.get("password2", "").strip()
+
+        if len(pwd1) < 6:
+            flash("Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες.", "danger")
+            return render_template("reset_password.html")
+
+        if pwd1 != pwd2:
+            flash("Οι κωδικοί δεν ταιριάζουν.", "danger")
+            return render_template("reset_password.html")
+
+        hash = generate_password_hash(pwd1)
+
+        # Ενημέρωση κωδικού στη βάση
+        conn = sqlite3.connect(DB)
+        conn.execute("UPDATE users SET password = ? WHERE email = ?", (hash, email))
+        conn.commit()
+        conn.close()
+
+        flash("✅ Ο κωδικός άλλαξε! Μπορείς να συνδεθείς τώρα.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("reset_password.html")
+
+@app.route("/main")
+@login_required
+def main():
+    clear_suggestions()
+    return render_template("main.html")
 
 @app.route('/recipe_page/<int:recipe_id>')
 @login_required
@@ -340,6 +532,192 @@ def recipe_page(recipe_id):
         chef_avatar=avatar_filename
     )
 
+@app.route("/profile")
+def profile():
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    # --- User Info ---
+    cur.execute("SELECT first_name FROM users WHERE id = ?", (user_id,))
+    row = cur.fetchone()
+    if not row:
+        return "User not found", 404
+    first_name = row[0]
+    avatar_path = f"/static/images/avatars/{user_id}.jpg"
+
+    # --- User Stats ---
+    cur.execute("SELECT COUNT(*) FROM favorite_recipes WHERE user_id = ?", (user_id,))
+    favorites_count = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM cooked_dishes WHERE user_id = ?", (user_id,))
+    cooked_count = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM recipe_ratings WHERE user_id = ?", (user_id,))
+    ratings_count = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM recipe_comments WHERE user_id = ?", (user_id,))
+    comments_count = cur.fetchone()[0]
+
+    # --- Αγαπημένα ---
+    
+    
+    def get_chef_avatar(chef_name):
+        filename = CHEF_AVATAR_MAP.get(chef_name, 'default.jpg')
+        return f"/static/images/avatars/{filename}"
+        
+    cur.execute("""
+    SELECT r.id, r.title, r.image_path, r.chef, r.total_time, r.main_ingredient, r.method
+    FROM favorite_recipes f
+    JOIN recipes r ON f.recipe_id = r.id
+    WHERE f.user_id = ?
+    ORDER BY f.id DESC
+    """, (user_id,))
+    favorites = []
+    for row in cur.fetchall():
+        chef_avatar = get_chef_avatar(row[3])  # row[3] είναι το r.chef
+        favorites.append({
+            "id": row[0],
+            "title": row[1],
+            "image": row[2],
+            "chef_name": row[3],
+            "chef_avatar": chef_avatar,
+            "total_time": row[4],
+            "main_ingredient": row[5],
+            "method": row[6]
+        })
+
+
+    # --- Είδες πρόσφατα (last seen) ---
+    cur.execute("""
+        SELECT r.id, r.title, r.image_path, r.chef, r.total_time, lsr.seen_at, r.main_ingredient, r.method
+        FROM last_seen_recipes lsr
+        JOIN recipes r ON lsr.recipe_id = r.id
+        WHERE lsr.user_id = ?
+        ORDER BY lsr.seen_at DESC
+    """, (user_id,))
+    last_seen = []
+    for row in cur.fetchall():
+        chef_avatar = get_chef_avatar(row[3])
+        last_seen.append({
+            "id": row[0],
+            "title": row[1],
+            "image": row[2],
+            "chef_name": row[3],
+            "chef_avatar": chef_avatar,
+            "total_time": row[4],
+            "seen_at": row[5],
+            "main_ingredient": row[6],
+            "method": row[7]
+        })
+
+    # --- Δραστηριότητα (comments, ratings, cooked) --- 
+    
+    # Comments
+    cur.execute("""
+        SELECT rc.id as comment_id, rc.recipe_id, r.title, r.image_path, r.total_time, r.chef, rc.created_at, 'comment' as type, rc.comment, NULL as rating
+        FROM recipe_comments rc
+        JOIN recipes r ON rc.recipe_id = r.id
+        WHERE rc.user_id = ?
+    """, (user_id,))
+    comments = [
+        {
+            "comment_id": row[0],            # <-- ΝΕΟ!
+            "recipe_id": row[1],
+            "recipe_title": row[2],
+            "image_url": row[3],
+            "total_time": row[4],
+            "chef_name": row[5],
+            "chef_avatar": get_chef_avatar(row[5]),
+            "timestamp": fmt_ts(row[6]),
+            "type": row[7],
+            "comment": row[8],
+            "rating": None
+        }
+        for row in cur.fetchall()
+    ]
+
+    # Ratings
+    cur.execute("""
+        SELECT rr.id as rating_id, rr.recipe_id, r.title, r.image_path, r.total_time, r.chef, rr.updated_at, 'rating' as type, NULL as comment, rr.rating
+        FROM recipe_ratings rr
+        JOIN recipes r ON rr.recipe_id = r.id
+        WHERE rr.user_id = ?
+    """, (user_id,))
+    ratings = [
+        {
+            "rating_id": row[0],             # <-- ΝΕΟ!
+            "recipe_id": row[1],
+            "recipe_title": row[2],
+            "image_url": row[3],
+            "total_time": row[4],
+            "chef_name": row[5],
+            "chef_avatar": get_chef_avatar(row[5]),
+            "timestamp": row[6],
+            "type": row[7],
+            "comment": None,
+            "rating": row[9]
+        }
+        for row in cur.fetchall()
+    ]
+
+    # Cooked
+    cur.execute("""
+        SELECT cd.id as cooked_id, cd.recipe_id, r.title, r.image_path, r.total_time, r.chef, cd.cooked_at, 'cooked' as type, cd.notes, NULL as rating
+        FROM cooked_dishes cd
+        JOIN recipes r ON cd.recipe_id = r.id
+        WHERE cd.user_id = ?
+    """, (user_id,))
+
+    cooked_activity = [
+        {
+            "cooked_id": row[0],                
+            "recipe_id": row[1],
+            "recipe_title": row[2],
+            "image_url": row[3],
+            "total_time": row[4],
+            "chef_name": row[5],
+            "chef_avatar": get_chef_avatar(row[5]),
+            "timestamp": row[6],
+            "type": row[7],
+            "notes": row[8],
+            "comment": None,
+            "rating": None
+        }
+        for row in cur.fetchall()
+    ]
+
+
+
+    # Ταξινόμηση όλης της activity κατά timestamp (πιο πρόσφατα πρώτα)
+    activity = comments + ratings + cooked_activity
+    activity.sort(key=lambda x: x['timestamp'], reverse=True)
+
+    # --- Render σελίδας με Jinja2 ---
+    return render_template(
+        "profile.html",
+        user_id=user_id,
+        avatar_path=avatar_path,
+        first_name=first_name,
+        stats={
+            "favorites": favorites_count,
+            "cooked": cooked_count,
+            "ratings": ratings_count,
+            "comments": comments_count
+        },
+        favorites=favorites,
+        last_seen=last_seen,
+        activity=activity
+    )
+
+# ----------- APP PAGES -----------
+
+
+# ----------- RATINGS για recipe -----------
+
 @app.route('/api/rate_recipe', methods=['POST'])
 def rate_recipe():
     data = request.json
@@ -388,7 +766,37 @@ def get_recipe_rating():
     else:
         return jsonify({'success': True, 'rating': None})
 
-# ----------- GET COMMENTS για recipe -----------
+@app.route('/api/recipe_ratings/<int:rating_id>', methods=['DELETE'])
+def delete_recipe_rating(rating_id):
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Missing user_id'}), 400
+
+    try:
+        conn = get_db_conn()
+        c = conn.cursor()
+        c.execute('SELECT user_id FROM recipe_ratings WHERE id = ?', (rating_id,))
+        row = c.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'error': 'Not found'}), 404
+        if str(row['user_id']) != str(user_id):
+            conn.close()
+            return jsonify({'error': 'Δεν έχεις δικαίωμα διαγραφής'}), 403
+
+        c.execute('DELETE FROM recipe_ratings WHERE id = ?', (rating_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'ok': True})
+    except Exception as e:
+        print('[ERROR] delete_recipe_rating:', e)
+        return jsonify({'error': 'DB error'}), 500
+
+# ----------- RATINGS για recipe -----------
+
+
+# ----------- COMMENTS για recipe -----------
+
 @app.route('/api/recipe_comments')
 def get_recipe_comments():
     recipe_id = request.args.get('recipe_id')
@@ -413,7 +821,6 @@ def get_recipe_comments():
         print('[ERROR] get_recipe_comments:', e)
         return jsonify({'error': 'DB error'}), 500
 
-# ----------- ADD NEW COMMENT -----------
 @app.route('/api/recipe_comments', methods=['POST'])
 def add_recipe_comment():
     data = request.json
@@ -442,7 +849,6 @@ def add_recipe_comment():
         print('[ERROR] add_recipe_comment:', e)
         return jsonify({'error': 'DB error'}), 500
 
-# ----------- DELETE COMMENT -----------
 @app.route('/api/recipe_comments/<int:comment_id>', methods=['DELETE'])
 def delete_recipe_comment(comment_id):
     user_id = request.args.get('user_id')  # Πρέπει να περάσει το frontend τον user_id
@@ -470,11 +876,46 @@ def delete_recipe_comment(comment_id):
         print('[ERROR] delete_recipe_comment:', e)
         return jsonify({'error': 'DB error'}), 500
 
+# ----------- COMMENTS για recipe -----------
+
+
+# ----------- COOCKED DISHES -----------
+
+@app.route('/api/cooked_dishes/<int:cooked_id>', methods=['DELETE'])
+def delete_cooked_dish(cooked_id):
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Missing user_id'}), 400
+
+    try:
+        conn = get_db_conn()
+        c = conn.cursor()
+        c.execute('SELECT user_id FROM cooked_dishes WHERE id = ?', (cooked_id,))
+        row = c.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'error': 'Not found'}), 404
+        if str(row['user_id']) != str(user_id):
+            conn.close()
+            return jsonify({'error': 'Δεν έχεις δικαίωμα διαγραφής'}), 403
+
+        c.execute('DELETE FROM cooked_dishes WHERE id = ?', (cooked_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'ok': True})
+    except Exception as e:
+        print('[ERROR] delete_cooked_dish:', e)
+        return jsonify({'error': 'DB error'}), 500
+
+# ----------- COOCKED DISHES -----------
+
+
+
 @app.route('/api/similar')
 def api_similar():
     recipe_id = request.args.get("recipe_id", type=int)
     max_time = request.args.get("max_time", type=int) # π.χ. 120
-    
+
     if not recipe_id or not max_time:
         return {"success": False, "error": "Missing recipe_id or max_time"}, 400
 
@@ -506,10 +947,8 @@ def api_similar():
     param = f'%{main_ingredient}%'
     params = (recipe_id, param, param, param)
 
-    # Φέρνεις όλα τα πιθανά, κάνεις sort στην Python γιατί δεν μπορείς να βάλεις απόλυτο σε SQL LIMIT
     similar = conn.execute(sql, params).fetchall()
 
-    # Κάνεις parse τα total_time (αν είναι string, κάνε int), skip όσα δεν έχουν σωστό χρόνο
     recipes = []
     for row in similar:
         try:
@@ -524,7 +963,6 @@ def api_similar():
             "image_path": row["image_path"]
         })
 
-    # Ταξινόμηση: πρώτα όσα είναι στο εύρος max_time±20 (τα βάζεις πρώτα), μετά όλα τα υπόλοιπα κατά εγγύτητα
     close = []
     others = []
     for r in recipes:
@@ -532,205 +970,34 @@ def api_similar():
             close.append(r)
         else:
             others.append(r)
-    # Κάνε sort και τα δυο arrays με βάση το abs διαφορά
     close = sorted(close, key=lambda r: abs(r["total_time"] - max_time))
     others = sorted(others, key=lambda r: abs(r["total_time"] - max_time))
 
-    # Βάλε τα 3 πρώτα, από close πρώτα
     top = close[:6]
     if len(top) < 6:
         top += others[:(6-len(top))]
 
-    # Προετοιμασία για απάντηση
     data = []
     for row in top:
         if row["image_path"] and row["image_path"].strip() != "":
             image_url = url_for('static', filename=f'images/recipes/{row["image_path"]}')
         else:
             image_url = url_for('static', filename='images/placeholder.jpg')
+        chef = row["chef"]
+        avatar_file = CHEF_AVATAR_MAP.get(chef, "default.jpg")
+        chef_avatar = url_for('static', filename='images/avatars/' + avatar_file)
         data.append({
             "id": row["id"],
             "title": row["title"],
             "chef": row["chef"],
             "total_time": row["total_time"],
-            "image_url": image_url
+            "image_url": image_url,
+            "chef_avatar": chef_avatar
         })
 
     print("[DEBUG] /api/similar ->", data)
     return {"success": True, "recipes": data}
 
-
-@app.route("/profile")
-def profile():
-    user_id = session.get("user_id")
-    if not user_id:
-        return redirect(url_for("login"))
-
-    conn = sqlite3.connect(DB)
-    cur = conn.cursor()
-
-    # --- User Info ---
-    cur.execute("SELECT first_name FROM users WHERE id = ?", (user_id,))
-    row = cur.fetchone()
-    if not row:
-        return "User not found", 404
-    first_name = row[0]
-    avatar_path = f"/static/images/avatars/{user_id}.jpg"
-
-    # --- User Stats ---
-    cur.execute("SELECT COUNT(*) FROM favorite_recipes WHERE user_id = ?", (user_id,))
-    favorites_count = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM cooked_dishes WHERE user_id = ?", (user_id,))
-    cooked_count = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM recipe_ratings WHERE user_id = ?", (user_id,))
-    ratings_count = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM recipe_comments WHERE user_id = ?", (user_id,))
-    comments_count = cur.fetchone()[0]
-
-    # --- Αγαπημένα ---
-    
-    
-    def get_chef_avatar(chef_name):
-        filename = CHEF_AVATAR_MAP.get(chef_name, 'default.jpg')
-        return f"/static/images/avatars/{filename}"
-        
-    cur.execute("""
-    SELECT r.id, r.title, r.image_path, r.chef, r.total_time
-    FROM favorite_recipes f
-    JOIN recipes r ON f.recipe_id = r.id
-    WHERE f.user_id = ?
-    ORDER BY f.id DESC
-    LIMIT 12
-    """, (user_id,))
-    favorites = []
-    for row in cur.fetchall():
-        chef_avatar = get_chef_avatar(row[3])  # row[3] είναι το r.chef
-        favorites.append({
-            "id": row[0],
-            "title": row[1],
-            "image": row[2],
-            "chef_name": row[3],
-            "chef_avatar": chef_avatar,
-            "total_time": row[4]
-        })
-
-    # --- Είδες πρόσφατα (last seen) ---
-    cur.execute("""
-        SELECT r.id, r.title, r.image_path, r.chef, r.total_time, lsr.seen_at
-        FROM last_seen_recipes lsr
-        JOIN recipes r ON lsr.recipe_id = r.id
-        WHERE lsr.user_id = ?
-        ORDER BY lsr.seen_at DESC
-        LIMIT 12
-    """, (user_id,))
-    last_seen = []
-    for row in cur.fetchall():
-        chef_avatar = get_chef_avatar(row[3])
-        last_seen.append({
-            "id": row[0],
-            "title": row[1],
-            "image": row[2],
-            "chef_name": row[3],
-            "chef_avatar": chef_avatar,
-            "total_time": row[4],
-            "seen_at": row[5]
-        })
-
-
-    # --- Δραστηριότητα (comments, ratings, cooked) ---
-    
-    # Comments
-    cur.execute("""
-        SELECT rc.recipe_id, r.title, r.image_path, r.total_time, r.chef, rc.created_at, 'comment' as type, rc.comment, NULL as rating
-        FROM recipe_comments rc
-        JOIN recipes r ON rc.recipe_id = r.id
-        WHERE rc.user_id = ?
-    """, (user_id,))
-    comments = [
-        {
-            "recipe_id": row[0],
-            "recipe_title": row[1],
-            "image_url": row[2],
-            "total_time": row[3],
-            "chef_name": row[4],
-            "chef_avatar": get_chef_avatar(row[4]),
-            "timestamp": fmt_ts(row[5]),
-            "type": row[6],
-            "comment": row[7],
-            "rating": None
-        }
-        for row in cur.fetchall()
-    ]
-
-    # Ratings
-    cur.execute("""
-        SELECT rr.recipe_id, r.title, r.image_path, r.total_time, r.chef, rr.updated_at, 'rating' as type, NULL as comment, rr.rating
-        FROM recipe_ratings rr
-        JOIN recipes r ON rr.recipe_id = r.id
-        WHERE rr.user_id = ?
-    """, (user_id,))
-    ratings = [
-        {
-            "recipe_id": row[0],
-            "recipe_title": row[1],
-            "image_url": row[2],
-            "total_time": row[3],
-            "chef_name": row[4],
-            "chef_avatar": get_chef_avatar(row[4]),
-            "timestamp": row[5],
-            "type": row[6],
-            "comment": None,
-            "rating": row[8]
-        }
-        for row in cur.fetchall()
-    ]
-
-
-    # Cooked
-    cur.execute("""
-        SELECT cd.recipe_id, r.title, r.image_path, r.total_time, r.chef, cd.cooked_at, 'cooked' as type, NULL as comment, NULL as rating
-        FROM cooked_dishes cd
-        JOIN recipes r ON cd.recipe_id = r.id
-        WHERE cd.user_id = ?
-    """, (user_id,))
-    cooked_activity = [
-        {
-            "recipe_id": row[0],
-            "recipe_title": row[1],
-            "image_url": row[2],
-            "total_time": row[3],
-            "chef_name": row[4],
-            "chef_avatar": get_chef_avatar(row[4]),
-            "timestamp": row[5],
-            "type": row[6],
-            "comment": None,
-            "rating": None
-        }
-        for row in cur.fetchall()
-    ]
-
-    # Ταξινόμηση όλης της activity κατά timestamp (πιο πρόσφατα πρώτα)
-    activity = comments + ratings + cooked_activity
-    activity.sort(key=lambda x: x['timestamp'], reverse=True)
-
-    # --- Render σελίδας με Jinja2 ---
-    return render_template(
-        "profile.html",
-        avatar_path=avatar_path,
-        first_name=first_name,
-        stats={
-            "favorites": favorites_count,
-            "cooked": cooked_count,
-            "ratings": ratings_count,
-            "comments": comments_count
-        },
-        favorites=favorites,
-        last_seen=last_seen,
-        activity=activity
-    )
 
 
 
@@ -1297,6 +1564,12 @@ def ai_suggest_dish():
                     rec["image_url"] = image_url
                 else:
                     rec["image_url"] = "/static/images/recipes/default.jpg"
+
+                # --- Chef Avatar --- 
+                chef = rec.get("chef")
+                avatar_file = CHEF_AVATAR_MAP.get(chef, "default.jpg")
+                rec["chef_avatar"] = "/static/images/avatars/" + avatar_file
+
                 results.append(rec)
 
             # Προσθήκη στα suggested (μόνο τα νέα)
@@ -1308,8 +1581,6 @@ def ai_suggest_dish():
                 "dishes": results,
                 "matches_count": matches_count
             })
-
-
 
 
         # =============== Branch 1: lexical match ==================
@@ -1364,17 +1635,35 @@ def ai_suggest_dish():
                     conn.close()
                     step = data.get("step")
                     print(f"[DEBUG] ✅ Final returned from Branch1 (step={step})")
+
+                    # --- enrich results with image_url & chef_avatar ---
+                    def enrich_dish_with_all(dish):
+                        rec = dict(dish)
+                        image_path = rec.get("image_path") or rec.get("image_url")
+                        if image_path:
+                            if not image_path.startswith("http"):
+                                image_url = "/static/images/recipes/" + image_path.lstrip("/")
+                            else:
+                                image_url = image_path
+                            rec["image_url"] = image_url
+                        else:
+                            rec["image_url"] = "/static/images/recipes/default.jpg"
+                        chef = rec.get("chef")
+                        avatar_file = CHEF_AVATAR_MAP.get(chef, "default.jpg")
+                        rec["chef_avatar"] = "/static/images/avatars/" + avatar_file
+                        return rec
+
                     if step == 2:
                         session["suggested_dish_ids"] = already_suggested + [d["id"] for d in dishes_branch1]
                         return jsonify({
                             "message": random.choice(suggestion_messages),
-                            "dishes": [enrich_dish_with_image_url(d) for d in dishes_branch1]
+                            "dishes": [enrich_dish_with_all(d) for d in dishes_branch1]
                         })
                     top_dishes = dishes_branch1[:3]
                     session["suggested_dish_ids"] = already_suggested + [d["id"] for d in top_dishes]
                     return jsonify({
                         "message": random.choice(suggestion_messages),
-                        "dishes": [enrich_dish_with_image_url(d) for d in top_dishes]
+                        "dishes": [enrich_dish_with_all(d) for d in top_dishes]
                     })
             else:
                 print("[DEBUG] ❌ Branch1 no strong matches")
@@ -1481,18 +1770,6 @@ def index():
         return redirect(url_for("welcome"))
 
 
-@app.route("/welcome")
-def welcome_v2():
-    hour = datetime.now().hour
-    greeting = "Καλημέρα" if hour < 12 else "Καλησπέρα"
-    day_idx = datetime.now().weekday()  # 0 = Δευτέρα
-    day_name = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο", "Κυριακή"][day_idx]
-    return render_template(
-        "welcome.html",
-        greeting=greeting,
-        day_name=day_name
-    )
-
 
 @app.route("/login/google/callback")
 def google_login_callback():
@@ -1524,171 +1801,6 @@ def google_login_callback():
     session["user_id"] = user_id
     return redirect(url_for("welcome"))
 
-@app.route("/signup", methods=["GET", "POST"])
-def signup():
-    if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
-        password = request.form.get("password", "").strip()
-        first_name = request.form.get("first_name", "").strip()
-
-        if not email or not password:
-            flash("Email και κωδικός είναι υποχρεωτικά!", "danger")
-            return redirect(url_for("signup"))
-
-        conn = sqlite3.connect(DB)
-        conn.row_factory = sqlite3.Row
-        existing = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
-        if existing:
-            flash("Υπάρχει ήδη χρήστης με αυτό το email!", "warning")
-            conn.close()
-            return redirect(url_for("signup"))
-
-        # Κωδικοποίηση κωδικού
-        hashed_password = generate_password_hash(password)
-
-        # Προσθήκη νέου χρήστη
-        conn.execute("""
-            INSERT INTO users (email, password, first_name)
-            VALUES (?, ?, ?)
-        """, (email, hashed_password, first_name))
-        conn.commit()
-
-        # Ανάκτηση του νέου id
-        user_id = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()["id"]
-        conn.close()
-
-        session["user_id"] = user_id
-        session['signup_success'] = True
-        return redirect(url_for("login"))
-
-    return render_template("signup.html")
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "GET":
-        if not get_flashed_messages() and not session.get("signup_success"):
-            session.clear()
-        return render_template("login.html")
-
-    if request.method == "POST":
-        action = request.form.get("action")
-        conn = sqlite3.connect(DB)
-        conn.row_factory = sqlite3.Row
-
-        # ✅ Debug login bypass
-        if action == "debug":
-            user = conn.execute("SELECT * FROM users ORDER BY id LIMIT 1").fetchone()
-            conn.close()
-            if user:
-                session["user_id"] = user["id"]
-                return redirect(url_for("main"))
-            else:
-                flash("Δεν βρέθηκε χρήστης για debug login!", "danger")
-                return redirect(url_for("login"))
-
-        # ✅ Κανονικό login
-        email = request.form.get("email", "").strip().lower()
-        password = request.form.get("password", "").strip()
-
-        # 1. Βρες τον χρήστη με βάση το email
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        conn.close()
-
-        if not user:
-            flash("Δεν υπάρχει χρήστης με αυτό το email.", "danger")
-            return redirect(url_for("login"))
-
-        # 2. Έλεγχος κωδικού (hashed)
-        stored_hash = user["password"]  # ή "password_hash" αν το πεδίο λέγεται αλλιώς
-        if check_password_hash(stored_hash, password):
-            session["user_id"] = user["id"]
-            session['login_success'] = True
-            return redirect(url_for("main"))
-        else:
-            flash("Λανθασμένος κωδικός!", "danger")
-            print("λαθος κωδικος")
-            return redirect(url_for("login"))
-
-@app.route("/forgot-password", methods=["GET", "POST"])
-def forgot_password():
-    if request.method == "POST":
-        email = request.form["email"].strip().lower()
-
-        conn = sqlite3.connect(DB)
-        conn.row_factory = sqlite3.Row
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        conn.close()
-
-        if user:
-            s = URLSafeTimedSerializer(app.secret_key)
-            token = s.dumps(user["email"], salt='password-reset')
-            reset_link = url_for('reset_password', token=token, _external=True)
-
-            msg = Message(
-                subject="Επαναφορά Κωδικού – Family Food",
-                sender=("Family Food", app.config['MAIL_USERNAME']),
-                recipients=[email]
-            )
-            msg.body = f"Για να επαναφέρεις τον κωδικό σου, κάνε κλικ στον παρακάτω σύνδεσμο:\n\n{reset_link}\n\nΑν δεν ζήτησες επαναφορά, αγνόησέ το."
-
-            try:
-                mail.send(msg)
-                flash("✅ Σου στείλαμε email με οδηγίες επαναφοράς.", "success")
-            except Exception:
-                flash("❌ Σφάλμα κατά την αποστολή email. Δοκίμασε ξανά.", "danger")
-        else:
-            flash("⚠️ Δεν βρέθηκε λογαριασμός με αυτό το email.", "warning")
-
-        return redirect(url_for("forgot_password"))
-
-    return render_template("forgot_password.html")
-
-@app.route("/reset_password/<token>", methods=["GET", "POST"])
-def reset_password(token):
-    try:
-        s = URLSafeTimedSerializer(app.secret_key)
-        email = s.loads(token, salt='password-reset', max_age=7200)  # 2 ώρες
-    except SignatureExpired:
-        flash("⏰ Ο σύνδεσμος έληξε. Ζήτησε νέο από τη σελίδα επαναφοράς.", "danger")
-        return redirect(url_for("forgot_password"))
-    except BadSignature:
-        flash("❌ Μη έγκυρος σύνδεσμος επαναφοράς.", "danger")
-        return redirect(url_for("forgot_password"))
-
-    # Αναζητάμε τον χρήστη στη βάση
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-    conn.close()
-
-    if not user:
-        flash("Ο λογαριασμός δεν βρέθηκε.", "danger")
-        return redirect(url_for("forgot_password"))
-
-    if request.method == "POST":
-        pwd1 = request.form.get("password", "").strip()
-        pwd2 = request.form.get("password2", "").strip()
-
-        if len(pwd1) < 6:
-            flash("Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες.", "danger")
-            return render_template("reset_password.html")
-
-        if pwd1 != pwd2:
-            flash("Οι κωδικοί δεν ταιριάζουν.", "danger")
-            return render_template("reset_password.html")
-
-        hash = generate_password_hash(pwd1)
-
-        # Ενημέρωση κωδικού στη βάση
-        conn = sqlite3.connect(DB)
-        conn.execute("UPDATE users SET password = ? WHERE email = ?", (hash, email))
-        conn.commit()
-        conn.close()
-
-        flash("✅ Ο κωδικός άλλαξε! Μπορείς να συνδεθείς τώρα.", "success")
-        return redirect(url_for("login"))
-
-    return render_template("reset_password.html")
 
 @app.route('/delete_user_and_data', methods=['POST'])
 def delete_user_and_data():
@@ -1722,12 +1834,6 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
-
-@app.route("/main")
-@login_required
-def main():
-    clear_suggestions()
-    return render_template("main.html")
 
 @app.route('/delete_user_recipe', methods=['POST'])
 def delete_user_recipe():
@@ -1880,7 +1986,7 @@ def get_favorite_filters():
     conn.row_factory = sqlite3.Row
 
     rows = conn.execute("""
-    SELECT r.chef, r.main_dish_tag, r.total_time, r.method
+    SELECT r.chef, r.main_ingredient, r.total_time, r.method
     FROM favorite_recipes f
     JOIN recipes r ON r.id = f.recipe_id
     WHERE f.user_id = ?
@@ -1896,8 +2002,8 @@ def get_favorite_filters():
     for r in rows:
         if r["chef"]:
             chefs.add(r["chef"])
-        if r["main_dish_tag"]:
-            categories.add(r["main_dish_tag"])
+        if r["main_ingredient"]:
+            categories.add(r["main_ingredient"])
         if r["total_time"]:
             times.add(int(r["total_time"]))
         if r["method"]:
@@ -1910,115 +2016,48 @@ def get_favorite_filters():
         "methods": sorted(methods)
     })
 
-
-def strip_tonos(text):
-    return ''.join(c for c in unicodedata.normalize('NFD', text)
-                   if unicodedata.category(c) != 'Mn').lower()
-
-@app.route("/api/favorites")
+@app.route("/api/last_seen/filters")
 @login_required
-def api_favorites():
+def get_last_seen_filters():
     user, _ = get_user()
     user_id = user["id"]
-
-    # Query params
-    page = int(request.args.get("page", 1))
-    per_page = int(request.args.get("per_page", 4))
-    method = request.args.get("method", "").strip()
-    category = request.args.get("category", "").strip()
-    chef = request.args.get("chef", "").strip()
-    time_limit = request.args.get("max_time", "").strip()
-    search = request.args.get("search", "").strip()
 
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
 
-    base_query = """
-    SELECT r.id, r.title, r.chef, r.prep_time, r.cook_time, r.url,
-           r.main_dish_tag, r.total_time, r.created_by, r.parent_id,
-           r.method, r.tags, r.ingredients, r.instructions
-    FROM favorite_recipes f
-    JOIN recipes r ON r.id = f.recipe_id
-    WHERE f.user_id = ?
-    """
-    filters = [user_id]
-    conditions = []
-
-    if method:
-        conditions.append("r.method = ?")
-        filters.append(method)
-
-    if category:
-        conditions.append("r.main_dish_tag = ?")
-        filters.append(category)
-
-    if chef:
-        conditions.append("r.chef = ?")
-        filters.append(chef)
-
-    if time_limit:
-        try:
-            time_limit = int(time_limit)
-            conditions.append("r.total_time <= ?")
-            filters.append(time_limit)
-        except ValueError:
-            pass
-
-    if conditions:
-        base_query += " AND " + " AND ".join(conditions)
-
-    base_query += " ORDER BY f.rowid ASC"
-
-    rows = conn.execute(base_query, filters).fetchall()
+    rows = conn.execute("""
+        SELECT r.chef, r.main_ingredient, r.total_time, r.method
+        FROM last_seen_recipes lsr
+        JOIN recipes r ON r.id = lsr.recipe_id
+        WHERE lsr.user_id = ?
+    """, (user_id,)).fetchall()
     conn.close()
 
-    def row_to_dict(row):
-        return {
-            "id": row["id"],
-            "title": row["title"],
-            "chef": row["chef"],
-            "prep_time": row["prep_time"],
-            "cook_time": row["cook_time"],
-            "total_time": row["total_time"],
-            "url": row["url"],
-            "main_dish_tag": row["main_dish_tag"],
-            "created_by": row["created_by"],
-            "method": row["method"],
-            "tags": row["tags"],
-            "ingredients": row["ingredients"],
-            "instructions": row["instructions"]
-        }
+    chefs = set()
+    categories = set()
+    times = set()
+    methods = set()
 
-    all_recipes = [row_to_dict(r) for r in rows]
-
-    # ✅ Fuzzy Search
-    if search:
-        search_clean = strip_tonos(search)
-        
-        def match(recipe):
-            fields = [
-                recipe["title"] or "",
-                recipe["tags"] or "",
-                recipe["main_dish_tag"] or ""
-            ]
-            for f in fields:
-                target = strip_tonos(f)
-                score = fuzz.partial_ratio(search_clean, target)
-                if score > 85:  # κατώφλι fuzzy matching
-                    return True
-            return False
-       
-        all_recipes = [r for r in all_recipes if match(r)]
-
-    total_count = len(all_recipes)
-    start = (page - 1) * per_page
-    end = start + per_page
+    for r in rows:
+        if r["chef"]:
+            chefs.add(r["chef"])
+        if r["main_ingredient"]:
+            categories.add(r["main_ingredient"])
+        if r["total_time"]:
+            try:
+                times.add(int(r["total_time"]))
+            except:
+                pass
+        if r["method"]:
+            methods.add(r["method"])
 
     return jsonify({
-        "recipes": all_recipes[start:end],
-        "page": page,
-        "total_pages": (total_count + per_page - 1) // per_page
+        "chefs": sorted(chefs),
+        "categories": sorted(categories),
+        "times": sorted(times),
+        "methods": sorted(methods)
     })
+
 
 
 @app.route('/toggle_favorite_recipe', methods=['POST'])
