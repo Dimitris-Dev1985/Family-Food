@@ -907,6 +907,33 @@ def delete_cooked_dish(cooked_id):
         print('[ERROR] delete_cooked_dish:', e)
         return jsonify({'error': 'DB error'}), 500
 
+@app.route('/api/cooked_notes/<int:cooked_id>', methods=['PATCH'])
+def update_cooked_note(cooked_id):
+    data = request.json
+    user_id = data.get('user_id')
+    note = data.get('note', '').strip()
+    # Μπορείς να βάλεις εδώ επιπλέον validation αν θες
+
+    if not user_id or not note:
+        return jsonify({'success': False, 'error': 'missing fields'}), 400
+
+    try:
+        conn = sqlite3.connect(DB)
+        c = conn.cursor()
+        # Επιβεβαίωση ότι το cooked_dishes ανήκει στον χρήστη
+        c.execute("SELECT id FROM cooked_dishes WHERE id = ? AND user_id = ?", (cooked_id, user_id))
+        row = c.fetchone()
+        if not row:
+            return jsonify({'success': False, 'error': 'not found'}), 404
+
+        c.execute("UPDATE cooked_dishes SET notes = ?, cooked_at = CURRENT_TIMESTAMP WHERE id = ?", (note, cooked_id))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        print('[ERROR] update_cooked_note:', e)
+        return jsonify({'success': False, 'error': 'DB error'}), 500
+
 # ----------- COOCKED DISHES -----------
 
 
