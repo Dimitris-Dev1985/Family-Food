@@ -162,9 +162,9 @@
 <!-- =================== Input Row =================== -->
 <style>
   .chat-input-row {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 5px;
     width: 100%; max-width: 100%;
-    margin: 0; padding: 10px 12px 7px;
+    margin: 0!important; padding: 10px 12px 7px;
     border-radius: 20px; z-index: 10;
     background: #fff;
     border-top: 1.5px solid var(--outline);
@@ -173,15 +173,14 @@
   .chat-input-row textarea {
     flex: 1;
     min-height: 44px; max-height: 120px;
-    padding: 0 20px 0 10px;
-	margin-right: 15px;
+    padding: 0 5px 0 10px;
     border: 1.5px solid var(--outline); border-radius: 20px;
     font-size: 0.9rem; resize: none;
     background: var(--input-bg);
     overflow-y: auto;
-	letter-spacing: 1.12px;
     transition: background-color 0.2s;
 	align-content: center;
+	margin-right: 5px;
   }
   .chat-input-row textarea:focus {
     outline: none;
@@ -341,9 +340,17 @@
 
 <!-- =================== OUT CONFIRM MODAL =================== -->
 <style>
-
+.modal-logout, .modal-logout-backdrop {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s;
+}
+.modal-logout.open, .modal-logout-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
 .modal-logout {
-  display: none;
+  display: block;
   position: fixed;
   z-index: 250;
   left: 50%; top: 50%;
@@ -353,9 +360,7 @@
   box-shadow: 0 6px 24px rgba(33,142,70,0.17);
   min-width: 288px; max-width: 95vw;
   padding: 28px 20px 20px 20px;
-  animation: fadeIn 0.17s;
 }
-.modal-logout.open { display: block; }
 .modal-logout-content { text-align: center; }
 .modal-logout-title {
   font-size: 1.17rem;
@@ -401,16 +406,40 @@
 .btn-logout-confirm:hover { background: #c5163e; }
 
 .modal-logout-backdrop {
-  display: none;
+  display: block;
   position: fixed; inset: 0;
   z-index: 200;
   background: rgba(44, 44, 44, 0.15);
   backdrop-filter: blur(1.5px);
-  animation: fadeIn 0.17s;
 }
-.modal-logout-backdrop.open { display: block; }
-
 </style>
+
+<!-- =================== RESTART BUTTON =================== -->
+<style>
+.restart-chat-btn {
+  background: none;
+  border: none;
+  color: var(--brand);
+  font-size: 1.5rem;
+  padding: 6px 8px 6px 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+}
+.restart-chat-btn:active,
+
+.restart-chat-btn:{
+  background: #eafbe7;
+  color: var(--brand);
+}
+</style>
+
+
 
 
 <body style="min-height:100vh; display:flex; flex-direction:column;">
@@ -435,7 +464,10 @@
 	  <div class="chat-bubble from-ai">👩‍🍳 Περίπου πόσο χρόνο έχεις για μαγείρεμα;</div>
 	</div>
     <div class="chat-input-row" id="chatInputRow">
-        <textarea id="userInput" placeholder="Πες μου τι σκέφτεσαι..."></textarea>
+        <button id="restartChatBtn" class="restart-chat-btn" title="Επαναφορά συνομιλίας" onclick="restartChat()" style="display:none;">
+		  <i class="fa fa-undo"></i>
+		</button>
+		<textarea id="userInput" placeholder="Πες μου τι σκέφτεσαι..."></textarea>
         <button onclick="sendMessage()">
           <span class="material-icons mui-icon">send</span>
         </button>
@@ -477,31 +509,10 @@
 
 
 
+
 </body>
 
 {% endblock %}
-
-{% block modals %}
-
-<!-- === LOGOUT CONFIRM MODAL === -->
-<div id="logoutConfirmModal" class="modal-logout">
-  <div class="modal-logout-content">
-    <div class="modal-logout-title">
-      <i class="fa fa-sign-out-alt"></i> Αποσύνδεση;
-    </div>
-    <div class="modal-logout-msg">
-      Επιθυμείς σίγουρα να αποσυνδεθείς;<br>
-      <span style="color:var(--red); font-weight:600;">Οι προτιμήσεις σου για σήμερα θα διαγραφούν!</span>
-    </div>
-    <div class="modal-logout-actions">
-      <button class="btn-logout-cancel" onclick="closeLogoutModal()">Ακύρωση</button>
-      <button class="btn-logout-confirm" onclick="confirmLogout()">Αποσύνδεση</button>
-    </div>
-  </div>
-</div>
-<div id="logoutModalBackdrop" class="modal-logout-backdrop" onclick="closeLogoutModal()"></div>
-{% endblock %}
-
 
 
 
@@ -1257,21 +1268,54 @@ document.addEventListener('keydown', function(e) {
 </script>
 
 <script>
-// === LOGOUT CONFIRM LOGIC ===
+
+// === LOGOUT CONFIRM LOGIC (ΔΥΝΑΜΙΚΟ MODAL) ===
 function logoutUser() {
-  // Εμφάνισε modal επιβεβαίωσης (αντί για άμεσο logout)
-  document.getElementById('logoutConfirmModal').classList.add('open');
-  document.getElementById('logoutModalBackdrop').classList.add('open');
-  // Κλείσε το offcanvas αν είναι ανοιχτό
-  closeOffcanvas && closeOffcanvas();
-  // Disable scroll στο body
+  // Αν υπάρχει ήδη, μην το ξαναβάλεις
+  if (document.getElementById('logoutConfirmModal')) return;
+
+  // Δημιουργία backdrop
+  const backdrop = document.createElement('div');
+  backdrop.id = 'logoutModalBackdrop';
+  backdrop.className = 'modal-logout-backdrop open';
+  backdrop.onclick = closeLogoutModal;
+
+  // Δημιουργία modal
+  const modal = document.createElement('div');
+  modal.id = 'logoutConfirmModal';
+  modal.className = 'modal-logout open';
+  modal.innerHTML = `
+    <div class="modal-logout-content">
+      <div class="modal-logout-title">
+        <i class="fa fa-sign-out-alt"></i> Αποσύνδεση;
+      </div>
+      <div class="modal-logout-msg">
+        Επιθυμείς σίγουρα να αποσυνδεθείς;<br>
+        <span style="color:var(--red); font-weight:600;">Οι προτιμήσεις σου για σήμερα θα διαγραφούν!</span>
+      </div>
+      <div class="modal-logout-actions">
+        <button class="btn-logout-cancel" onclick="closeLogoutModal()">Ακύρωση</button>
+        <button class="btn-logout-confirm" onclick="confirmLogout()">Αποσύνδεση</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
+
+  // Κλείσε το offcanvas αν είναι ανοιχτό
+  if (typeof closeOffcanvas === 'function') closeOffcanvas();
 }
+
 function closeLogoutModal() {
-  document.getElementById('logoutConfirmModal').classList.remove('open');
-  document.getElementById('logoutModalBackdrop').classList.remove('open');
+  const modal = document.getElementById('logoutConfirmModal');
+  const backdrop = document.getElementById('logoutModalBackdrop');
+  if (modal) modal.remove();
+  if (backdrop) backdrop.remove();
   document.body.style.overflow = '';
 }
+
 function confirmLogout() {
   localStorage.clear();
   window.location.href = '/logout';
@@ -1282,4 +1326,78 @@ document.addEventListener('keydown', function(e) {
   if (e.key === "Escape") closeLogoutModal();
 });
 </script>
+
+<script>
+
+
+window.addEventListener("DOMContentLoaded", function() {
+  const btn = document.getElementById("restartChatBtn");
+  if (!btn) return;
+  const hasHistory = !!sessionStorage.getItem('chatHistory');
+  btn.style.display = hasHistory ? 'inline-flex' : 'none';
+});
+
+
+</script>
+
+<script>
+function restartChat() {
+  showRestartModal();
+}
+
+function showRestartModal() {
+  // Αν υπάρχει ήδη, μην το ξαναβάλεις
+  if (document.getElementById('restartConfirmModal')) return;
+
+  // Δημιουργία backdrop
+  const backdrop = document.createElement('div');
+  backdrop.id = 'restartModalBackdrop';
+  backdrop.className = 'modal-logout-backdrop open';
+  backdrop.onclick = closeRestartModal;
+
+  // Δημιουργία modal
+  const modal = document.createElement('div');
+  modal.id = 'restartConfirmModal';
+  modal.className = 'modal-logout open';
+  modal.innerHTML = `
+    <div class="modal-logout-content">
+      <div class="modal-logout-title">
+        <i class="fa fa-undo"></i> Επαναφορά συνομιλίας;
+      </div>
+      <div class="modal-logout-msg">
+        Θέλεις σίγουρα να επαναφέρεις το ιστορικό της συνομιλίας;<br>
+        <span style="color:var(--red); font-weight:600;">Οι προτιμήσεις σου για σήμερα θα διαγραφούν!</span>
+      </div>
+      <div class="modal-logout-actions">
+        <button class="btn-logout-cancel" onclick="closeRestartModal()">Ακύρωση</button>
+        <button class="btn-logout-confirm" onclick="confirmRestart()">Επαναφορά</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+}
+
+function closeRestartModal() {
+  const modal = document.getElementById('restartConfirmModal');
+  const backdrop = document.getElementById('restartModalBackdrop');
+  if (modal) modal.remove();
+  if (backdrop) backdrop.remove();
+  document.body.style.overflow = '';
+}
+
+function confirmRestart() {
+  clearChatHistory();
+  localStorage.clear();
+  location.reload();
+}
+
+// Κλείσιμο με Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === "Escape") closeRestartModal();
+});
+</script>
+
 {% endblock %}
