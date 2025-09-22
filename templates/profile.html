@@ -356,7 +356,8 @@
 }
 .activity-card-bg-comment  { background: #eafbe7 !important; }
 .activity-card-bg-rating   { background: #fffbe9 !important; }
-.activity-card-bg-cooked   { background: #fff7f2 !important; }
+.activity-card-bg-cooked   { background: #ffe2d0 !important; }
+
 
 .activity-card-left {
   width: 110px;
@@ -459,7 +460,7 @@
 }
 
 .activity-card-bg-cooked .activity-user-content {
-  background: #fff7f2;
+  background: #ffe2d0;
   border-left-color: #ee7642;
 }
 .activity-user-content b {
@@ -540,7 +541,7 @@
   color: #1a6e38;
 }
 @media (max-width: 600px) {
-  #favorites-filters-section { padding: 10px 3vw 8px 3vw; }
+  #favorites-filters-section { padding: 10px 3vw 10px 3vw; }
   .profile-search-row input[type="text"].form-control-sm { min-height: 34px; font-size: 1em; }
   .profile-filters-row .form-select-sm { min-height: 32px; font-size: 0.98em; }
 }
@@ -566,7 +567,6 @@
   flex-direction: row;
   gap: 10px;
   border-radius: 16px;
-  padding: 13px 23px;
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.18s;
@@ -579,7 +579,7 @@
 }
 
 .action-btn {
-  width: 44px; height: 44px;
+  width: 50px; height: 50px;
   background: var(--brand);
   color: #fff;
   border: none;
@@ -598,8 +598,55 @@
 }
 </style>
 
+<!-- === Activity Card Subtabs === -->
+<style>
+#activity-filters-section {
+  background: #fcfdfb;
+  border-radius: 16px;
+  margin: 16px auto 8px auto;
+  max-width: 580px;
+  box-shadow: 0 1.5px 7px rgba(33,142,70,0.04);
+  padding: 14px 15px 9px 15px;
+  border: 1.2px solid #e7efea;
+  animation: fadeIn 0.25s;
+}
+.activity-filters-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.activity-filter-btn {
+  display: inline-block;
+  background: #f8fcf9;
+  color: #1a6e38;
+  border-radius: 8px;
+  border: 1.1px solid #d6ead8;
+  min-height: 35px;
+  padding: 4px;
+  font-size: 1.04em;
+  font-weight: 400;
+  margin-right: 5px;
+  cursor: pointer;
+  transition: border 0.13s, box-shadow 0.13s, background 0.13s, color 0.13s;
+  outline: none;
+  appearance: none;
+}
+.activity-filter-btn:last-child { margin-right: 0; }
+.activity-filter-btn.active,
+.activity-filter-btn:focus {
+  background: var(--brand);
+  color: #fff;
+  border: 1.2px solid var(--brand);
+  box-shadow: 0 0 0 1.5px #eafbe7;
+}
+@media (max-width: 600px) {
+  #activity-filters-section { padding: 10px 3vw 10px 3vw; }
+  .activity-filter-btn { min-height: 32px; font-size: 0.98em; }
+}
+</style>
 
-<!-- =================== DELETE CONFIRM MODAL =================== -->
+
+<!-- =================== DELETE ACTIVITY CONFIRM MODAL =================== -->
 <style>
 
 .modal-logout {
@@ -621,6 +668,7 @@
 .modal-logout.open {
   visibility: visible;
   opacity: 1;
+  z-index: 299;
 }
 
 .modal-logout-content { text-align: center; }
@@ -685,8 +733,192 @@
 
 </style>
 
+<!-- =================== EDIT ACTIVITY MODAL =================== -->
+<style>
+.modal-edit-activity {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  position: fixed;
+  z-index: 270;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  background: #fcfdfb;
+  border-radius: 18px;
+  box-shadow: 0 10px 32px rgba(33,142,70,0.17);
+  min-width: 320px; max-width: 98vw;
+  width: 420px;
+  padding: 34px 28px 22px 28px;
+  animation: fadeIn 0.19s;
+  transition: opacity 0.18s, visibility 0.18s;
+}
+@media (max-width: 640px) {
+  .modal-edit-activity {
+    width: 98vw;
+    min-width: unset;
+    padding: 22px 7vw 16px 7vw;
+  }
+}
+.modal-edit-activity.open {
+  visibility: visible;
+  opacity: 1;
+}
+.modal-edit-activity.bg-rating   { background: #fffbe9 !important; }
+.modal-edit-activity.bg-comment  { background: #eafbe7 !important; }
+.modal-edit-activity.bg-cooked   { background: #ffe2d0 !important; }
+
+.modal-edit-content {  }
 
 
+.modal-edit-title {
+  font-size: 1.26rem;
+  font-weight: 800;
+  color: #283228;
+  margin-bottom: 13px;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+.modal-edit-field {
+  margin-bottom: 18px;
+  text-align: left;
+}
+.modal-edit-label {
+  display: block;
+  font-size: 1.05em;
+  font-weight: 500;
+  color: var(--brand);
+  margin-bottom: 7px;
+}
+#editCookedNoteInput {
+  width: 100%;
+  border-radius: 9px;
+  border: 1.1px solid #e1eae4;
+  min-height: 90px;
+  background: #f8fcf9;
+  color: #18381a;
+  font-size: 1.05em;
+  padding: 8px 10px;
+  transition: border 0.13s;
+  resize: vertical;
+}
+#editCookedNoteInput:focus {
+  border: 1.2px solid var(--brand);
+  outline: none;
+  background: #f6fbf7;
+}
+.modal-edit-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+.btn-edit-cancel, .btn-edit-submit {
+  border: none;
+  border-radius: 7px;
+  padding: 9px 22px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.btn-edit-cancel {
+  background: #f3f3f3;
+  color: #555;
+}
+.btn-edit-cancel:hover { background: #eafbe7; color: var(--brand-hover, #1a6e38); }
+.btn-edit-submit {
+  background: var(--brand, #218e46);
+  color: #fff;
+}
+.btn-edit-submit:hover { background: var(--brand-hover, #1a6e38); }
+
+.modal-edit-backdrop {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  position: fixed; inset: 0;
+  z-index: 200;
+  background: rgba(44, 44, 44, 0.13);
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.19s;
+  transition: opacity 0.18s, visibility 0.18s;
+}
+.modal-edit-backdrop.open {
+  visibility: visible;
+  opacity: 1;
+}
+
+.modal-edit-activity.is-backdrop {
+  opacity: 0.48;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.23s;
+}
+
+</style>
+
+<!-- =================== User Rating Stars =================== -->
+<style>
+.user-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  
+}
+.user-rating-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--brand-hover);
+  min-width: 132px;
+  white-space: nowrap;
+}
+.user-stars {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-rating-hint {
+  font-size: 0.99rem;
+  color: #666;
+  font-style: italic;
+  margin: 1px 0 0 0;
+  white-space: normal;
+}
+
+.user-stars .fa-star,
+.user-stars .fa-star.user-star-empty,
+.user-stars .far.fa-star,
+.user-stars .fa-regular.fa-star {
+  color: var(--brand-hover) !important;
+  opacity: 1;
+  font-weight: normal;
+  scale:1.2;
+}
+
+
+/* =================== User Rating Stars SVG MODAL SUPPORT =================== */
+.user-stars svg {
+  color: var(--brand-hover) !important;
+  cursor: pointer;
+  transition: color 0.16s, transform 0.11s;
+}
+.user-stars svg.user-star-empty {
+  color: var(--brand-hover) !important;
+  font-weight: normal;
+}
+.user-stars svg.user-star-selected {
+  color: var(--brand-hover) !important;
+  font-weight: bold;
+}
+.user-stars svg.user-star-hover {
+  color: var(--brand) !important;
+  transform: scale(1.13);
+}
+
+
+
+
+</style>
 
 
 <!-- ========= CONTENT ========= -->
@@ -769,7 +1001,7 @@
     </div>
   </div>
 
-  <div class="mb-3 d-flex profile-search-row">
+  <div class="d-flex profile-search-row">
     <input type="text" id="search-term" class="form-control form-control-sm voice-enabled" placeholder="Αναζήτησε... ή πάτα το μικρόφωνο:" data-voice-target="favorites">
     <button class="btn btn-outline-secondary btn-sm ms-2" id="reset-filters-btn" type="button">
       <i class="fa fa-rotate-left"></i>
@@ -815,6 +1047,55 @@
   </div>
 </div>
 <div id="deleteModalBackdrop" class="modal-logout-backdrop" onclick="closeDeleteModal()"></div>
+
+<!-- === EDIT COOKED NOTE MODAL === -->
+<div id="editCookedModal" class="modal-edit-activity">
+  <div class="modal-edit-content">
+    <div class="modal-edit-title" id="editCookedModalTitle">
+      <!-- Ο τίτλος του πιάτου μπαίνει εδώ δυναμικά -->
+    </div>
+    <div class="modal-edit-field">
+      <label for="editCookedNoteInput" class="modal-edit-label">Σημειώσεις για το πιάτο:</label>
+      <textarea id="editCookedNoteInput" rows="4" maxlength="1000" placeholder="Γράψε τις σημειώσεις σου εδώ..."></textarea>
+    </div>
+    <div class="modal-edit-actions">
+      <button class="btn-edit-cancel" type="button" onclick="closeEditCookedModal()">Ακύρωση</button>
+      <button class="btn-edit-submit" type="button" id="submitEditCookedBtn">Υποβολή</button>
+    </div>
+  </div>
+</div>
+<div id="editCookedModalBackdrop" class="modal-edit-backdrop" onclick="closeEditCookedModal()"></div>
+
+<!-- === EDIT RATING MODAL === -->
+<div id="editRatingModal" class="modal-edit-activity">
+  <div class="modal-edit-content">
+    <div class="modal-edit-title" id="editRatingModalTitle"></div>
+    <div class="modal-edit-field user-rating-row" style="margin-bottom:18px;">
+	  <label class="modal-edit-label" style="margin:0 10px 0 0;">Η βαθμολογία σου:</label>
+	  <div class="user-stars" id="editRatingStars"></div>
+	</div>
+    <div class="modal-edit-actions">
+      <button class="btn-edit-cancel" type="button" onclick="closeEditRatingModal()">Ακύρωση</button>
+      <button class="btn-edit-submit" type="button" id="submitEditRatingBtn">Υποβολή</button>
+    </div>
+  </div>
+</div>
+<div id="editRatingModalBackdrop" class="modal-edit-backdrop" onclick="closeEditRatingModal()"></div>
+
+<!-- === CONFIRM EDIT MODAL === -->
+<div id="confirmEditModal" class="modal-logout">
+  <div class="modal-logout-content">
+    <div class="modal-logout-title">
+      <i class="fa fa-edit"></i> Επιβεβαίωση αλλαγής;
+    </div>
+    <div class="modal-logout-msg" id="confirmEditMsg"></div>
+    <div class="modal-logout-actions">
+      <button class="btn-logout-cancel" onclick="closeConfirmEditModal()">Ακύρωση</button>
+      <button class="btn-logout-confirm" id="confirmEditBtn">Ναι, αποθήκευση</button>
+    </div>
+  </div>
+</div>
+<div id="confirmEditModalBackdrop" class="modal-logout-backdrop" onclick="closeConfirmEditModal()"></div>
 
 {% endblock %}
 
@@ -1024,15 +1305,18 @@ function renderActivityCards(activity) {
   const wrapper = document.getElementById('activityList');
   wrapper.innerHTML = "";
 
-  const subtabsHTML = `
-    <div class="activity-subtabs-row" style="display:flex;gap:0px;justify-content:center;margin-bottom:12px;">
-      <button class="activity-subtab-btn active" data-activity-type="all">Όλα</button>
-      <button class="activity-subtab-btn" data-activity-type="rating">Αξιολογήσεις</button>
-      <button class="activity-subtab-btn" data-activity-type="comment">Σχόλια</button>
-      <button class="activity-subtab-btn" data-activity-type="cooked">Μαγειρέματα</button>
-    </div>
-    <div id="activityCardsWrapper"></div>
-  `;
+	const subtabsHTML = `
+	  <div id="activity-filters-section">
+		  <div class="activity-filters-row">
+			<button class="activity-filter-btn active" data-activity-type="all">Όλα</button>
+			<button class="activity-filter-btn" data-activity-type="rating">Αξιολογήσεις</button>
+			<button class="activity-filter-btn" data-activity-type="comment">Σχόλια</button>
+			<button class="activity-filter-btn" data-activity-type="cooked">Μαγειρέματα</button>
+		  </div>
+		</div>
+	  <div id="activityCardsWrapper"></div>
+	`;
+
   wrapper.insertAdjacentHTML("beforeend", subtabsHTML);
   const cardsWrapper = document.getElementById('activityCardsWrapper');
 
@@ -1115,15 +1399,145 @@ function renderActivityCards(activity) {
 	  e.stopPropagation();
 	});
 
-
-
     const editBtn = item.querySelector('.btn-edit');
     const deleteBtn = item.querySelector('.btn-delete');
-    if (editBtn) editBtn.onclick = function(ev) {
-      ev.stopPropagation();
-      item.querySelector(".activity-action-btns").classList.remove("active");
-      alert("Edit: " + act.recipe_title);
-    };
+	
+	
+	
+	if (editBtn) editBtn.onclick = function(ev) {
+	  ev.stopPropagation();
+	  item.querySelector(".activity-action-btns").classList.remove("active");
+
+	  // ===== ΕΠΕΞΕΡΓΑΣΙΑ ΣΗΜΕΙΩΣΗΣ (cooked) =====
+	  if (act.type === "cooked") {
+		const recipeTitle = act.recipe_title || "Πιάτο";
+		const oldNote = act.notes || "";
+		const cookedId = act.cooked_id;
+		const userId = window.current_user_id;
+
+		openEditCookedModal({
+		  recipeTitle: recipeTitle,
+		  note: oldNote,
+		  onSubmit: function(newNote) {
+			fetch(`/api/cooked_notes/${cookedId}`, {
+			  method: 'PATCH',
+			  headers: { 'Content-Type': 'application/json' },
+			  body: JSON.stringify({ user_id: userId, note: newNote })
+			})
+			.then(r => r.json())
+			.then(data => {
+			  if (data && data.success) {
+				const noteBox = item.querySelector('.activity-user-content');
+				if (noteBox) {
+				  noteBox.innerHTML =
+					'<span style="color:#ee7642;"><i class="fa fa-utensils"></i></span> <b>Σημείωση:</b> ' + newNote;
+				}
+			  } else {
+				alert(data.error || "Σφάλμα κατά την ενημέρωση.");
+			  }
+			})
+			.catch(() => alert("Σφάλμα σύνδεσης."));
+		  }
+		});
+	  }
+
+	  // ===== ΕΠΕΞΕΡΓΑΣΙΑ ΣΧΟΛΙΟΥ (comment) =====
+	  else if (act.type === "comment") {
+		const recipeTitle = act.recipe_title || "Πιάτο";
+		const oldComment = act.comment || "";
+		const commentId = act.comment_id;
+		const recipeId = act.recipe_id;
+		const userId = window.current_user_id;
+
+		openEditCommentModal({
+		  recipeTitle: recipeTitle,
+		  comment: oldComment,
+		  onSubmit: function(newComment) {
+			// Πρώτα διαγράφουμε το παλιό comment
+			fetch(`/api/recipe_comments/${commentId}?user_id=${userId}`, {
+			  method: 'DELETE'
+			})
+			.then(r => r.json())
+			.then(data => {
+			  if (!data.ok) {
+				alert(data.error || "Σφάλμα διαγραφής σχολίου.");
+				return;
+			  }
+			  // Προσθέτουμε το νέο σχόλιο
+			  fetch('/api/recipe_comments', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+				  recipe_id: recipeId,
+				  user_id: userId,
+				  comment: newComment
+				})
+			  })
+			  .then(r => r.json())
+			  .then(resp => {
+				if (resp && resp.ok) {
+				  const commentBox = item.querySelector('.activity-user-content');
+				  if (commentBox) {
+					commentBox.innerHTML =
+					  '<span style="color:#19a147;"><i class="fa fa-comment"></i></span> <b>Σχόλιο:</b> ' + newComment;
+				  }
+				} else {
+				  alert(resp.error || "Σφάλμα κατά την προσθήκη νέου σχολίου.");
+				}
+			  })
+			  .catch(() => alert("Σφάλμα σύνδεσης (add comment)."));
+			})
+			.catch(() => alert("Σφάλμα σύνδεσης (delete comment)."));
+		  }
+		});
+	  }
+
+	  // ===== ΕΠΕΞΕΡΓΑΣΙΑ ΑΛΛΩΝ ΤΥΠΩΝ (προσωρινά όχι) =====
+	  else if (act.type === "rating") {
+		  const recipeTitle = act.recipe_title || "Πιάτο";
+		  const oldRating = act.rating || 0;
+		  const recipeId = act.recipe_id;
+		  const userId = window.current_user_id;
+
+		  openEditRatingModal({
+			recipeTitle: recipeTitle,
+			rating: oldRating,
+			onSubmit: function(newRating) {
+			  fetch('/api/rate_recipe', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+				  recipe_id: recipeId,
+				  user_id: userId,
+				  rating: newRating
+				})
+			  })
+			  .then(r => r.json())
+			  .then(data => {
+				if (data && data.success) {
+				  // Update στο DOM:
+				  const ratingBox = item.querySelector('.activity-user-content');
+				  if (ratingBox) {
+					ratingBox.innerHTML =
+					  '<span style="color:#e6ba08;"><i class="fa fa-star"></i></span> <b>Βαθμολογία:</b> ' + newRating + '/5';
+				  }
+				  // === UPDATE το αντικείμενο act ώστε να κρατάει το νέο rating! ===
+				  act.rating = newRating;
+				} else {
+				  alert(data.error || "Σφάλμα κατά την ενημέρωση αξιολόγησης.");
+				}
+			  })
+			  .catch(() => alert("Σφάλμα σύνδεσης."));
+			}
+
+		  });
+		}
+
+	};
+
+	
+	
+	
     if (deleteBtn) deleteBtn.onclick = function(ev) {
       ev.stopPropagation();
       item.querySelector(".activity-action-btns").classList.remove("active");
@@ -1185,7 +1599,7 @@ function renderActivityCards(activity) {
 
 
   // Subtab filtering logic (πάντα κρύβει τα κουμπιά!)
-  const subtabs = wrapper.querySelectorAll(".activity-subtab-btn");
+  const subtabs = wrapper.querySelectorAll("#activity-filters-section .activity-filter-btn");
   subtabs.forEach(function(btn) {
     btn.addEventListener("click", function(e) {
       subtabs.forEach(x => x.classList.remove("active"));
@@ -1509,5 +1923,224 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+<!-------------- Edit Activity Modal ---------------->
+<script>
+function openEditCookedModal({ recipeTitle, note, onSubmit }) {
+  document.getElementById("editCookedModalTitle").textContent = recipeTitle || "Επεξεργασία μαγειρέματος";
+  document.getElementById("editCookedNoteInput").value = note || "";
+
+  var modal = document.getElementById("editCookedModal");
+  if (modal) {
+    modal.classList.remove('bg-rating', 'bg-comment', 'bg-cooked');
+    modal.classList.add('bg-cooked');
+    modal.classList.remove('is-backdrop'); // Σιγουρεύσου ότι δεν έχει μείνει από πριν!
+  }
+
+  document.getElementById("editCookedModal").classList.add("open");
+  document.getElementById("editCookedModalBackdrop").classList.add("open");
+  window._editCookedSubmitCallback = onSubmit;
+}
+
+function closeEditCookedModal() {
+  var modal = document.getElementById("editCookedModal");
+  if (modal) modal.classList.remove('is-backdrop');
+  document.getElementById("editCookedModal").classList.remove("open");
+  document.getElementById("editCookedModalBackdrop").classList.remove("open");
+  window._editCookedSubmitCallback = null;
+}
+
+
+function openEditCommentModal({ recipeTitle, comment, onSubmit }) {
+  document.getElementById("editCookedModalTitle").textContent = recipeTitle || "Επεξεργασία σχολίου";
+  document.querySelector(".modal-edit-label").textContent = "Το σχόλιό σου:";
+  var input = document.getElementById("editCookedNoteInput");
+  input.value = comment || "";
+  input.placeholder = "Γράψε το νέο σου σχόλιο...";
+  input.maxLength = 1000;
+  input.rows = 4;
+
+  var modal = document.getElementById("editCookedModal");
+  if (modal) {
+    modal.classList.remove('bg-rating', 'bg-comment', 'bg-cooked');
+    modal.classList.add('bg-comment');
+    modal.classList.remove('is-backdrop');
+  }
+
+  document.getElementById("editCookedModal").classList.add("open");
+  document.getElementById("editCookedModalBackdrop").classList.add("open");
+  window._editCommentSubmitCallback = onSubmit;
+  window._editCookedSubmitCallback = null; // reset
+}
+
+document.getElementById("submitEditCookedBtn").onclick = function() {
+  // Ελέγχουμε αν έχουμε comment ή cooked
+  var isCommentMode = !!window._editCommentSubmitCallback;
+  var input = document.getElementById("editCookedNoteInput");
+  var val = input.value.trim();
+  if (isCommentMode) {
+    if (val.length < 2 || val.length > 1000) {
+      alert("Το σχόλιο πρέπει να έχει 2 έως 1000 χαρακτήρες.");
+      return;
+    }
+    openConfirmEditModal({
+      message: "Είσαι σίγουρος ότι θες να αλλάξεις το σχολιασμό αυτού του πιάτου;<br>Τα προηγούμενα σχόλια θα διαγραφούν οριστικά!",
+      onConfirm: function() {
+        if (typeof window._editCommentSubmitCallback === "function") {
+          window._editCommentSubmitCallback(val);
+        }
+        closeEditCookedModal();
+      },
+      parent: "editCookedModal"
+    });
+  } else if (typeof window._editCookedSubmitCallback === "function") {
+    if (val.length === 0) {
+      alert("Συμπλήρωσε τη σημείωση!");
+      return;
+    }
+    openConfirmEditModal({
+      message: "Είσαι σίγουρος ότι θες να αλλάξεις τις σημειώσεις αυτού του πιάτου;<br>Η προηγούμενη σημείωση θα διαγραφεί!",
+      onConfirm: function() {
+        window._editCookedSubmitCallback(val);
+        closeEditCookedModal();
+      },
+      parent: "editCookedModal"
+    });
+  }
+};
+
+
+function closeEditRatingModal() {
+  var modal = document.getElementById("editRatingModal");
+  if (modal) modal.classList.remove('is-backdrop');
+  document.getElementById("editRatingModal").classList.remove("open");
+  document.getElementById("editRatingModalBackdrop").classList.remove("open");
+  window._editRatingSubmitCallback = null;
+  window._editRatingValue = 0;
+}
+
+document.getElementById("submitEditRatingBtn").onclick = function() {
+  var rating = window._editRatingValue || 0;
+  if (rating < 1 || rating > 5) {
+    alert("Διάλεξε μια βαθμολογία από 1 έως 5 αστέρια!");
+    return;
+  }
+  openConfirmEditModal({
+    message: "Είσαι σίγουρος ότι θες να αλλάξεις την αξιολόγηση αυτού του πιάτου;<br>Η προηγούμενη αξιολόγηση θα διαγραφεί οριστικά!",
+    onConfirm: function() {
+      if (typeof window._editRatingSubmitCallback === "function") {
+        window._editRatingSubmitCallback(rating);
+      }
+      closeEditRatingModal();
+    },
+    parent: "editRatingModal"
+  });
+};
+
+function openEditRatingModal({ recipeTitle, rating, onSubmit }) {
+  document.getElementById("editRatingModalTitle").textContent = recipeTitle || "Επεξεργασία αξιολόγησης";
+  window._editRatingValue = rating || 0;
+
+  // ΟΡΙΖΕΙ ΤΟ ΣΩΣΤΟ BACKGROUND για rating
+  var modal = document.getElementById("editRatingModal");
+  if (modal) {
+    modal.classList.remove('bg-rating', 'bg-comment', 'bg-cooked');
+    modal.classList.add('bg-rating');
+    modal.classList.remove('is-backdrop');
+  }
+
+  const filledStarPath = "M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z";
+  const emptyStarPath = "M287.9 0c9.2 0 17.6 5.2 21.6 13.5l68.6 141.3 153.2 22.6c9 1.3 16.5 7.6 19.3 16.3s.5 18.1-5.9 24.5L433.6 328.4l26.2 155.6c1.5 9-2.2 18.1-9.6 23.5s-17.3 6-25.3 1.7l-137-73.2L151 509.1c-8.1 4.3-17.9 3.7-25.3-1.7s-11.2-14.5-9.7-23.5l26.2-155.6L31.1 218.2c-6.5-6.4-8.7-15.9-5.9-24.5s10.3-14.9 19.3-16.3l153.2-22.6L266.3 13.5C270.4 5.2 278.7 0 287.9 0zm0 79L235.4 187.2c-3.5 7.1-10.2 12.1-18.1 13.3L99 217.9 184.9 303c5.5 5.5 8.1 13.3 6.8 21L171.4 443.7l105.2-56.2c7.1-3.8 15.6-3.8 22.6 0l105.2 56.2L384.2 324.1c-1.3-7.7 1.2-15.5 6.8-21l85.9-85.1L358.6 200.5c-7.8-1.2-14.6-6.1-18.1-13.3L287.9 79z";
+
+  const wrapper = document.getElementById("editRatingStars");
+  wrapper.innerHTML = "";
+
+  for (let i = 1; i <= 5; i++) {
+    let isFilled = i <= window._editRatingValue;
+    let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "svg-inline--fa fa-star " + (isFilled ? "user-star-selected" : "user-star-empty"));
+    svg.setAttribute("data-val", i);
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("viewBox", "0 0 576 512");
+    svg.setAttribute("data-prefix", isFilled ? "fas" : "far");
+    svg.setAttribute("data-icon", "star");
+    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("fill", "currentColor");
+    path.setAttribute("d", isFilled ? filledStarPath : emptyStarPath);
+    svg.appendChild(path);
+
+    // === Events ===
+    svg.onmouseenter = function() {
+      const all = wrapper.querySelectorAll("svg");
+      all.forEach((s, j) => {
+        let active = j <= (i - 1);
+        s.setAttribute("class", "svg-inline--fa fa-star " + (active ? "user-star-selected user-star-hover" : "user-star-empty"));
+        s.setAttribute("data-prefix", active ? "fas" : "far");
+        s.querySelector("path").setAttribute("d", active ? filledStarPath : emptyStarPath);
+      });
+    };
+    svg.onmouseleave = function() {
+      const all = wrapper.querySelectorAll("svg");
+      all.forEach((s, j) => {
+        let active = j < (window._editRatingValue || 0);
+        s.setAttribute("class", "svg-inline--fa fa-star " + (active ? "user-star-selected" : "user-star-empty"));
+        s.setAttribute("data-prefix", active ? "fas" : "far");
+        s.querySelector("path").setAttribute("d", active ? filledStarPath : emptyStarPath);
+      });
+    };
+    svg.onclick = function() {
+      window._editRatingValue = i;
+      const all = wrapper.querySelectorAll("svg");
+      all.forEach((s, j) => {
+        let active = j < window._editRatingValue;
+        s.setAttribute("class", "svg-inline--fa fa-star " + (active ? "user-star-selected" : "user-star-empty"));
+        s.setAttribute("data-prefix", active ? "fas" : "far");
+        s.querySelector("path").setAttribute("d", active ? filledStarPath : emptyStarPath);
+      });
+    };
+
+    wrapper.appendChild(svg);
+  }
+
+  document.getElementById("editRatingModal").classList.add("open");
+  document.getElementById("editRatingModalBackdrop").classList.add("open");
+  window._editRatingSubmitCallback = onSubmit;
+}
+
+// ===================== OPEN CONFIRM MODAL =====================
+function openConfirmEditModal({ message, onConfirm, parent }) {
+  document.getElementById("confirmEditMsg").innerHTML = message || "Είσαι σίγουρος;";
+  document.getElementById("confirmEditModal").classList.add("open");
+  document.getElementById("confirmEditModalBackdrop").classList.add("open");
+  window._editCookedConfirmCallback = onConfirm;
+
+  // === Εφαρμόζεις backdrop και στο προηγούμενο modal ===
+  if (parent && document.getElementById(parent)) {
+    document.getElementById(parent).classList.add('is-backdrop');
+    // Αποθήκευσε σε global ποιο modal ήταν "parent", για restore
+    window._lastActivityModalWithBackdrop = parent;
+  }
+}
+
+function closeConfirmEditModal() {
+  document.getElementById("confirmEditModal").classList.remove("open");
+  document.getElementById("confirmEditModalBackdrop").classList.remove("open");
+  window._editCookedConfirmCallback = null;
+
+  // === Αφαίρεσε το backdrop από το προηγούμενο activity modal ===
+  if (window._lastActivityModalWithBackdrop && document.getElementById(window._lastActivityModalWithBackdrop)) {
+    document.getElementById(window._lastActivityModalWithBackdrop).classList.remove('is-backdrop');
+    window._lastActivityModalWithBackdrop = null;
+  }
+}
+
+document.getElementById("confirmEditBtn").onclick = function() {
+  if (typeof window._editCookedConfirmCallback === "function") window._editCookedConfirmCallback();
+  closeConfirmEditModal();
+};
+
+</script>
 
 {% endblock %}
