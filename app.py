@@ -229,6 +229,14 @@ def strip_tonos(text):
     return ''.join(c for c in unicodedata.normalize('NFD', text)
                    if unicodedata.category(c) != 'Mn').lower()
 
+def check_onboarding(user_id):
+    conn = sqlite3.connect(DB)
+    row = conn.execute("SELECT completed FROM onboarding_progress WHERE user_id=?", (user_id,)).fetchone()
+    conn.close()
+    if row and row[0]:
+        return True
+    return False
+
 
 @app.route('/api/normalize_ingredient', methods=['POST'])
 def normalize_ingredient_route():
@@ -247,6 +255,119 @@ def normalize_ingredient_route():
         cache_ingredient(raw, fixed_core)
         core = fixed_core
     return jsonify({'core': core})
+
+
+
+
+# ----------- START -----------
+@app.route("/")
+def index():
+    if "user_id" in session:
+        user_id = session["user_id"]
+
+        conn = sqlite3.connect(DB)
+        c = conn.cursor()
+        row = c.execute("SELECT completed FROM onboarding_progress WHERE user_id=?", (user_id,)).fetchone()
+        conn.close()
+        onboarding_done = row and row[0]
+
+        if onboarding_done:
+            return redirect(url_for("main"))
+        else:
+            # Redirect στην πρώτη ενδιάμεση σελίδα
+            return redirect(url_for("onboarding_diet"))
+    else:
+        return redirect(url_for("welcome"))
+
+@app.route("/onboarding_diet", methods=["GET", "POST"])
+def onboarding_diet():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    diet = None
+
+    if request.method == "POST":
+        diet = request.form.get("diet", "")
+        # Αποθήκευσε στο users table
+        conn = sqlite3.connect(DB)
+        c = conn.cursor()
+        c.execute("UPDATE users SET diet=? WHERE id=?", (diet, user_id))
+        conn.commit()
+        conn.close()
+        # Προχώρα στο επόμενο βήμα
+        return redirect(url_for("onboarding_allergies"))
+
+    # GET: φέρε τρέχουσα τιμή (αν υπάρχει)
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    row = c.execute("SELECT diet FROM users WHERE id=?", (user_id,)).fetchone()
+    if row:
+        diet = row[0]
+    conn.close()
+
+    return render_template("onboarding_diet.html", diet=diet)
+
+@app.route("/onboarding_allergies", methods=["GET", "POST"])
+def onboarding_allergies():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    allergies = []
+
+    if request.method == "POST":
+        allergies_str = request.form.get("allergies", "")
+        allergies = [a.strip() for a in allergies_str.split(",") if a.strip()]
+        conn = sqlite3.connect(DB)
+        c = conn.cursor()
+        c.execute("UPDATE users SET allergies=? WHERE id=?", (",".join(allergies), user_id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("onboarding_methods"))  # ή το επόμενο βήμα σου
+
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    row = c.execute("SELECT allergies FROM users WHERE id=?", (user_id,)).fetchone()
+    if row and row[0]:
+        allergies = [a.strip() for a in row[0].split(",") if a.strip()]
+    conn.close()
+
+    return render_template("onboarding_allergies.html", allergies=allergies)
+
+@app.route("/onboarding_methods", methods=["GET", "POST"])
+def onboarding_methods():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    cooking_methods = []
+
+    if request.method == "POST":
+        methods_str = request.form.get("cooking_methods", "")
+        cooking_methods = [m.strip() for m in methods_str.split(",") if m.strip()]
+        conn = sqlite3.connect(DB)
+        c = conn.cursor()
+        c.execute("UPDATE users SET cooking_method=? WHERE id=?", (",".join(cooking_methods), user_id))
+        # Ολοκλήρωση onboarding (π.χ. flag completed)
+        c.execute("INSERT OR REPLACE INTO onboarding_progress (user_id, completed) VALUES (?, 1)", (user_id,))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("main"))  # ή όπου θες να πηγαίνει μετά
+
+    # GET: φέρε τις υπάρχουσες μεθόδους αν υπάρχουν
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    row = c.execute("SELECT cooking_method FROM users WHERE id=?", (user_id,)).fetchone()
+    if row and row[0]:
+        cooking_methods = [m.strip() for m in row[0].split(",") if m.strip()]
+    conn.close()
+
+    return render_template("onboarding_methods.html", cooking_methods=cooking_methods)
+
+# ----------- START -----------
+
+
 
 # ----------- APP PAGES -----------
 
@@ -320,7 +441,12 @@ def login():
             conn.close()
             if user:
                 session["user_id"] = user["id"]
-                return redirect(url_for("main"))
+                # === ΝΕΟ: Ελεγχος για onboarding ===
+                onboarding = check_onboarding(user["id"])
+                if onboarding:
+                    return redirect(url_for("main"))
+                else:
+                    return redirect(url_for("onboarding_diet"))
             else:
                 flash("Δεν βρέθηκε χρήστης για debug login!", "danger")
                 return redirect(url_for("login"))
@@ -342,7 +468,12 @@ def login():
         if check_password_hash(stored_hash, password):
             session["user_id"] = user["id"]
             session['login_success'] = True
-            return redirect(url_for("main"))
+            # === ΝΕΟ: Ελεγχος για onboarding ===
+            onboarding = check_onboarding(user["id"])
+            if onboarding:
+                return redirect(url_for("main"))
+            else:
+                return redirect(url_for("onboarding_diet"))
         else:
             flash("Λανθασμένος κωδικός!", "danger")
             print("λαθος κωδικος")
@@ -712,6 +843,23 @@ def profile():
         last_seen=last_seen,
         activity=activity
     )
+
+@app.route('/edit_profile')
+def edit_profile():
+    # Dummy user για δοκιμή - αντικατέστησε με τα πραγματικά δεδομένα του user σου!
+    user = {
+        "first_name": "Γιώργος",
+        "avatar": "/static/images/avatars/1.jpg",
+        "email": "george@example.com",
+        "diet": "vegan",
+        "allergies": ["Ξηροί καρποί", "Γλουτένη"],
+        "cooking_methods": ["Φούρνος", "Τηγάνι"],
+        "servings": 4,
+        "google_id": "google-abc123",
+        "facebook_id": None
+    }
+    return render_template("edit_profile.html", user=user)
+
 
 # ----------- APP PAGES -----------
 
@@ -1789,12 +1937,6 @@ def ai_suggest_dish():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/")
-def index():
-    if "user_id" in session:
-        return redirect(url_for("main"))
-    else:
-        return redirect(url_for("welcome"))
 
 
 
