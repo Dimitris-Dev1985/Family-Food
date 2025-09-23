@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+
+<title>{% block title %}FamilyFood{% endblock %}</title>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Indie+Flower&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400|Quicksand:500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">  
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#4CAF50">
+
+  <meta name="theme-color" content="#f44336">
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- Materialize CSS  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet"> 
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Roboto Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  
+<link rel="stylesheet" href="/static/styles1.css">
+
+<link rel="stylesheet" href="/static/styles.css">
+
+<style>
+html {font-size: 15px;}
+</style>
+
+<!-- =================== Design Tokens =================== -->
+<style>
+  :root {
+    --brand: #218e46;
+    --brand-hover: #1a6e38;
+    --surface: #fffaf5;
+    --text: #1b1b1b;
+    --text-dim: #666;
+    --outline: #ddd;
+    --bg-badge: #f0f9f2;
+    --servings-bg: #fff;
+    --servings-border: #e2e3e4;
+    --pink: #ef2d6a;
+	--red: #e73030f5;
+    --time-bg: #f4f7f6;
+    --shadow: 0 3px 14px rgba(33,142,70,0.1);
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    background: var(--surface);
+    font-family: 'Roboto', sans-serif;
+    color: var(--text);
+  }
+</style>
+
+<!-- =================== Topbar =================== -->
+<style>
+  .recipe-topbar {
+    position: sticky; top: 0; left: 0; right: 0; z-index: 99;
+    background: #fff;
+    border-bottom: 1.5px solid var(--outline);
+    min-height: 54px; height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 10px 0 6px;
+    box-shadow: 0 1px 8px rgba(33,142,70,0.05);
+    transition: box-shadow 0.16s;
+  }
+  .recipe-topbar .icon-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0; cursor: pointer;
+    background: none; color: var(--brand);
+    font-size: 1.32rem;
+    transition: background 0.13s;
+  }
+  .recipe-topbar .icon-btn:active { background: #f4f4f4; }
+  .topbar-title {
+    flex: 1;
+    margin-left: 7px;
+    font-size: 1.2rem; font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    text-align: left;
+  }
+  .topbar-actions { display: flex; align-items: center; gap: 7px; }
+</style>
+
+
+<!-- =================== Similar Recipes =================== -->
+<!-- =================== Dish Cards =================== -->
+<style>
+
+.chat-carousel-row {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  display: block;
+}
+
+.similar-swiper {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 10px !important;
+  width: max-content !important;      /* Αυτό βοηθά το swipe μόνο στα items */
+  min-width: 100px;
+  scroll-snap-type: x mandatory !important;
+  background: none !important;
+  margin: 12px 0 8px 0 !important;
+  padding: 5px 2px 9px 0 !important;
+  align-items: center;
+}
+.chat-carousel-row::-webkit-scrollbar {
+  display: none;  
+  height: 15px;
+  background: var(--brand);
+}
+.chat-carousel-row::-webkit-scrollbar-thumb {
+  display: none;  
+  height: 15px;
+  background: var(--brand);
+}
+
+.similar-card-item {
+  min-width: 122px !important;
+  max-width: 122px !important;
+  width: 122px !important;
+  height: fit-content;
+  background: var(--surface) !important;
+  border: 1.2px solid #eee !important;
+  border-radius: 15px !important;
+  box-shadow: 0 2px 8px rgba(33,142,70,0.07) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  position: relative !important;
+  margin: 0 2px !important;
+  cursor: pointer !important;
+  overflow: visible !important;
+  padding: 0 0 7px 0 !important; /* ΚΑΘΟΛΟΥ πλάγιο padding */
+  scroll-snap-align: start !important;
+  box-sizing: border-box !important;
+}
+
+.similar-card-item img.card-main-img {
+  width: 100% !important;
+  max-width: 100% !important;
+  /* ΜΗΝ βάζεις height/min-height/max-height */
+  display: block !important;
+  object-fit: contain !important;  /* ή cover αν θες "γεμάτο" */
+  border-radius: 14px 14px 0 0 !important;
+  background: var(--surface) !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.similar-card-item img.chef-avatar-inline {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  max-width: 22px !important;
+  max-height: 22px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  background: #fff !important;
+  margin: 0 !important;
+  box-shadow: 0 2px 8px rgba(67,185,106,0.11) !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  padding: 0 !important;
+}
+
+.similar-card-item-title {
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 4px 0 !important;
+  text-align: center !important;
+  line-height: 1.22 !important;
+  word-break: break-word !important;
+  color: #17221b !important;
+  padding: 0 2px;
+}
+.similar-card-item-chef {
+  font-size: 0.89rem !important;
+  font-weight: 500 !important;
+  color: #767676 !important;
+  text-align: center !important;
+  margin-top: 2px !important;
+  margin-bottom: 1px !important;
+  padding: 0 2px;
+}
+.similar-card-item span[style*="position: absolute"] {
+  right: 7px !important;
+  top: 6px !important;
+}
+
+/* ======== Meta row: χρόνος, by, avatar ======== */
+.similar-card-item-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  max-width: 120px;
+  margin: 0 auto 2px auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-height: 20px;
+}
+.similar-card-item-meta .fa-clock {
+  font-size: 1.02rem;
+  color: var(--brand);
+  margin-right: 1px;
+  vertical-align: middle;
+  display: inline-block;
+  line-height: 1;
+}
+.similar-card-item-time-val {
+  font-size: 0.85rem;
+  color: #1a6e38;
+  font-weight: 500;
+  margin-right: 1px;
+  margin-left: 2px;
+  letter-spacing: 0.4px;
+  font-family: inherit;
+}
+.chef-by-label {
+  font-family: 'Indie Flower', cursive;
+  font-size: 0.85rem;
+  color: #bdbdbd;
+  margin-right: 2px;
+  margin-left: 5px;
+  font-style: italic;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  position: relative;
+  top: 0.5px;
+}
+
+</style>
+
+
+  
+{% block head %}{% endblock %}
+
+</head>
+
+<body>
+
+{% block content %}{% endblock %}
+
+{% block modals %}{% endblock %} 
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+
+<script>
+
+function normalize(str) {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "") // αφαιρεί τόνους
+    .replace(/[·.,;!?]/g, "") // αφαιρεί σημεία στίξης
+    .trim();
+}
+
+
+function openRecipePage(id) {
+  // π.χ. πάρε από local array ή fetch(`/api/recipe/${id}`)
+  const recipeData = recipesArr.find(r => r.id == id); // παράδειγμα με local array
+  // render δυναμικά το περιεχόμενο της συνταγής:
+  document.getElementById('recipePage').innerHTML = renderRecipeHTML(recipeData);
+  document.getElementById('mainPage').style.display = 'none';
+  document.getElementById('recipePage').style.display = 'block';
+
+  // Push state για να δουλεύει και το browser back!
+  history.pushState({page: 'recipe', id: id}, '', `#recipe-${id}`);
+}
+
+// Επιστροφή στο main
+function backToMain() {
+  document.getElementById('recipePage').style.display = 'none';
+  document.getElementById('mainPage').style.display = 'block';
+  history.pushState({page: 'main'}, '', '#main');
+}
+
+// Handle browser back/forward
+window.onpopstate = function(e) {
+  if (!e.state || e.state.page === 'main') {
+    backToMain();
+  } else if (e.state.page === 'recipe') {
+    openRecipePage(e.state.id);
+  }
+};
+
+// Σύνδεση κουμπιού "πίσω"
+document.body.addEventListener('click', function(e){
+  if (e.target.closest('.icon-btn[data-back]')) {
+    backToMain();
+  }
+});
+</script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+
+</html>

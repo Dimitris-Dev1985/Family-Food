@@ -1,0 +1,509 @@
+{% extends "base.html" %}
+{% block title %}Επεξεργασία Προφίλ{% endblock %}
+
+{% block content %}
+
+
+
+
+<style>
+
+.profile-header-card {
+  background: #fff;
+  box-shadow: var(--shadow, 0 2px 9px rgba(33,142,70,0.06));
+  border-radius: 2.2rem;
+  margin: 16px auto 0 auto;
+  padding: 28px 16px 22px 16px;
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.profile-avatar-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: 7px;
+  position: relative;
+}
+.profile-avatar-img {
+  width: 100px; height: 100px;
+  border-radius: 50%; object-fit: cover;
+  border: 2.2px solid var(--brand);
+  box-shadow: 0 3px 15px #eafbe7;
+  background: #f7faf7;
+}
+.edit-avatar-label {
+  position: absolute;
+  right: -10px;
+  bottom: 8px;
+  cursor: pointer;
+  background: var(--brand,#218e46);
+  color: #fff;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px #e1fbe4;
+  font-size: 1.18em;
+  transition: background .13s;
+  z-index: 2;
+}
+.edit-avatar-label:hover {
+  background: var(--brand-hover,#1a6e38);
+}
+
+.profile-username {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 1.5px;
+  line-height: 1.12;
+  margin: 10px 20px 2px 20px;
+  text-align: center;
+  word-break: break-word;
+  background: #f8fcf8;
+  border: 1.4px solid var(--outline,#ddd);
+  border-radius: 13px;
+  padding: 9px 18px;
+  width: auto;
+  min-width: 60px;
+  max-width: 390px;
+  outline: none;
+  transition: border-color 0.14s, box-shadow 0.16s;
+  box-sizing: content-box;
+  display: inline-block;
+}
+.profile-username:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px rgba(33, 142, 70, 0.13);
+}
+
+.profile-email {
+  font-size: 1rem;
+  color: var(--text-dim);
+  opacity: 0.82;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.profile-edit-btn {
+  display: block;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 7px 18px;
+  font-size: 0.99rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(33,142,70,0.08);
+  transition: background 0.14s;
+}
+
+.profile-edit-btn.w-100 { width: 100%; }
+.profile-edit-btn.mb-2 { margin-bottom: 6px; }
+.profile-edit-btn.badge-circle {
+  width: 38px; height: 38px; border-radius: 50%; padding: 0; font-size: 1.23em; display: flex; align-items: center; justify-content: center;
+}
+.profile-edit-btn.btn-add-badge { min-width: 88px; padding: 7px 14px; border-radius: 12px; }
+.profile-edit-btn.btn-save {
+  flex: 1;
+  padding: 13px 0;
+  font-size: 1.09em;
+  border-radius: 17px;
+  font-weight: 700;
+}
+.profile-edit-btn.btn-cancel {
+  background: var(--bg-badge, #f0f9f2);
+  color: var(--brand, #218e46);
+  padding: 13px 0;
+  font-size: 1.09em;
+  border-radius: 17px;
+  border: none;
+  font-weight: 600;
+  min-width: 42%;
+}
+
+.profile-card-section {
+  background: #fff;
+  border-radius: 2.2rem;
+  padding: 23px 18px 16px 18px;
+  box-shadow: 0 2px 8px #f7f8f7;
+  margin-bottom: 22px;
+}
+.section-title {
+  font-weight: 600;
+  color: var(--brand, #218e46);
+  font-size: 1.05em;
+  margin-bottom: 10px;
+}
+.section-title-sm {
+  font-weight: 600;
+  color: var(--brand, #218e46);
+  font-size: 1em;
+}
+
+.form-label { color: var(--text-dim, #666); font-size: .97em; }
+
+.form-control {
+  font-size: 1rem;
+  padding: 7px 10px;
+  border-radius: 12px;
+  border: 1.5px solid var(--outline, #ddd);
+  margin-bottom: 0;
+  background: #fcfcfc;
+  transition: border-color 0.2s;
+  width: auto;
+}
+.form-control:focus {
+  border-color: var(--brand, #218e46);
+  box-shadow: 0 0 0 2px rgba(33, 142, 70, 0.13);
+}
+.flex-grow-1 { flex-grow: 1; }
+.d-flex { display: flex; }
+.align-items-center { align-items: center; }
+.justify-content-center { justify-content: center; }
+.gap-1 { gap: 8px !important;}
+.gap-2 { gap: 12px; }
+.mb-2 { margin-bottom: 10px; }
+.mb-3 { margin-bottom: 20px; }
+.mb-4 { margin-bottom: 27px; }
+.mt-1 { margin-top: 7px; }
+.mt-2 { margin-top: 10px; }
+.ms-1 { margin-left: 5px; }
+
+.profile-badge {
+  background: var(--brand, #218e46);
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .99em;
+  cursor: pointer;
+  transition: background .14s, color .14s;
+}
+.profile-badge.badge-inactive {
+  background: var(--bg-badge, #f0f9f2);
+  color: var(--brand, #218e46);
+}
+.profile-badge.selected { background: var(--brand, #218e46); color: #fff; }
+.profile-badge .remove-badge {
+  color: #fff; margin-left: 5px; font-weight: bold; text-decoration: none; cursor: pointer;
+}
+
+.connected-badge { color: var(--brand, #218e46); font-size: .96em; margin-left: 2px; }
+.icon-20 { width: 50px; }
+
+.actions-row { max-width: 380px; margin: 0 auto 26px auto; }
+
+.servings-input { width: 60px; text-align: center; font-size: 1.13em; }
+
+</style>
+
+<style>
+.btn-add-badge {
+  transition: background 0.12s, transform 0.11s, box-shadow 0.12s;
+  background: var(--brand, #218e46);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(33,142,70,0.08);
+}
+
+.btn-add-badge:hover {
+  background: var(--brand-hover, #1a6e38);
+  color: #fff;
+}
+
+.btn-add-badge:active {
+  background: var(--brand-hover, #1a6e38);
+  color: #fff;
+  transform: scale(0.95);
+  box-shadow: 0 1px 3px rgba(33,142,70,0.14);
+}
+
+</style>
+
+
+<div class="recipe-topbar" id="profileTopbar">
+  <button class="icon-btn" id="backBtn"><i class="fa fa-arrow-left"></i></button>
+  <span class="topbar-title">Επεξεργασία προφίλ</span>
+  <button class="icon-btn" title="Ακύρωση" id="cancelEditProfileBtn">
+    <i class="fa fa-times"></i>
+  </button>
+</div>
+
+<div class="profile-header-card mb-3" style="align-items:center;">
+  <div class="profile-avatar-wrap" style="position:relative;">
+    <img class="profile-avatar-img" src="{{ avatar_path }}" alt="Avatar">
+    <label for="avatar-upload" class="edit-avatar-label" style="position:absolute;right:-10px;bottom:8px;cursor:pointer;background:var(--brand,#218e46);color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px #e1fbe4;font-size:1.18em;">
+      <i class="fa fa-camera"></i>
+      <input type="file" id="avatar-upload" name="avatar" accept="image/*" style="display:none;">
+    </label>
+  </div>
+
+  <div style="position:relative; display:flex; justify-content:center;">
+    <input
+      type="text"
+      class="profile-username"
+      id="profile-name"
+      name="name"
+      maxlength="32"
+      value="{{ user.first_name }}"
+      placeholder="Όνομα χρήστη"
+      style="
+        background:#f8fcf8;
+        border:1.4px solid var(--outline,#ddd);
+        border-radius:13px;
+        padding:9px 18px;
+        text-align:center;
+        font-size:2.2rem;
+        font-weight:800;
+        color:var(--text,#1b1b1b);
+        letter-spacing:1.5px;
+        outline:none;
+        min-width:60px;
+        width:auto;
+        transition:border-color 0.13s, box-shadow 0.16s;
+        box-sizing:content-box;
+      "
+      autocomplete="off"
+      oninput="resizeNameInput(this)"
+    >
+    <span id="profile-name-shadow" 
+      style="visibility:hidden;position:absolute;left:0;top:0;white-space:pre;font-size:2.2rem;font-weight:800;padding:9px 18px;font-family:inherit;letter-spacing:1.5px;">
+      {{ user.first_name }}
+    </span>
+  </div>
+</div>
+
+<form id="edit-profile-form" autocomplete="off" class="edit-profile-form">
+  <!-- === Λογαριασμός & Ασφάλεια === -->
+  <div class="profile-card-section mb-3">
+    <div class="section-title mb-2">Λογαριασμός</div>
+    <label for="profile-email" class="form-label">Email</label>
+    <input type="email" id="profile-email" name="email" value="{{ user.email or '' }}" class="form-control mb-2">
+    <button type="button" class="profile-edit-btn w-100 mb-2 d-flex align-items-center justify-content-center gap-2" id="changePasswordBtn">
+      <i class="fa fa-key"></i> Αλλαγή κωδικού
+    </button>
+    <div class="mt-2">
+      <span class="section-title-sm">Σύνδεση με Social</span>
+      <div class="d-flex gap-2 mt-1">
+        <button type="button" class="profile-social-btn google">
+          <img src="/static/images/icons/google.svg" alt="Google" class="icon-20"> Google
+          <span class="connected-badge">{{ 'Συνδεδεμένο' if user.google_id else 'Σύνδεση' }}</span>
+        </button>
+        <button type="button" class="profile-social-btn facebook">
+          <img src="/static/images/icons/facebook.png" alt="Facebook" class="icon-20"> Facebook
+          <span class="connected-badge">{{ 'Συνδεδεμένο' if user.facebook_id else 'Σύνδεση' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- === Προτιμήσεις διατροφής === -->
+  <div class="profile-card-section mb-3">
+    <div class="section-title mb-2">Προτίμηση διατροφής</div>
+    <select id="profile-diet" name="diet" class="form-control">
+      <option value="none" {% if user.diet=='none' %}selected{% endif %}>Κανένας περιορισμός</option>
+      <option value="vegan" {% if user.diet=='vegan' %}selected{% endif %}>Vegan</option>
+      <option value="pescetarian" {% if user.diet=='pescetarian' %}selected{% endif %}>Pescetarian</option>
+    </select>
+  </div>
+
+  <!-- === Αλλεργίες / Υλικά προς αποφυγή === -->
+  <div class="profile-card-section mb-3">
+    <div class="section-title mb-2">Αλλεργίες / Υλικά προς αποφυγή</div>
+    <div id="allergy-badges-row" class="d-flex flex-wrap gap-1 mb-2">
+      {% for allergen in user.allergies or [] %}
+        <span class="profile-badge selected">
+          {{ allergen }}
+          <a href="#" class="remove-badge ms-1">×</a>
+        </span>
+      {% endfor %}
+      {% for common in ["Ψάρι","Αυγό","Ξηροί καρποί","Γλουτένη","Γαλακτοκομικά"] if (user.allergies is not defined or common not in user.allergies) %}
+        <span class="profile-badge badge-inactive">
+          {{ common }}
+        </span>
+      {% endfor %}
+    </div>
+    <div class="d-flex gap-1 align-items-center mt-3">
+      <input type="text" id="add-allergy-input" placeholder="Προσθήκη υλικού..." class="form-control flex-grow-1">
+		<button type="button" id="add-allergy-btn" class="profile-edit-btn btn-add-badge">Προσθήκη</button>
+    </div>
+    <input type="hidden" name="allergies" id="allergies-hidden">
+  </div>
+
+
+  <!-- === Διαθέσιμοι τρόποι μαγειρέματος === -->
+  <div class="profile-card-section mb-3">
+    <div class="section-title mb-2">Διαθέσιμοι τρόποι μαγειρέματος</div>
+    <div id="cooking-methods-row" class="d-flex gap-1 flex-wrap">
+      {% set methods = ["Φούρνος","Τηγάνι","Κατσαρόλα","Σχάρα","Airfryer"] %}
+      {% for method in methods %}
+        <span class="profile-badge {% if method in user.cooking_methods %}selected{% else %}badge-inactive{% endif %}">
+          {{ method }}
+        </span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- === Μερίδες οικογένειας === -->
+  <div class="profile-card-section mb-4">
+    <div class="section-title mb-2">Μερίδες οικογένειας</div>
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" id="servings-minus" class="profile-edit-btn badge-circle">–</button>
+      <input type="number" id="profile-servings" min="1" max="12" value="{{ user.servings }}" class="form-control servings-input">
+      <button type="button" id="servings-plus" class="profile-edit-btn badge-circle">+</button>
+    </div>
+  </div>
+
+  <!-- === Actions === -->
+  <div class="d-flex gap-2 justify-content-center actions-row">
+    <button type="submit" class="profile-edit-btn btn-save">Αποθήκευση</button>
+    <button type="button" class="profile-edit-btn btn-cancel" id="cancelEditProfileBtn2">Ακύρωση</button>
+  </div>
+</form>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<!------------ User name ------------->
+<script>
+function resizeNameInput(input) {
+  var shadow = document.getElementById('profile-name-shadow');
+  shadow.textContent = input.value || input.placeholder;
+  input.style.width = (shadow.offsetWidth+2) + 'px';
+}
+// Αρχικό resize με το value που ήδη υπάρχει
+window.addEventListener('DOMContentLoaded', function() {
+  var input = document.getElementById('profile-name');
+  if(input) resizeNameInput(input);
+});
+</script>
+
+
+<!------------ Allergies+ ------------->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var input = document.getElementById("add-allergy-input");
+  var btn = document.getElementById("add-allergy-btn");
+  var badgesRow = document.getElementById("allergy-badges-row");
+  var hiddenInput = document.getElementById("allergies-hidden");
+
+  // --- Ενημέρωση του hidden input με τα επιλεγμένα badges ---
+  function updateAllergiesHidden() {
+    var selected = badgesRow.querySelectorAll(".profile-badge.selected");
+    var vals = Array.from(selected).map(b => b.childNodes[0].textContent.trim());
+    hiddenInput.value = vals.join(',');
+	console.log("Hidden allergies:", hiddenInput.value);
+  }
+
+  // === Αφαίρεση badge ===
+  function addRemoveEventToBadge(badge) {
+    var removeBtn = badge.querySelector(".remove-badge");
+    if (removeBtn) {
+      removeBtn.onclick = function(e) {
+        e.preventDefault();
+        badge.remove();
+        updateAllergiesHidden();
+      };
+    }
+  }
+
+  // === Προσθήκη νέου badge από input ===
+  function addAllergyBadge(value) {
+    value = value.trim();
+    if (!value) return;
+
+    // Έλεγξε αν υπάρχει ήδη ως selected badge
+    var exists = Array.from(badgesRow.querySelectorAll('.profile-badge.selected'))
+      .some(b => b.childNodes[0].textContent.trim().toLowerCase() === value.toLowerCase());
+    if (exists) {
+      input.value = "";
+      return;
+    }
+
+    // Δημιουργία νέου badge
+    var badge = document.createElement("span");
+    badge.className = "profile-badge selected";
+    badge.innerHTML = value + '<a href="#" class="remove-badge ms-1">×</a>';
+    addRemoveEventToBadge(badge);
+    badgesRow.insertBefore(badge, badgesRow.querySelector(".profile-badge.badge-inactive"));
+    input.value = "";
+    input.focus();
+    updateAllergiesHidden();
+  }
+
+
+
+  btn.addEventListener("click", function() {
+    console.log("OKKK");
+    addAllergyBadge(input.value);
+	
+  });
+
+  input.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addAllergyBadge(input.value);
+	  btn.blur(); 
+    }
+  });
+
+  // === Κάνε τα inactive badges clickable για να γίνονται selected ===
+  function activateInactiveBadges() {
+    var inactiveBadges = badgesRow.querySelectorAll(".profile-badge.badge-inactive");
+    inactiveBadges.forEach(function(badge) {
+      badge.style.cursor = "pointer";
+      badge.onclick = function() {
+        var value = badge.textContent.trim();
+        addAllergyBadge(value);
+        badge.remove();
+      };
+    });
+  }
+  activateInactiveBadges();
+
+  // === Αρχικό remove για τα ήδη υπάρχοντα ===
+  badgesRow.querySelectorAll(".profile-badge.selected").forEach(addRemoveEventToBadge);
+
+  // === Αρχική τιμή στο hidden ===
+  updateAllergiesHidden();
+});
+</script>
+
+<!------------ Servings ------------->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var minusBtn = document.getElementById("servings-minus");
+  var plusBtn = document.getElementById("servings-plus");
+  var input = document.getElementById("profile-servings");
+
+  var min = parseInt(input.min) || 1;
+  var max = parseInt(input.max) || 12;
+
+  minusBtn.addEventListener("click", function() {
+    var val = parseInt(input.value) || min;
+    if(val > min) input.value = val - 1;
+  });
+
+  plusBtn.addEventListener("click", function() {
+    var val = parseInt(input.value) || min;
+    if(val < max) input.value = val + 1;
+  });
+
+  // Αν το αλλάξεις απευθείας με πληκτρολόγιο, κράτα το στα όρια!
+  input.addEventListener("input", function() {
+    var val = parseInt(input.value) || min;
+    if(val < min) input.value = min;
+    if(val > max) input.value = max;
+  });
+});
+</script>
+
+
+{% endblock %}
