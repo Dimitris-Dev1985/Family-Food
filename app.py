@@ -92,7 +92,6 @@ def get_db_conn():
 
 def get_user():    
     user_id = session.get("user_id")
-    print(user_id)
 #    if not user_id:
 #        user_id = 1  # fallback μόνο για debug
     conn = sqlite3.connect(DB)
@@ -106,9 +105,7 @@ def login_required(f):
     @wraps(f)
     def wrapped(*args, **kwargs):
         if "user_id" not in session:
-            print("no user logged in")
             return redirect(url_for("login"))
-        print("user logged in")
         return f(*args, **kwargs)
     return wrapped
 
@@ -645,10 +642,6 @@ def recipe_page(recipe_id):
 
     avatar_filename = CHEF_AVATAR_MAP.get(recipe['chef'], 'default.jpg')
 
-    print(image_url)
-    print(user_name)
-    print(user_avatar)
-
     return render_template(
         'recipe_page.html',
         recipe=recipe,
@@ -664,6 +657,7 @@ def recipe_page(recipe_id):
     )
 
 @app.route("/profile")
+@login_required
 def profile():
     user_id = session.get("user_id")
     if not user_id:
@@ -844,22 +838,76 @@ def profile():
         activity=activity
     )
 
-@app.route('/edit_profile')
+@app.route('/edit_profile', methods=["GET", "POST"])
+@login_required
 def edit_profile():
-    # Dummy user για δοκιμή - αντικατέστησε με τα πραγματικά δεδομένα του user σου!
-    user = {
-        "first_name": "Γιώργος",
-        "avatar": "/static/images/avatars/1.jpg",
-        "email": "george@example.com",
-        "diet": "vegan",
-        "allergies": ["Ξηροί καρποί", "Γλουτένη"],
-        "cooking_methods": ["Φούρνος", "Τηγάνι"],
-        "servings": 4,
-        "google_id": "google-abc123",
-        "facebook_id": None
-    }
-    return render_template("edit_profile.html", user=user)
+    # Βεβαιώσου ότι ο χρήστης είναι log-in
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
 
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        diet = request.form.get("diet", "").strip()
+        allergies = request.form.get("allergies", "")
+        cooking_methods = request.form.get("cooking_methods", "")
+        servings = request.form.get("servings", "")
+
+        allergies_list = [x.strip() for x in allergies.split(",") if x.strip()]
+        cooking_methods_list = [x.strip() for x in cooking_methods.split(",") if x.strip()]
+        servings = int(servings) if servings and servings.isdigit() else 4
+
+
+        print(name)
+
+
+
+
+        conn.execute("""
+            UPDATE users
+            SET first_name = ?,
+                email = ?,
+                diet = ?,
+                allergies = ?,
+                cooking_method = ?,
+                servings = ?
+            WHERE id = ?
+        """, (
+            name,
+            email,
+            diet,
+            ",".join(allergies_list),
+            ",".join(cooking_methods_list),
+            servings,
+            user_id
+        ))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("profile"))
+
+    # GET: Φόρτωσε τα στοιχεία του user από τη βάση!
+    user = conn.execute("""
+        SELECT first_name, email, diet, allergies, cooking_method, servings
+        FROM users
+        WHERE id = ?
+    """, (user_id,)).fetchone()
+
+    # Πέρνα τις λίστες αλλεργιών/μεθόδων ως python λίστα για το template
+    user_dict = dict(user)
+    user_dict["allergies"] = [x.strip() for x in (user["allergies"] or "").split(",") if x.strip()]
+    user_dict["cooking_method"] = [x.strip() for x in (user["cooking_method"] or "").split(",") if x.strip()]
+
+    # Προσαρμόζεις το path avatar εδώ αν θες...
+    user_dict["avatar"] = "/static/images/avatars/%s.jpg" % user_id
+
+    print(user_dict)
+
+    conn.close()
+    return render_template("edit_profile.html", user=user_dict, avatar_path=user_dict["avatar"])
 
 # ----------- APP PAGES -----------
 
