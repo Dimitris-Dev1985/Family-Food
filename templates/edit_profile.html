@@ -90,7 +90,7 @@
   background: var(--brand);
   color: #fff;
   border: none;
-  border-radius: 14px;
+  border-radius: 13px;
   padding: 7px 18px;
   font-size: 0.99rem;
   font-weight: 600;
@@ -104,7 +104,7 @@
 .profile-edit-btn.badge-circle {
   width: 38px; height: 38px; border-radius: 50%; padding: 0; font-size: 1.23em; display: flex; align-items: center; justify-content: center;
 }
-.profile-edit-btn.btn-add-badge { min-width: 88px; padding: 7px 14px; border-radius: 12px; }
+.profile-edit-btn.btn-add-badge { min-width: 88px; padding: 7px 14px; border-radius: 13px; }
 .profile-edit-btn.btn-save {
   flex: 1;
   padding: 13px 0;
@@ -149,7 +149,7 @@
 .form-control {
   font-size: 1rem;
   padding: 7px 10px;
-  border-radius: 12px;
+  border-radius: 13px;
   border: 1.5px solid var(--outline, #ddd);
   margin-bottom: 0;
   background: #fcfcfc;
@@ -323,8 +323,8 @@
     <div class="section-title mb-3">Διατροφική προτίμηση</div>
     <div class="diet-badge-row" id="diet-badges-row">
       <span class="diet-badge {% if user.diet=='none' or user.diet=='Όλα'  or not user.diet %}selected{% endif %}" data-value="none">Κανένας περιορισμός</span>
-      <span class="diet-badge {% if user.diet=='vegan' %}selected{% endif %}" data-value="vegan">Vegan</span>
-      <span class="diet-badge {% if user.diet=='pescetarian' %}selected{% endif %}" data-value="pescetarian">Pescetarian</span>
+      <span class="diet-badge {% if user.diet=='Vegan' %}selected{% endif %}" data-value="Vegan">Vegan</span>
+      <span class="diet-badge {% if user.diet=='Pescetarian' %}selected{% endif %}" data-value="Pescetarian">Pescetarian</span>
     </div>
     <input type="hidden" name="diet" id="profile-diet" value="{{ user.diet or 'none' }}">
   </div>
@@ -376,9 +376,9 @@
   </div>
 
   <!-- === Actions === -->
-  <div class="d-flex gap-2 justify-content-center actions-row">
-    <button type="submit" class="profile-edit-btn btn-save">Αποθήκευση</button>
-    <button type="button" class="profile-edit-btn btn-cancel" id="cancelEditProfileBtn2">Ακύρωση</button>
+  <div class="d-flex gap-4 justify-content-center actions-row">
+    <button type="button" class="onboarding-back-btn"  id="cancelEditProfileBtn2">Ακύρωση</button>
+    <button type="submit" class="onboarding-next-btn">Αποθήκευση</button>
   </div>
 </form>
 

@@ -1170,7 +1170,7 @@ function renderFavoritesCards(favorites) {
   const wrapper = document.getElementById('favoritesList');
   wrapper.innerHTML = "";
   if (!favorites || favorites.length === 0) {
-    wrapper.innerHTML = '<div class="profile-card-empty">Δεν έχεις αποθηκεύσει αγαπημένες συνταγές ακόμα!</div>';
+    wrapper.innerHTML = '<div class="profile-card-empty">Δεν έχεις αγαπημένες συνταγές ακόμα!</div>';
     return;
   }
   favorites.forEach(dish => {
@@ -1230,7 +1230,7 @@ function renderLastSeenCards(last_seen) {
   const wrapper = document.getElementById('lastSeenList');
   wrapper.innerHTML = "";
   if (!last_seen || last_seen.length === 0) {
-    wrapper.innerHTML = '<div class="profile-card-empty">Δεν έχεις αποθηκεύσει αγαπημένες συνταγές ακόμα!</div>';
+    wrapper.innerHTML = '<div class="profile-card-empty">Δεν έχεις δει κάποια συνταγή ακόμα!</div>';
     return;
   }
   last_seen.forEach(dish => {
@@ -1323,7 +1323,7 @@ function renderActivityCards(activity) {
   const cardsWrapper = document.getElementById('activityCardsWrapper');
 
   if (!activity || activity.length === 0) {
-    cardsWrapper.innerHTML = '<div class="profile-card-empty">Δεν έχεις δραστηριότητα ακόμα!</div>';
+    cardsWrapper.innerHTML = '<div class="profile-card-empty" style="margin-left:10px;">Δεν έχεις δραστηριότητα ακόμα!</div>';
     return;
   }
 
