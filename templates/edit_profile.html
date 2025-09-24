@@ -272,7 +272,7 @@
 		<img class="profile-avatar-img" id="avatar-img-preview" src="{{ avatar_path }}" alt="Avatar">
 		<label for="avatar-upload" class="edit-avatar-label">
 		  <i class="fa fa-camera"></i>
-		  <input type="file" id="avatar-upload" name="avatar" accept="image/*" capture="user" style="display:none;">
+		  <input type="file" id="avatar-upload" name="avatar" accept="image/*" style="display:none;">
 		</label>
 	  </div>
 
@@ -323,8 +323,8 @@
     <div class="section-title mb-3">Διατροφική προτίμηση</div>
     <div class="diet-badge-row" id="diet-badges-row">
       <span class="diet-badge {% if user.diet=='none' or user.diet=='Όλα'  or not user.diet %}selected{% endif %}" data-value="none">Κανένας περιορισμός</span>
-      <span class="diet-badge {% if user.diet=='Vegan' %}selected{% endif %}" data-value="vegan">Vegan</span>
-      <span class="diet-badge {% if user.diet=='Pescetarian' %}selected{% endif %}" data-value="pescetarian">Pescetarian</span>
+      <span class="diet-badge {% if user.diet=='vegan' %}selected{% endif %}" data-value="vegan">Vegan</span>
+      <span class="diet-badge {% if user.diet=='pescetarian' %}selected{% endif %}" data-value="pescetarian">Pescetarian</span>
     </div>
     <input type="hidden" name="diet" id="profile-diet" value="{{ user.diet or 'none' }}">
   </div>
