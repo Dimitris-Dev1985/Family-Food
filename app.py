@@ -861,11 +861,13 @@ def edit_profile():
         cooking_methods_list = [x.strip() for x in cooking_methods.split(",") if x.strip()]
         servings = int(servings) if servings and servings.isdigit() else 4
 
-
-        print(name)
-
-
-
+        # ------ Avatar upload χωρίς καμία ενημέρωση στη βάση ------
+        avatar_file = request.files.get("avatar")
+        if avatar_file and avatar_file.filename:
+            filename = f"{user_id}.jpg"
+            save_path = os.path.join(app.root_path, "static", "images", "avatars", filename)
+            avatar_file.save(save_path)
+            # ΔΕΝ αλλάζεις τίποτα στη βάση!
 
         conn.execute("""
             UPDATE users
@@ -888,6 +890,7 @@ def edit_profile():
         conn.commit()
         conn.close()
         return redirect(url_for("profile"))
+
 
     # GET: Φόρτωσε τα στοιχεία του user από τη βάση!
     user = conn.execute("""
