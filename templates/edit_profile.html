@@ -126,7 +126,7 @@
 .profile-card-section {
   background: #fff;
   border-radius: 2.2rem;
-  padding: 18px;
+  padding: 15px;
   box-shadow: 0 2px 8px #f7f8f7;
   margin-bottom: 22px;
   margin-left: 2vw;
@@ -241,7 +241,7 @@
   border: 1.3px solid #dbdbdb;
   border-radius: 24px;
   font-size: 1em;
-  padding: 4px 10px;
+  padding: 4px 7px;
   cursor: pointer;
   transition: background 0.13s, color 0.13s, border 0.13s;
   outline: none;
@@ -265,14 +265,14 @@
 </div>
 
 
-<form id="edit-profile-form" autocomplete="off" class="edit-profile-form" method="post">
+<form id="edit-profile-form" autocomplete="off" class="edit-profile-form" method="post" enctype="multipart/form-data">
 	
 	<div class="profile-header-card mb-3" style="align-items:center;">
 	  <div class="profile-avatar-wrap" style="position:relative;">
-		<img class="profile-avatar-img" src="{{ avatar_path }}" alt="Avatar">
+		<img class="profile-avatar-img" id="avatar-img-preview" src="{{ avatar_path }}" alt="Avatar">
 		<label for="avatar-upload" class="edit-avatar-label">
 		  <i class="fa fa-camera"></i>
-		  <input type="file" id="avatar-upload" name="avatar" accept="image/*" style="display:none;">
+		  <input type="file" id="avatar-upload" name="avatar" accept="image/*" capture="user" style="display:none;">
 		</label>
 	  </div>
 
@@ -298,36 +298,33 @@
 
 
   <!-- === Λογαριασμός & Ασφάλεια === -->
-  <div class="profile-card-section mb-3">
-    <div class="section-title mb-3">Λογαριασμός</div>
-    <label for="profile-email" class="form-label">Email</label>
-    <input type="email" id="profile-email" name="email" value="{{ user.email or '' }}" class="form-control mb-2">
-    <button type="button" class="profile-edit-btn w-100 mb-2 d-flex align-items-center justify-content-center gap-2" id="changePasswordBtn">
-      <i class="fa fa-key"></i> Αλλαγή κωδικού
-    </button>
-    <!--<div class="mt-2">
-      <span class="section-title-sm">Σύνδεση με Social</span>
-      
-	  <div class="d-flex gap-2 mt-1">
-        <button type="button" class="profile-social-btn google">
-          <img src="/static/images/icons/google.svg" alt="Google" class="icon-20"> Google
-          <span class="connected-badge">{{ 'Συνδεδεμένο' if user.google_id else 'Σύνδεση' }}</span>
-        </button>
-        <button type="button" class="profile-social-btn facebook">
-          <img src="/static/images/icons/facebook.png" alt="Facebook" class="icon-20"> Facebook
-          <span class="connected-badge">{{ 'Συνδεδεμένο' if user.facebook_id else 'Σύνδεση' }}</span>
-        </button>
-      </div> -->
-    </div>
-  </div>
+	<div class="profile-card-section mb-3">
+	  <div class="section-title mb-3">Λογαριασμός</div>
+	  <div class="d-flex align-items-center mb-2" style="gap:10px;">
+		<label for="profile-email" class="section-title-sm mb-0" style="white-space:nowrap;">Email:</label>
+		<input type="email" id="profile-email" name="email" value="{{ user.email or '' }}"
+			   class="form-control"
+			   style="max-width:240px;"
+			   readonly>
+		<button type="button" id="editEmailBtn" class="profile-edit-btn btn-add-badge"
+		  style="min-width:40px; padding:11px; display:flex; align-items:center; justify-content:center;">
+		  <i class="fa fa-pencil"></i>
+		</button>
+	  </div>
+	  <button type="button" class="profile-edit-btn w-100 mb-2 d-flex align-items-center justify-content-center gap-2" id="changePasswordBtn">
+		<i class="fa fa-key"></i> Αλλαγή κωδικού
+	  </button>
+	</div>
+
+</div>
 
   <!-- === Προτίμηση διατροφής === -->
   <div class="profile-card-section mb-3">
-    <div class="section-title mb-3">Προτίμηση διατροφής</div>
+    <div class="section-title mb-3">Διατροφική προτίμηση</div>
     <div class="diet-badge-row" id="diet-badges-row">
-      <span class="diet-badge {% if user.diet=='none' or not user.diet %}selected{% endif %}" data-value="none">Κανένας περιορισμός</span>
-      <span class="diet-badge {% if user.diet=='vegan' %}selected{% endif %}" data-value="vegan">Vegan</span>
-      <span class="diet-badge {% if user.diet=='pescetarian' %}selected{% endif %}" data-value="pescetarian">Pescetarian</span>
+      <span class="diet-badge {% if user.diet=='none' or user.diet=='Όλα'  or not user.diet %}selected{% endif %}" data-value="none">Κανένας περιορισμός</span>
+      <span class="diet-badge {% if user.diet=='Vegan' %}selected{% endif %}" data-value="vegan">Vegan</span>
+      <span class="diet-badge {% if user.diet=='Pescetarian' %}selected{% endif %}" data-value="pescetarian">Pescetarian</span>
     </div>
     <input type="hidden" name="diet" id="profile-diet" value="{{ user.diet or 'none' }}">
   </div>
@@ -360,7 +357,7 @@
     <div class="diet-badge-row" id="cooking-methods-row">
       {% set COOKING_METHODS = ['Φούρνος','Κατσαρόλα','Χύτρα','Τηγάνι','Σχάρα','Air-fryer'] %}
       {% for method in COOKING_METHODS %}
-        <span class="profile-badge {% if method in user.cooking_methods %}selected{% else %}badge-inactive{% endif %}" data-value="{{ method }}">
+        <span class="profile-badge {% if method in user.cooking_method %}selected{% else %}badge-inactive{% endif %}" data-value="{{ method }}">
           {{ method }}
         </span>
       {% endfor %}
@@ -373,7 +370,7 @@
     <div class="section-title mb-3">Μερίδες οικογένειας</div>
     <div class="d-flex align-items-center gap-2">
       <button type="button" id="servings-minus" class="profile-edit-btn badge-circle">–</button>
-      <input type="number" id="profile-servings" min="1" max="12" value="{{ user.servings }}" class="form-control servings-input">
+	  <input type="number" id="profile-servings" name="servings" min="1" max="12" value="{{ user.servings }}" class="form-control servings-input">
       <button type="button" id="servings-plus" class="profile-edit-btn badge-circle">+</button>
     </div>
   </div>
@@ -530,6 +527,36 @@ document.addEventListener("DOMContentLoaded", function() {
     var val = parseInt(input.value) || min;
     if(val < min) input.value = min;
     if(val > max) input.value = max;
+  });
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var emailInput = document.getElementById('profile-email');
+  var editBtn = document.getElementById('editEmailBtn');
+  if (!emailInput || !editBtn) return;
+  editBtn.addEventListener('click', function() {
+    emailInput.readOnly = false;
+    emailInput.focus();
+    emailInput.select();
+  });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var avatarInput = document.getElementById('avatar-upload');
+  var avatarImg = document.getElementById('avatar-img-preview');
+  if (!avatarInput || !avatarImg) return;
+  avatarInput.addEventListener('change', function(e) {
+    var file = avatarInput.files && avatarInput.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      avatarImg.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
   });
 });
 </script>

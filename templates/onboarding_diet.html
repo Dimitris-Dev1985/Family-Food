@@ -29,6 +29,17 @@
   text-align: center;
   position: relative;
 }
+
+.onboarding-welcome {
+  font-size: 2.5em;
+  font-weight: bold;
+  line-height: 45px;
+  color: var(--brand);
+  letter-spacing: -1px;
+  text-shadow: 0 2px 12px #1a6e3840;
+  text-align: center;
+}
+
 .onboarding-close-btn {
   position: absolute;
   left: 8px;
@@ -172,11 +183,14 @@
 </style>
 
 <div class="onboarding-screen">
-  <div class="onboarding-header">
-    <img src="/static/images/logo.png" class="onboarding-logo" alt="Family Food Logo">
-    <h2>Ακολουθείς κάποια συγκεκριμένη διατροφή;</h2>
-    <p class="onboarding-desc">Αυτό θα μας βοηθήσει να σου προτείνουμε τα κατάλληλα πιάτα ειδικά για σένα!</p>
-  </div>
+	<div class="onboarding-header">
+	  <img src="/static/images/logo.png" class="onboarding-logo" alt="Family Food Logo">
+	  <div class="onboarding-welcome">Καλωσήρθες στο</div>
+	  	  <div class="onboarding-welcome mb-4">Family Food!</div>
+
+	  <h2>Ακολουθείς κάποια συγκεκριμένη διατροφή;</h2>
+	  <p class="onboarding-desc">Αυτό θα μας βοηθήσει να σου προτείνουμε τα κατάλληλα πιάτα ειδικά για σένα!</p>
+	</div>
 
   <form class="diet-form" method="post" autocomplete="off">
     <div class="diet-options">
