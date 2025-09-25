@@ -519,6 +519,12 @@
 {% block scripts %}
 
 <script>
+  window.BACKEND_FAVORITE_RECIPE_IDS = {{ favorite_recipe_ids|tojson }};
+</script>
+
+
+
+<script>
 
 
 const StorageKeys = {
@@ -593,7 +599,11 @@ function scrollChatToBottom() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  //localStorage.clear();
+
+	if (window.BACKEND_FAVORITE_RECIPE_IDS) {
+		localStorage.setItem('favorite_recipe_ids', JSON.stringify(window.BACKEND_FAVORITE_RECIPE_IDS.map(Number)));
+	  }
+
   if (!localStorage.getItem(StorageKeys.METHOD_PREFS)) setMethodPrefs(getMethodPrefs());
   if (!localStorage.getItem(StorageKeys.EXCLUDED)) setExcluded([]);
   if (!localStorage.getItem(StorageKeys.MAX_TIME)) setMaxTime(180);
@@ -1095,7 +1105,6 @@ function callAISuggest(userMessage = "", step) {
 	  console.log("dishes = ",data.dishes);
       if (data.dishes?.length) renderDishCards(data.dishes);
       if (!data.dishes || data.dishes.length === 0) {
-        //localStorage.clear();
         if (typeof initLocalState === "function") initLocalState();
       }
 	  
@@ -1147,7 +1156,10 @@ function resetInputUI() {
   inputRow.classList.remove("voice-active");
 }
 
+
+
 <!------------- Fanorites Handling ------------->
+
 function toggleFavorite(wrapper, recipe_id) {
   // Βεβαιώσου ότι το recipe_id είναι ΠΑΝΤΑ αριθμός!
   recipe_id = Number(recipe_id);
@@ -1163,18 +1175,27 @@ function toggleFavorite(wrapper, recipe_id) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ recipe_id: recipe_id })
   })
-  .then(r => r.json())
+  .then(r => {
+    console.log('RAW fetch response:', r);
+    return r.json();
+  })
   .then(data => {
-    const isAdded = data.status === "added";
+    console.log('Parsed JSON data:', data, 'favIds before:', favIds);
 
-    // === Ενημέρωσε το localStorage (πάντα ως αριθμοί!) ===
+    const isAdded = data.status === "added";
     let idx = favIds.findIndex(x => Number(x) === recipe_id);
+
+    console.log('isAdded:', isAdded, 'idx:', idx, 'recipe_id:', recipe_id);
+
     if (isAdded && idx === -1) {
       favIds.push(recipe_id);
+      console.log('>>> Προστέθηκε:', recipe_id);
     } else if (!isAdded && idx !== -1) {
       favIds.splice(idx, 1);
+      console.log('>>> Αφαιρέθηκε:', recipe_id);
     }
     localStorage.setItem('favorite_recipe_ids', JSON.stringify(favIds));
+    console.log('favIds after:', favIds);
 
     // === Ενημέρωσε το εικονίδιο ===
     wrapper.innerHTML = '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color: var(--brand); font-size: 18px; vertical-align: -2px; cursor: pointer;"></i>';
@@ -1185,8 +1206,13 @@ function toggleFavorite(wrapper, recipe_id) {
         toggleFavorite(wrapper, recipe_id);
       };
     }
+  })
+  .catch(err => {
+    console.error('toggleFavorite error:', err);
   });
 }
+
+
 
 function isFavorite(recipe_id) {
   recipe_id = Number(recipe_id);
@@ -1197,6 +1223,7 @@ function isFavorite(recipe_id) {
     return false;
   }
 }
+
 
 function refreshFavorites() {
   console.log('[refreshFavorites] Ξεκινάμε refresh...');
@@ -1253,12 +1280,6 @@ function closeOffcanvas() {
   document.getElementById('offcanvas').classList.remove('open');
   document.getElementById('offcanvas-backdrop').classList.remove('open');
   document.body.style.overflow = '';
-}
-
-// Έξοδος χρήστη
-function logoutUser() {
-  localStorage.clear();
-  window.location.href = '/logout';
 }
 
 // Προαιρετικά: Κλείσιμο με ESC
@@ -1327,6 +1348,8 @@ document.addEventListener('keydown', function(e) {
 });
 </script>
 
+
+
 <script>
 
 
@@ -1390,7 +1413,12 @@ function closeRestartModal() {
 
 function confirmRestart() {
   clearChatHistory();
-  localStorage.clear();
+  localStorage.removeItem("aux_ingredients");
+  localStorage.removeItem("dish_category");
+  localStorage.removeItem("excluded");
+  localStorage.removeItem("main_ingredient");
+  localStorage.removeItem("max_time");
+  localStorage.removeItem("method_prefs");
   location.reload();
 }
 

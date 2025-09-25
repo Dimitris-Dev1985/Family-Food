@@ -1044,6 +1044,16 @@
   // --------- DOMContentLoaded ensures all elements exist! ----------
   document.addEventListener("DOMContentLoaded", function() {
 
+	if (typeof RECIPE_ID !== "undefined" && RECIPE_ID) {
+        fetch("/api/mark_recipe_seen", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ recipe_id: RECIPE_ID })
+        });
+    }
+
     // ---------- Play Button -------------
     const playBtn = document.getElementById('playBtn');
     if (playBtn) {
@@ -1244,6 +1254,7 @@ if (refreshSimilar) {
 
 <!------------- Fanorites Handling ------------->
 <script>
+
 function isFavorite(recipe_id) {
   recipe_id = Number(recipe_id);
   try {
@@ -1297,10 +1308,29 @@ function toggleFavorite(wrapper, recipe_id) {
 // ---- Στο recipes page ----
 var favBtn = document.getElementById('favBtnTopBar');
 if (favBtn) {
+
+  // === ΣΥΓΧΡΟΝΙΣΜΟΣ localStorage με backend (αρχικό μόνο) ===
+  (function syncFavoriteFromBackend(){
+    try {
+      var favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
+      var recipeId = Number(RECIPE_ID);
+      var backendIsFavorite = {{ 'true' if is_favorite else 'false' }};
+      var idx = favIds.indexOf(recipeId);
+      if (backendIsFavorite && idx === -1) {
+        favIds.push(recipeId);
+        localStorage.setItem('favorite_recipe_ids', JSON.stringify(favIds));
+      } else if (!backendIsFavorite && idx !== -1) {
+        favIds.splice(idx, 1);
+        localStorage.setItem('favorite_recipe_ids', JSON.stringify(favIds));
+      }
+    } catch(e){}
+  })();
+
   favBtn.onclick = function(e) {
     e.stopPropagation();
     toggleFavorite(favBtn, RECIPE_ID);
   };
+
   // --- Sync το state και αν κάνεις refresh/αλλαγή tab! 
   function updateFavBtnState() {
     const fav = isFavorite(RECIPE_ID);
@@ -1323,6 +1353,9 @@ if (favBtn) {
     }
   });
 }
+
+
+
 </script>
 
 <!------------- Ingredients Handling ------------->
