@@ -362,12 +362,11 @@ def onboarding_methods():
 
     return render_template("onboarding_methods.html", cooking_methods=cooking_methods)
 
-# ----------- START -----------
+
 
 
 
 # ----------- APP PAGES -----------
-
 
 @app.route("/welcome")
 def welcome():
@@ -561,7 +560,20 @@ def reset_password(token):
 @login_required
 def main():
     clear_suggestions()
-    return render_template("main.html")
+    
+    user, _ = get_user()
+    user_id = user["id"]
+
+    conn = sqlite3.connect(DB)
+    
+    favs = conn.execute("SELECT recipe_id FROM favorite_recipes WHERE user_id=?", (user_id,)).fetchall()
+    favorite_recipe_ids = [row[0] for row in favs]
+    conn.close()
+    
+    return render_template(
+        "main.html",
+        favorite_recipe_ids=favorite_recipe_ids,
+    )
 
 @app.route('/recipe_page/<int:recipe_id>')
 @login_required
@@ -600,14 +612,14 @@ def recipe_page(recipe_id):
    
     # dish_tags
     dish_tags = [line.strip() for line in recipe['dish_tags'].splitlines() if line.strip()]
-    print(dish_tags)
+    
    
     # Οδηγίες
     instructions = [line.strip() for line in recipe['instructions'].splitlines() if line.strip()]
     
     # Εικόνα από static folder
     image_path = recipe['image_path'] if 'image_path' in recipe.keys() else ''
-    print('image_path:', repr(recipe['image_path']))
+    
     if image_path and image_path.strip() != '':
         image_url = url_for('static', filename=f"images/recipes/{image_path}")
     else:
@@ -641,6 +653,8 @@ def recipe_page(recipe_id):
 
 
     avatar_filename = CHEF_AVATAR_MAP.get(recipe['chef'], 'default.jpg')
+
+    print(is_favorite)
 
     return render_template(
         'recipe_page.html',
@@ -912,7 +926,6 @@ def edit_profile():
     conn.close()
     return render_template("edit_profile.html", user=user_dict, avatar_path=user_dict["avatar"])
 
-# ----------- APP PAGES -----------
 
 
 # ----------- RATINGS για recipe -----------
@@ -990,8 +1003,6 @@ def delete_recipe_rating(rating_id):
     except Exception as e:
         print('[ERROR] delete_recipe_rating:', e)
         return jsonify({'error': 'DB error'}), 500
-
-# ----------- RATINGS για recipe -----------
 
 
 # ----------- COMMENTS για recipe -----------
@@ -1075,8 +1086,6 @@ def delete_recipe_comment(comment_id):
         print('[ERROR] delete_recipe_comment:', e)
         return jsonify({'error': 'DB error'}), 500
 
-# ----------- COMMENTS για recipe -----------
-
 
 # ----------- COOCKED DISHES -----------
 
@@ -1133,10 +1142,34 @@ def update_cooked_note(cooked_id):
         print('[ERROR] update_cooked_note:', e)
         return jsonify({'success': False, 'error': 'DB error'}), 500
 
-# ----------- COOCKED DISHES -----------
+
+# ----------- LAST SEEN DISHES -----------
+@app.route("/api/mark_recipe_seen", methods=["POST"])
+def mark_recipe_seen():
+    user, _ = get_user()
+    if not user:
+        return {"success": False, "error": "Unauthorized"}, 401
+
+    data = request.get_json()
+    recipe_id = data.get("recipe_id")
+    if not recipe_id:
+        return {"success": False, "error": "Missing recipe_id"}, 400
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    # Προσπάθεια για UPSERT (αν υπάρχει το ενημερώνει, αλλιώς το προσθέτει)
+    conn.execute("""
+        INSERT INTO last_seen_recipes (user_id, recipe_id, seen_at)
+        VALUES (?, ?, datetime('now', 'localtime'))
+        ON CONFLICT(user_id, recipe_id) DO UPDATE SET seen_at=datetime('now', 'localtime')
+    """, (user["id"], recipe_id))
+    conn.commit()
+    conn.close()
+    return {"success": True}
 
 
-
+# ----------- SIMILAR DISHES -----------
 @app.route('/api/similar')
 def api_similar():
     recipe_id = request.args.get("recipe_id", type=int)
@@ -1157,7 +1190,7 @@ def api_similar():
         return {"success": False, "error": "No main_ingredient for this recipe"}, 404
 
     main_ingredient = base_row["main_ingredient"].strip().lower()
-    print("[DEBUG] main_ingredient (normalized):", main_ingredient)
+#    print("[DEBUG] main_ingredient (normalized):", main_ingredient)
 
     sql = """
         SELECT id, title, chef, COALESCE(image_path, '') as image_path, total_time
@@ -1221,7 +1254,7 @@ def api_similar():
             "chef_avatar": chef_avatar
         })
 
-    print("[DEBUG] /api/similar ->", data)
+#    print("[DEBUG] /api/similar ->", data)
     return {"success": True, "recipes": data}
 
 
@@ -2279,7 +2312,6 @@ def get_last_seen_filters():
     })
 
 
-
 @app.route('/toggle_favorite_recipe', methods=['POST'])
 def toggle_favorite_recipe():
     user, _ = get_user()
@@ -2305,41 +2337,24 @@ def toggle_favorite_recipe():
             )
             conn.commit()
             conn.close()
-            return jsonify({"success": True, "status": "removed", "first_time": False})
+            return jsonify({"success": True, "status": "removed"})
         else:
             # Προσθήκη αγαπημένης
             conn.execute(
                 "INSERT INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)",
                 (user_id, recipe_id)
             )
-
-            # Έλεγχος για εγγραφή onboarding
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT 1 FROM onboarding_progress WHERE user_id = ? AND page = ?",
-                (user_id, "favorites")
-            )
-            exists = cursor.fetchone()
-            first_time = not exists
-
-            if first_time:
-                cursor.execute(
-                    "INSERT INTO onboarding_progress (user_id, page, step, completed) VALUES (?, ?, ?, ?)",
-                    (user_id, "favorites", 0, 0)
-                )
-
             conn.commit()
             conn.close()
-
             return jsonify({
                 "success": True,
-                "status": "added",
-                "first_time": first_time
+                "status": "added"
             })
 
     except Exception as e:
         conn.close()
         return jsonify({"success": False, "error": str(e)})
+
 
 @app.route("/add_favorite_recipe", methods=["POST"])
 def add_favorite_recipe():
