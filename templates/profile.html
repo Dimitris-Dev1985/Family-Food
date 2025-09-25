@@ -974,12 +974,7 @@
       </select>
     </div>
     <div class="col-6">
-      <select id="filter-time" class="form-select form-select-sm">
-        <option value="">Όλοι οι χρόνοι</option>
-        <option value="30">Έως 30'</option>
-        <option value="60">Έως 60'</option>
-        <option value="120">Έως 2 ώρες</option>
-      </select>
+      <select id="filter-time" class="form-select form-select-sm"></select>
     </div>
     <div class="col-6">
       <select id="filter-category" class="form-select form-select-sm">
@@ -1098,6 +1093,15 @@
 
 
 {% block scripts %}
+
+
+<script>
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted) {
+    window.scrollTo(0, 0);
+  }
+});
+</script>
 
 <script>
 window.current_user_id = {{ user_id }};
@@ -1692,6 +1696,8 @@ function populateFilter(selectId, values, defaultLabel) {
     select.appendChild(o);
   });
 }
+
+
 function populateTimeFilter(selectId, timeList) {
   const select = document.getElementById(selectId);
   if (!select) return;
@@ -1701,6 +1707,8 @@ function populateTimeFilter(selectId, timeList) {
   opt.textContent = "Όλοι οι χρόνοι";
   select.appendChild(opt);
 
+  if (!timeList || !timeList.length) return;
+
   const ranges = [
     { label: "Έως 30'", max: 30 },
     { label: "Έως 60'", max: 60 },
@@ -1708,15 +1716,39 @@ function populateTimeFilter(selectId, timeList) {
     { label: "Έως 120'", max: 120 }
   ];
 
+  let shownRanges = [];
+
+  // Βρες το μικρότερο range στο οποίο ανήκει κάθε πιάτο
+  timeList.forEach(function(t) {
+    for (let i = 0; i < ranges.length; i++) {
+      if (t <= ranges[i].max) {
+        shownRanges.push(ranges[i].max);
+        break;
+      }
+    }
+  });
+
+  // Κράτα μόνο τα μοναδικά ranges που πραγματικά καλύπτουν πιάτα
+  shownRanges = [...new Set(shownRanges)];
+
   ranges.forEach(function(r) {
-    if ((timeList || []).some(function(t) { return t <= r.max; })) {
+    if (shownRanges.includes(r.max)) {
       const o = document.createElement("option");
       o.value = r.max;
       o.textContent = r.label;
       select.appendChild(o);
     }
   });
+
+  // Αν έχει πιάτα μόνο πάνω από 120'
+  if (timeList.some(function(t) { return t > 120; })) {
+    const o = document.createElement("option");
+    o.value = "over120";
+    o.textContent = "Άνω των 120'";
+    select.appendChild(o);
+  }
 }
+
 
 // === Filtering function για Αγαπημένες ===
 function filterFavorites() {
@@ -1730,7 +1762,14 @@ function filterFavorites() {
     if (chef && dish.chef_name !== chef) return false;
     if (category && dish.main_ingredient !== category) return false;
     if (method && dish.method !== method) return false;
-    if (time && dish.total_time && parseInt(dish.total_time) > parseInt(time)) return false;
+    if (time) {
+      const tval = parseInt(String(dish.total_time).replace(/[^0-9]/g,""));
+      if (time === "over120") {
+        if (!tval || tval <= 120) return false;
+      } else {
+        if (!tval || tval > parseInt(time)) return false;
+      }
+    }
     if (term) {
       let inTitle = normalize(dish.title).includes(normalize(term));
       let inTags = normalize(dish.tags || "").includes(normalize(term));
@@ -1756,7 +1795,14 @@ function filterLastSeen() {
     if (chef && dish.chef_name !== chef) return false;
     if (category && dish.main_ingredient !== category) return false;
     if (method && dish.method !== method) return false;
-    if (time && dish.total_time && parseInt(dish.total_time) > parseInt(time)) return false;
+    if (time) {
+      const tval = parseInt(String(dish.total_time).replace(/[^0-9]/g,""));
+      if (time === "over120") {
+        if (!tval || tval <= 120) return false;
+      } else {
+        if (!tval || tval > parseInt(time)) return false;
+      }
+    }
     if (term) {
       let inTitle = normalize(dish.title).includes(normalize(term));
       let inTags = normalize(dish.tags || "").includes(normalize(term));

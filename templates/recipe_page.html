@@ -987,6 +987,13 @@
   const BASE_SERVINGS = {{ recipe.servings|tojson if recipe.servings is not none else 4 }};
 </script>
 
+<script>
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted) {
+    window.scrollTo(0, 0);
+  }
+});
+</script>
 
 <script>
   // ------------------ Helpers ------------------
@@ -1067,7 +1074,7 @@
     const backBtn = document.getElementById('backBtn');
     if (backBtn) {
       backBtn.onclick = function() {
-        window.location.href = '/main';
+        window.history.back();
       };
     }
 
