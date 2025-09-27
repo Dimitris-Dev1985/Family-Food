@@ -142,7 +142,7 @@
     padding: 7px 16px;
     border-radius: 24px; border: none;
     font-size: 1.1rem; font-weight: 500;
-    white-space: nowrap; cursor: pointer;
+    cursor: pointer;
     background: var(--bg-badge); color: var(--brand);
     box-shadow: 0 1px 4px rgba(33,142,70,0.04);
     opacity: 0; visibility: visible;
@@ -167,7 +167,7 @@
     margin: 0!important; padding: 10px 12px 7px;
     border-radius: 20px; z-index: 10;
     background: #fff;
-    border-top: 1.5px solid var(--outline);
+    border: 1.5px solid var(--outline);
     box-shadow: 0 2px 14px rgba(33,142,70,0.07);
   }
   .chat-input-row textarea {
@@ -478,7 +478,7 @@
     </div>
 
 
-<!-- === OFFCANVAS MENU === 
+<!-- === OFFCANVAS MENU ===  -->
 <div id="offcanvas" class="offcanvas-menu">
   <div class="offcanvas-header">
     <img src="/static/images/logo.png" alt="Family Food" class="offcanvas-logo" />
@@ -506,7 +506,7 @@
   </div>
 </div>
 <div id="offcanvas-backdrop" class="offcanvas-backdrop" onclick="closeOffcanvas()"></div>
--->
+
 
 
 
@@ -518,14 +518,193 @@
 
 {% block scripts %}
 
+<!------------- Backend Init ------------->
 <script>
   window.BACKEND_FAVORITE_RECIPE_IDS = {{ favorite_recipe_ids|tojson }};
+  window.cookingMethodsFromBackend = {{ cooking_methods|tojson }};
 </script>
 
+<!------------- Fanorites Handling ------------->
+<script>
+function toggleFavorite(wrapper, recipe_id) {
+  // Βεβαιώσου ότι το recipe_id είναι ΠΑΝΤΑ αριθμός!
+  recipe_id = Number(recipe_id);
 
+  let favIds = [];
+  try {
+    favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
+  } catch (e) {}
 
+  // Ενημέρωση backend
+  fetch('/toggle_favorite_recipe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe_id: recipe_id })
+  })
+  .then(r => {
+    console.log('RAW fetch response:', r);
+    return r.json();
+  })
+  .then(data => {
+    console.log('Parsed JSON data:', data, 'favIds before:', favIds);
+
+    const isAdded = data.status === "added";
+    let idx = favIds.findIndex(x => Number(x) === recipe_id);
+
+    console.log('isAdded:', isAdded, 'idx:', idx, 'recipe_id:', recipe_id);
+
+    if (isAdded && idx === -1) {
+      favIds.push(recipe_id);
+      console.log('>>> Προστέθηκε:', recipe_id);
+    } else if (!isAdded && idx !== -1) {
+      favIds.splice(idx, 1);
+      console.log('>>> Αφαιρέθηκε:', recipe_id);
+    }
+    localStorage.setItem('favorite_recipe_ids', JSON.stringify(favIds));
+    console.log('favIds after:', favIds);
+
+    // === Ενημέρωσε το εικονίδιο ===
+    wrapper.innerHTML = '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color: var(--brand); font-size: 18px; vertical-align: -2px; cursor: pointer;"></i>';
+    const icon = wrapper.querySelector("i");
+    if (icon) {
+      icon.onclick = function(e) {
+        e.stopPropagation();
+        toggleFavorite(wrapper, recipe_id);
+      };
+    }
+  })
+  .catch(err => {
+    console.error('toggleFavorite error:', err);
+  });
+}
+
+function isFavorite(recipe_id) {
+  recipe_id = Number(recipe_id);
+  try {
+    const favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
+    return favIds.map(x => Number(x)).includes(recipe_id);
+  } catch (e) {
+    return false;
+  }
+}
+
+function refreshFavorites() {
+  const allCards = document.querySelectorAll('.similar-card-item');
+
+  allCards.forEach(card => {
+    const recipeId = card.getAttribute('data-recipe-id');
+
+    const favWrapper = card.querySelector('span[style*="position: absolute"]');
+    if (!favWrapper) {
+      return;
+    }
+
+    const fav = isFavorite(recipeId);
+
+    favWrapper.innerHTML =
+      '<i class="' + (fav ? 'fas' : 'far') + ' fa-heart" style="color: #1a6e38; font-size: 20px; filter: drop-shadow(0 2px 5px #fff2);"></i>';
+
+    const icon = favWrapper.querySelector("i");
+    if (icon) {
+      icon.onclick = function(e) {
+        e.stopPropagation();
+        toggleFavorite(favWrapper, recipeId);
+      };
+    } else {
+    }
+  });
+}
+
+</script>
+
+<!------------ OffCanvas ------------->
+<script>
+// === OFFCANVAS LOGIC ===
+
+// Άνοιγμα από το hamburger button
+document.querySelector('.fa-bars').closest('button').onclick = openOffcanvas;
+
+function openOffcanvas() {
+  document.getElementById('offcanvas').classList.add('open');
+  document.getElementById('offcanvas-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden'; // για να μην scrollάρει το body
+}
+
+function closeOffcanvas() {
+  document.getElementById('offcanvas').classList.remove('open');
+  document.getElementById('offcanvas-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Προαιρετικά: Κλείσιμο με ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === "Escape") closeOffcanvas();
+});
+</script>
+
+<!------------ Logout ------------->
 <script>
 
+// === LOGOUT CONFIRM LOGIC (ΔΥΝΑΜΙΚΟ MODAL) ===
+function logoutUser() {
+  // Αν υπάρχει ήδη, μην το ξαναβάλεις
+  if (document.getElementById('logoutConfirmModal')) return;
+
+  // Δημιουργία backdrop
+  const backdrop = document.createElement('div');
+  backdrop.id = 'logoutModalBackdrop';
+  backdrop.className = 'modal-logout-backdrop open';
+  backdrop.onclick = closeLogoutModal;
+
+  // Δημιουργία modal
+  const modal = document.createElement('div');
+  modal.id = 'logoutConfirmModal';
+  modal.className = 'modal-logout open';
+  modal.innerHTML = `
+    <div class="modal-logout-content">
+      <div class="modal-logout-title">
+        <i class="fa fa-sign-out-alt"></i> Αποσύνδεση;
+      </div>
+      <div class="modal-logout-msg">
+        Επιθυμείς σίγουρα να αποσυνδεθείς;<br>
+        <span style="color:var(--red); font-weight:600;">Οι προτιμήσεις σου για σήμερα θα διαγραφούν!</span>
+      </div>
+      <div class="modal-logout-actions">
+        <button class="btn-logout-cancel" onclick="closeLogoutModal()">Ακύρωση</button>
+        <button class="btn-logout-confirm" onclick="confirmLogout()">Αποσύνδεση</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+
+  // Κλείσε το offcanvas αν είναι ανοιχτό
+  if (typeof closeOffcanvas === 'function') closeOffcanvas();
+}
+
+function closeLogoutModal() {
+  const modal = document.getElementById('logoutConfirmModal');
+  const backdrop = document.getElementById('logoutModalBackdrop');
+  if (modal) modal.remove();
+  if (backdrop) backdrop.remove();
+  document.body.style.overflow = '';
+}
+
+function confirmLogout() {
+  localStorage.clear();
+  window.location.href = '/logout';
+}
+
+// Προαιρετικά: Κλείσιμο με Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === "Escape") closeLogoutModal();
+});
+</script>
+
+<!------------- Main Logic ------------->
+<script>
 
 const StorageKeys = {
   MAX_TIME: "max_time",
@@ -538,13 +717,20 @@ const StorageKeys = {
 function setStorageItem(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
 function getStorageItem(key, fallback = null) { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (e) { return fallback; } }
 function setMaxTime(minutes) { setStorageItem(StorageKeys.MAX_TIME, String(minutes)); }
-function getMaxTime() { return getStorageItem(StorageKeys.MAX_TIME, "30"); }
+function getMaxTime() { return getStorageItem(StorageKeys.MAX_TIME, "500"); }
 function setDishCategory(DishCategory) { setStorageItem(StorageKeys.DISH_CATEGORY, DishCategory); }
 function getDishCategory() { return getStorageItem(StorageKeys.DISH_CATEGORY, null); }
 function setMainIngredient(ingredient) { setStorageItem(StorageKeys.MAIN_INGREDIENT, ingredient); }
 function getMainIngredient() { return getStorageItem(StorageKeys.MAIN_INGREDIENT, null); }
 function setMethodPrefs(methodsArray) { setStorageItem(StorageKeys.METHOD_PREFS, methodsArray); }
-function getMethodPrefs() { return getStorageItem(StorageKeys.METHOD_PREFS, [ 'Φούρνος', 'Κατσαρόλα', 'Χύτρα', 'Τηγάνι', 'Σχάρα', 'Air-fryer' ]); }
+
+function getMethodPrefs() {
+  if (window.cookingMethodsFromBackend && Array.isArray(window.cookingMethodsFromBackend)) {
+    return window.cookingMethodsFromBackend;
+  }
+  return getStorageItem(StorageKeys.METHOD_PREFS, [ 'Φούρνος', 'Κατσαρόλα', 'Χύτρα', 'Τηγάνι', 'Σχάρα', 'Air-fryer' ]);
+}
+
 function setExcluded(excludesArray) { setStorageItem(StorageKeys.EXCLUDED, excludesArray); }
 function getExcluded() { return getStorageItem(StorageKeys.EXCLUDED, []); }
 function setAuxIngredient(auxArray) { setStorageItem(StorageKeys.AUX_INGREDIENTS, auxArray); }
@@ -555,6 +741,7 @@ const input = document.getElementById("userInput");
 const inputRow = document.getElementById("chatInputRow");
 const originalPlaceholder = input.placeholder;
 let moreResultsClicks = 0;
+let showAllRecipes = false;
 let userNeedsHelp = false;
 
 function adjustChatboxPosition() {
@@ -639,6 +826,28 @@ input.addEventListener("input", function() {
 
 window.addEventListener('resize', adjustChatboxPosition);
 
+
+function clearSuggestions() {
+  fetch('/clear_suggestions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+      // Αν απαιτείται CSRF token, προσθεσε το εδώ
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === "ok") {
+      console.log("Suggestions cleared!");
+      // Εδώ βάλε ό,τι άλλο θες να κάνεις μετά (π.χ. ενημέρωση UI)
+    }
+  })
+  .catch(error => {
+    console.error("Error clearing suggestions:", error);
+  });
+}
+
+
 function saveChatHistory() { sessionStorage.setItem('chatHistory', document.getElementById('chatbox').innerHTML); }
 
 function restoreChatHistory() {
@@ -659,7 +868,7 @@ function clearChatHistory() { sessionStorage.removeItem('chatHistory'); document
 
 function shuffle(array) { let arr = array.slice(); for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
 
-function mapTimeLabelToMinutes(label) { const map = {"Έως 30λ.": 30, "Έως 1 ώρα": 60, "Πάνω από 1,5 ώρα": 200}; return map[label] || 90; }
+function mapTimeLabelToMinutes(label) { const map = {"Έως 30'": 30, "Έως 1 ώρα": 60, "Πάνω από 1,5 ώρα": 200}; return map[label] || 90; }
 
 function getPreferredChef() { return localStorage.getItem("preferred_chef") || ""; }
 
@@ -768,7 +977,7 @@ function handleQuickReply(btn) {
   if (action === "set_main_ingredient_from_tag") {
     setMainIngredient(value);
     renderUserBubble(value);
-	console.log("call 1");
+	console.log("call 0");
     callAISuggest("", 0);
     return;
   }
@@ -804,6 +1013,7 @@ function handleQuickReply(btn) {
   if (action === "set_main_ingredient") {
     setMainIngredient(value);
     renderUserBubble(value);
+	console.log("call 1");
     callAISuggest("", 1);
     return;
   }
@@ -840,17 +1050,28 @@ function handleQuickReply(btn) {
 	  moreResultsClicks++;
 	  document.getElementById("typing-indicator")?.remove();
 
+	  if (showAllRecipes === true) {
+		console.log("shown all");
+		renderAIBubble(`Δε μπορέσαμε να βρούμε άλλες συνταγές με ${getMainIngredient()}.. Θα ήθελες να ψάξουμε κάτι άλλο; Πες μου, πόσο χρόνο έχεις και τι υλικό θα ήθελες να χρησιμοποιήσεις;`,"system");
+		setDishCategory("");
+		setMainIngredient(""); 	
+		setAuxIngredient("");
+		clearSuggestions();
+		return;
+	  }
 	  const more2show = localStorage.getItem("More2ShowfromAI_0");
 	  if (more2show === "1") {
 		// Κάλεσε με step=0 (δηλ. συνέχισε από το Branch 0)
+		console.log("call 0");
 		callAISuggest("", 0);
 	  } else {
 		// Δεν έχει άλλα στο Branch 0, συνέχισε με step=1
+		console.log("call 1");
 		callAISuggest(getMainIngredient(), 1);
 	  }
+
 	  return;
 	}
-
 
   if (action === "confirm_choice") {
     document.getElementById("typing-indicator")?.remove();
@@ -865,6 +1086,7 @@ function handleQuickReply(btn) {
     const DishCategory = getDishCategory();
     const mainIngredient = getMainIngredient();
     if (maxTime > 0 && DishCategory && mainIngredient) {
+		console.log("call 1");
       callAISuggest("", 1);
     } else if (maxTime > 0 && !mainIngredient && action === "time") {
       document.getElementById("typing-indicator")?.remove();
@@ -880,10 +1102,31 @@ function handleQuickReply(btn) {
     setMethodPrefs(getMethodPrefs().filter(m => m !== value.trim()));
     return;
   }
+  
   if (action === "exclude_ingredient") {
     setExcluded([...getExcluded(), value.toLowerCase()]);
     return;
   }
+
+  if (action === "show_all_by_time") {
+	  renderUserBubble(value);
+	  setDishCategory("");
+	  setAuxIngredient("");
+	  setMainIngredient("");
+	  console.log("call 1");
+	  callAISuggest("", 1);
+	  return;
+	}
+
+  if (action === "show_all_recipes") {
+	  renderUserBubble(value);
+	  showAllRecipes = true
+	  localStorage.removeItem("max_time");
+	  console.log("call 1");
+	  callAISuggest(getMainIngredient(), 1);
+	  return;
+	}
+
 }
 
 function fetchDishCategoriesAndRenderQuickReplies() {
@@ -1063,6 +1306,7 @@ function handleFreeUserMessage(text) {
       const maxTime = getMaxTime();
       const mainIngredient = getMainIngredient();
       if (maxTime > 0 && mainIngredient) {
+	  	console.log("call 1");
         callAISuggest(text, 1);
       } else if (data.reply) {
         renderAIBubble(data.reply);
@@ -1084,11 +1328,28 @@ function callAISuggest(userMessage = "", step) {
     preferred_methods: getMethodPrefs(),
     chef: getPreferredChef()
   };
+  
+  
+  // Κρατάει μόνο τα φίλτρα που έχουν πραγματική τιμή (όχι undefined, "", null ή [])
+  const filteredFilters = {};
+  Object.keys(filters).forEach(k => {
+    const val = filters[k];
+    if (Array.isArray(val)) {
+      if (val.length > 0) filteredFilters[k] = val;
+    } else if (val !== undefined && val !== null && val !== "") {
+      filteredFilters[k] = val;
+    }
+  });
+  
+  
   const payload = {
     step: step,
     message: userMessage,
     ...filters
   };
+  
+  console.log(payload);
+  
   fetch("/ai_suggest_dish", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1099,6 +1360,15 @@ function callAISuggest(userMessage = "", step) {
       document.getElementById("typing-indicator")?.remove();
       if (data.success === false) {
         renderAIBubble("⚠️ Το backend επέστρεψε αποτυχία.", "system");
+		renderAIBubble(`Δε βρέθηκε κάποιο πιάτο με ${filters.main_ingredient} και χρόνο μαγειρέμετος μέχρι ${filters.max_time}'. Πώς θα ήθελες να συνεχίσουμε;`, "system");
+		setTimeout(() => {
+		  renderQuickReplyOptions([
+			{ label: `Δείξε μου όλες τις συνταγές με ${filters.main_ingredient}`, action: "show_all_recipes" },
+			{ label: `Δείξε μου άλλες συνταγές με χρόνο έως ${filters.max_time}'`, action: "show_all_by_time" }
+		  ]);
+		}, 500);
+		clearSuggestions();
+		
         return;
       }
       if (data.message) renderAIBubble(data.message);
@@ -1156,202 +1426,10 @@ function resetInputUI() {
   inputRow.classList.remove("voice-active");
 }
 
-
-
-<!------------- Fanorites Handling ------------->
-
-function toggleFavorite(wrapper, recipe_id) {
-  // Βεβαιώσου ότι το recipe_id είναι ΠΑΝΤΑ αριθμός!
-  recipe_id = Number(recipe_id);
-
-  let favIds = [];
-  try {
-    favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
-  } catch (e) {}
-
-  // Ενημέρωση backend
-  fetch('/toggle_favorite_recipe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recipe_id: recipe_id })
-  })
-  .then(r => {
-    console.log('RAW fetch response:', r);
-    return r.json();
-  })
-  .then(data => {
-    console.log('Parsed JSON data:', data, 'favIds before:', favIds);
-
-    const isAdded = data.status === "added";
-    let idx = favIds.findIndex(x => Number(x) === recipe_id);
-
-    console.log('isAdded:', isAdded, 'idx:', idx, 'recipe_id:', recipe_id);
-
-    if (isAdded && idx === -1) {
-      favIds.push(recipe_id);
-      console.log('>>> Προστέθηκε:', recipe_id);
-    } else if (!isAdded && idx !== -1) {
-      favIds.splice(idx, 1);
-      console.log('>>> Αφαιρέθηκε:', recipe_id);
-    }
-    localStorage.setItem('favorite_recipe_ids', JSON.stringify(favIds));
-    console.log('favIds after:', favIds);
-
-    // === Ενημέρωσε το εικονίδιο ===
-    wrapper.innerHTML = '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color: var(--brand); font-size: 18px; vertical-align: -2px; cursor: pointer;"></i>';
-    const icon = wrapper.querySelector("i");
-    if (icon) {
-      icon.onclick = function(e) {
-        e.stopPropagation();
-        toggleFavorite(wrapper, recipe_id);
-      };
-    }
-  })
-  .catch(err => {
-    console.error('toggleFavorite error:', err);
-  });
-}
-
-
-
-function isFavorite(recipe_id) {
-  recipe_id = Number(recipe_id);
-  try {
-    const favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
-    return favIds.map(x => Number(x)).includes(recipe_id);
-  } catch (e) {
-    return false;
-  }
-}
-
-
-function refreshFavorites() {
-  console.log('[refreshFavorites] Ξεκινάμε refresh...');
-  const allCards = document.querySelectorAll('.similar-card-item');
-  console.log('[refreshFavorites] Βρέθηκαν', allCards.length, 'dish cards στο DOM');
-
-  allCards.forEach(card => {
-    const recipeId = card.getAttribute('data-recipe-id');
-    console.log('[refreshFavorites] Card με id:', recipeId);
-
-    const favWrapper = card.querySelector('span[style*="position: absolute"]');
-    if (!favWrapper) {
-      console.log('[refreshFavorites] ΔΕΝ βρέθηκε favWrapper για card', recipeId);
-      return;
-    }
-
-    const fav = isFavorite(recipeId);
-    console.log('[refreshFavorites] isFavorite(', recipeId, ') =', fav);
-
-    favWrapper.innerHTML =
-      '<i class="' + (fav ? 'fas' : 'far') + ' fa-heart" style="color: #1a6e38; font-size: 20px; filter: drop-shadow(0 2px 5px #fff2);"></i>';
-
-    const icon = favWrapper.querySelector("i");
-    if (icon) {
-      icon.onclick = function(e) {
-        e.stopPropagation();
-        toggleFavorite(favWrapper, recipeId);
-      };
-      console.log('[refreshFavorites] OnClick set for card', recipeId);
-    } else {
-      console.log('[refreshFavorites] ΔΕΝ βρέθηκε icon για card', recipeId);
-    }
-  });
-  console.log('[refreshFavorites] Τέλος refresh');
-}
-
-
 </script>
 
-
+<!------------ Restart Chat ------------->
 <script>
-// === OFFCANVAS LOGIC ===
-
-// Άνοιγμα από το hamburger button
-document.querySelector('.fa-bars').closest('button').onclick = openOffcanvas;
-
-function openOffcanvas() {
-  document.getElementById('offcanvas').classList.add('open');
-  document.getElementById('offcanvas-backdrop').classList.add('open');
-  document.body.style.overflow = 'hidden'; // για να μην scrollάρει το body
-}
-
-function closeOffcanvas() {
-  document.getElementById('offcanvas').classList.remove('open');
-  document.getElementById('offcanvas-backdrop').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-// Προαιρετικά: Κλείσιμο με ESC
-document.addEventListener('keydown', function(e) {
-  if (e.key === "Escape") closeOffcanvas();
-});
-</script>
-
-<script>
-
-// === LOGOUT CONFIRM LOGIC (ΔΥΝΑΜΙΚΟ MODAL) ===
-function logoutUser() {
-  // Αν υπάρχει ήδη, μην το ξαναβάλεις
-  if (document.getElementById('logoutConfirmModal')) return;
-
-  // Δημιουργία backdrop
-  const backdrop = document.createElement('div');
-  backdrop.id = 'logoutModalBackdrop';
-  backdrop.className = 'modal-logout-backdrop open';
-  backdrop.onclick = closeLogoutModal;
-
-  // Δημιουργία modal
-  const modal = document.createElement('div');
-  modal.id = 'logoutConfirmModal';
-  modal.className = 'modal-logout open';
-  modal.innerHTML = `
-    <div class="modal-logout-content">
-      <div class="modal-logout-title">
-        <i class="fa fa-sign-out-alt"></i> Αποσύνδεση;
-      </div>
-      <div class="modal-logout-msg">
-        Επιθυμείς σίγουρα να αποσυνδεθείς;<br>
-        <span style="color:var(--red); font-weight:600;">Οι προτιμήσεις σου για σήμερα θα διαγραφούν!</span>
-      </div>
-      <div class="modal-logout-actions">
-        <button class="btn-logout-cancel" onclick="closeLogoutModal()">Ακύρωση</button>
-        <button class="btn-logout-confirm" onclick="confirmLogout()">Αποσύνδεση</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(backdrop);
-  document.body.appendChild(modal);
-  document.body.style.overflow = 'hidden';
-
-  // Κλείσε το offcanvas αν είναι ανοιχτό
-  if (typeof closeOffcanvas === 'function') closeOffcanvas();
-}
-
-function closeLogoutModal() {
-  const modal = document.getElementById('logoutConfirmModal');
-  const backdrop = document.getElementById('logoutModalBackdrop');
-  if (modal) modal.remove();
-  if (backdrop) backdrop.remove();
-  document.body.style.overflow = '';
-}
-
-function confirmLogout() {
-  localStorage.clear();
-  window.location.href = '/logout';
-}
-
-// Προαιρετικά: Κλείσιμο με Escape
-document.addEventListener('keydown', function(e) {
-  if (e.key === "Escape") closeLogoutModal();
-});
-</script>
-
-
-
-<script>
-
 
 window.addEventListener("DOMContentLoaded", function() {
   const btn = document.getElementById("restartChatBtn");
@@ -1360,10 +1438,6 @@ window.addEventListener("DOMContentLoaded", function() {
   btn.style.display = hasHistory ? 'inline-flex' : 'none';
 });
 
-
-</script>
-
-<script>
 function restartChat() {
   showRestartModal();
 }
@@ -1427,5 +1501,6 @@ document.addEventListener('keydown', function(e) {
   if (e.key === "Escape") closeRestartModal();
 });
 </script>
+
 
 {% endblock %}

@@ -250,12 +250,13 @@
       Δεν έχεις λογαριασμό; <a href="{{ url_for('signup') }}">Δημιούργησε έναν!</a>
     </div>
 
+<!--
     <div class="divider">
       <hr>
       <span>ή</span>
     </div>
 
-<!--
+
 
     <button class="btn social-btn btn-google" disabled>
       <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
@@ -293,6 +294,7 @@
 {% block scripts %}
 <script>
 sessionStorage.clear();
+localStorage.clear();
 window.addEventListener('DOMContentLoaded', function() {
   const alert = document.getElementById('flash-alert');
   if (alert) {

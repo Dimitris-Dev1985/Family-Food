@@ -139,7 +139,7 @@
   .servings-tasty-box {
     display: flex; align-items: center; gap: 8px;
     padding: 4px 11px;
-    border: 1.6px solid var(--servings-border); border-radius: 14px;
+    border: 1.6px solid var(--servings-border); border-radius: 25px;
     background: var(--servings-bg);
     font-size: 1.25rem; font-weight: 500;
   }
@@ -147,7 +147,7 @@
     width: 32px; height: 32px;
     border-radius: 50%; border: none; cursor: pointer;
     background: none; color: var(--brand-hover);
-    font-size: 1.3em; font-weight: bold;
+    font-size: 1.25em; font-weight: bold;
   }
   .ingredients-list { list-style: none; margin: 0; padding: 0; }
   .ingredients-list li {
@@ -178,7 +178,7 @@
   
 .ingredients-tip {
   max-width: 580px;
-  margin: 0 auto 14px auto;
+  margin: 18px auto 18px auto;
   padding: 12px 12px 12px 5px;
   border-radius: 16px;
   background: #f9f9f9;
@@ -985,6 +985,7 @@
   const USERNAME = {{ user_name|tojson }};
   const USER_AVATAR_URL = {{ user_avatar|tojson }};
   const BASE_SERVINGS = {{ recipe.servings|tojson if recipe.servings is not none else 4 }};
+  window.userServings = {{ servings|tojson }};
 </script>
 
 <script>
@@ -1000,7 +1001,27 @@ window.addEventListener('pageshow', function(event) {
 
   function parseFraction(str) {
     str = str.replace(',', '.').trim();
-    const fractions = {'½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1/3, '⅔': 2/3, '⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875};
+    const fractions = {
+	  '½': 0.5,
+	  '⅓': 1/3,
+	  '⅔': 2/3,
+	  '¼': 0.25,
+	  '¾': 0.75,
+	  '⅕': 0.2,
+	  '⅖': 0.4,
+	  '⅗': 0.6,
+	  '⅘': 0.8,
+	  '⅙': 1/6,
+	  '⅚': 5/6,
+	  '⅐': 1/7,
+	  '⅛': 0.125,
+	  '⅜': 0.375,
+	  '⅝': 0.625,
+	  '⅞': 0.875,
+	  '⅑': 1/9,
+	  '⅒': 0.1
+	};
+
     if (fractions[str]) return fractions[str];
     if (str.match(/^\d+\/\d+$/)) {
       let [n, d] = str.split('/').map(Number);
@@ -1023,9 +1044,24 @@ window.addEventListener('pageshow', function(event) {
 
   function toCookingFraction(num) {
     const fracMap = {
-      0.125: '⅛', 0.25: '¼', 0.33: '⅓', 0.5: '½', 0.66: '⅔',
-      0.75: '¾', 0.375: '⅜', 0.625: '⅝', 0.875: '⅞'
-    };
+	  0.125: '⅛',
+	  0.1667: '⅙',
+	  0.2: '⅕',
+	  0.25: '¼',
+	  0.3333: '⅓',
+	  0.375: '⅜',
+	  0.4: '⅖',
+	  0.5: '½',
+	  0.6: '⅗',
+	  0.625: '⅝',
+	  0.6667: '⅔',
+	  0.75: '¾',
+	  0.8: '⅘',
+	  0.8333: '⅚',
+	  0.875: '⅞',
+	  0.9: '⅑',
+	  0.1: '⅒'
+	};
     let intPart = Math.floor(num);
     let frac = +(num - intPart).toFixed(3);
     let fracStr = '';
@@ -1115,7 +1151,8 @@ window.addEventListener('pageshow', function(event) {
 	  if (cb) cb.setAttribute('data-ing', ingredientName);
 	});
 
-    let currentServings = BASE_SERVINGS;
+    let currentServings = (window.userServings && !isNaN(window.userServings)) ? window.userServings : BASE_SERVINGS;
+	updateServings(currentServings);
     const minusBtn = document.getElementById('btnMinus');
     const plusBtn = document.getElementById('btnPlus');
     if (minusBtn) {
