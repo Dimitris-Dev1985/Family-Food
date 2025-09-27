@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash, get_flashed_messages
-import sqlite3, unicodedata, random, re, json, traceback, os, openai
+import sqlite3, unicodedata, random, re, json, traceback, os, openai, logging
 from dotenv import load_dotenv
 from rapidfuzz import fuzz, process
 from datetime import datetime, timedelta
@@ -10,6 +10,10 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask_mail import Mail, Message
 from fuzzywuzzy import process
 from stopwords_gr import RAW_STOPWORDS
+
+
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.WARNING)
 
 
 app = Flask(__name__)
@@ -123,12 +127,13 @@ def build_system_prompt():
         "You are a helpful kitchen assistant that helps tired parents decide what to cook.\n"
         "Always reply in Greek, with a warm and casual tone.\n"
 
-        "Your ONLY task is to manage and update these 5 fields:\n"
-        "- max_time (integer minutes) - είναι ο χρόνος που έχει στη διάθεσή του ο χρήστης για μαγείρεμα (απαραίτητο να υπάρχει πάντα)\n"
+        "Your ONLY task is to manage and update these 6 fields:\n"
+        "- max_time (integer minutes) - είναι ο χρόνος που έχει στη διάθεσή του ο χρήστης για μαγείρεμα (απαραίτητο να υπάρχει πάντα).\n"
+        "- dish_category (string) - είναι κατηγορία στην οποία ανήκει μια συνταγή (e.g όσπρια, λαδερά, κτλ). Δεν είναι απαραίτητο να υπάρχει πάντα, αλλά αν δοθεί από τον χρήστη πρέπει να καταγραφεί.\n"
         "- main_ingredient (string) - είναι το βασικό υλικό που θέλει να χρησιμοποιήσει ο χρήστης. Θα το βρείτε ΜΑΖΙ.\n"
-        "- aux_ingredients (array) - είναι τα επιπλέον βοηθητικά υλικά που θέλει ο χρήστης να έχει η συνταγή (προσθέσεις ή αφαιρέσεις)\n"
-        "- cooking_method (array) - είναι λίστα προκαθορισμένων μεθόδων μαγειρέματος που μπορεί να χρειαστεί να επεξεργαστείς (προσθέσεις ή αφαιρέσεις)\n"
-        "- excluded_keywords (array) - είναι λίστα με λέξεις που μπορεί να χρειαστεί να επεξεργαστείς (προσθέσεις ή αφαιρέσεις)\n\n"
+        "- aux_ingredients (array) - είναι τα επιπλέον βοηθητικά υλικά που θέλει ο χρήστης να έχει η συνταγή (προσθέσεις ή αφαιρέσεις).\n"
+        "- cooking_method (array) - είναι λίστα προκαθορισμένων μεθόδων μαγειρέματος που μπορεί να χρειαστεί να επεξεργαστείς (προσθέσεις ή αφαιρέσεις).\n"
+        "- excluded_keywords (array) - είναι λίστα με λέξεις που μπορεί να χρειαστεί να επεξεργαστείς (προσθέσεις ή αφαιρέσεις).\n\n"
 
         "VERY IMPORTANT:\n"
         "• Your exclusive goal is to understand the user's cooking preferences and update (add or remove values) from the abovementioned fields, throught store_filters function_call.\n\n"
@@ -147,7 +152,7 @@ def build_system_prompt():
         "5. User may provide information about two or more fields in the same phrase, either with positive or negative contribution. You must extract ALL referred fields. (e.g. 'κοτόπουλο με πατάτες στο φούρνο χωρίς καρότα' \n"
             "→ main_ingredient = 'κοτόπουλο', aux_ingredients = 'πατάτες', cooking_method = 'Φούρνος', excluded_keywords = 'καρότα').\n"
         "6. If user rejects a material (π.χ. 'όχι ψάρι', 'δεν έχω καρότα', 'χωρίς κιμά') → remove it (if present) from aux_ingredients AND main_ingredient, AND add it to excluded_keywords.\n"
-        "7. If the user explicitly mentions a material as the desired dish base (π.χ. 'σε ψάρι', 'κοτόπουλο', 'μοσχάρι με πατάτες'), you MUST ADD it as main_ingredient and (if present) REMOVE from excluded_keywords.\n"
+        "7. If the user explicitly mentions a material as main ingredient (e.g. 'σε ψάρι', 'κοτόπουλο', 'μοσχάρι με πατάτες'), you MUST ADD it as main_ingredient AND (if present) REMOVE from excluded_keywords.\n"
         "8. If user decides that finally has a material available that was previously missing → REMOVE from excluded_keywords AND add it to either main_ingredients OR aux_ingredient.\n"           
         "9. If the user explicitly mentions a cooking method (π.χ. 'στο φούρνο', 'σε σχάρα', 'με air fryer'), you MUST always include it in cooking_method.\n"
         "10. If the user explicitly says he wants to AVOID a cooking method (π.χ. 'όχι φούρνο', 'χωρίς τηγάνι', 'δεν θέλω σχάρα'), you must REMOVE that method from cooking_method.\n"
@@ -156,6 +161,7 @@ def build_system_prompt():
             "- If the user specifies an *absolute time* → take it literally (π.χ. 'μισή ώρα'=30, 'μιάμιση ώρα'=90).\n"
             "- If the user speaks about *relative time* compared to the existing (π.χ. 'πιο γρήγορο', 'πιο αργά', 'συντομότερο'), do NOT invent arbitrary numbers, but adjust the current max_time value by up to ±20%.\n"
             "(e.g. if current time = 200 and user says 'πιο γρήγορο' → new time = 160 (20% less).\n"
+        "13. Regarding dish_category: If found in user message, usually main_ingredient will be missing. Ask for it, don't assume main_ingeredient to be the same as dish_category.\n"
     )
 
 def lookup_ingredient(raw):
@@ -234,7 +240,6 @@ def check_onboarding(user_id):
         return True
     return False
 
-
 @app.route('/api/normalize_ingredient', methods=['POST'])
 def normalize_ingredient_route():
     data = request.get_json()
@@ -252,7 +257,6 @@ def normalize_ingredient_route():
         cache_ingredient(raw, fixed_core)
         core = fixed_core
     return jsonify({'core': core})
-
 
 
 
@@ -361,9 +365,6 @@ def onboarding_methods():
     conn.close()
 
     return render_template("onboarding_methods.html", cooking_methods=cooking_methods)
-
-
-
 
 
 # ----------- APP PAGES -----------
@@ -565,14 +566,26 @@ def main():
     user_id = user["id"]
 
     conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row 
     
+    # Διάβασε τα recipe_ids των αγαπημένων
     favs = conn.execute("SELECT recipe_id FROM favorite_recipes WHERE user_id=?", (user_id,)).fetchall()
     favorite_recipe_ids = [row[0] for row in favs]
+
+    # Διάβασε το cooking_method του χρήστη
+    user_row = conn.execute("SELECT cooking_method FROM users WHERE id=?", (user_id,)).fetchone()
+    cooking_method = user_row["cooking_method"] if user_row else ""
+        
+    # Σπάσε τα σε λίστα (αν θες λίστα)
+    cooking_methods = [m.strip() for m in cooking_method.split(",")] if cooking_method else []    
+    
     conn.close()
+    
     
     return render_template(
         "main.html",
         favorite_recipe_ids=favorite_recipe_ids,
+        cooking_methods=cooking_methods
     )
 
 @app.route('/recipe_page/<int:recipe_id>')
@@ -581,8 +594,10 @@ def recipe_page(recipe_id):
     user_id = session.get('user_id', 0)
     user_name = None
     user_avatar = None
+    
     print("\n========== /recipe_page CALLED ==========")
     print("[INPUT] recipe_id:", recipe_id)
+    
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     recipe = conn.execute("""
@@ -634,6 +649,10 @@ def recipe_page(recipe_id):
         ).fetchone()
         is_favorite = fav_row is not None
 
+    user_row = conn.execute("SELECT servings FROM users WHERE id=?", (user_id,)).fetchone()
+    servings = user_row["servings"] if user_row and "servings" in user_row.keys() else None
+
+
     conn.close()
 
     if user_id:
@@ -651,10 +670,8 @@ def recipe_page(recipe_id):
         user_name = 'Επισκέπτης'
         user_avatar = '/static/images/avatars/default.jpg'
 
-
     avatar_filename = CHEF_AVATAR_MAP.get(recipe['chef'], 'default.jpg')
 
-    print(is_favorite)
 
     return render_template(
         'recipe_page.html',
@@ -667,6 +684,7 @@ def recipe_page(recipe_id):
         user_id=user_id,
         user_name=user_name,
         user_avatar=user_avatar,
+        servings=servings,
         chef_avatar=avatar_filename
     )
 
@@ -1359,6 +1377,7 @@ def get_main_tags():
 @app.route("/ai_reply", methods=["POST"])
 def ai_reply_v3():
 
+
     def coerce_int(val):
         try:
             if val is None: return None
@@ -1413,14 +1432,15 @@ def ai_reply_v3():
         current_cooking_method = data.get("preferred_methods") or []
         excluded_keywords = data.get("excluded") or []
         aux_ingredients = data.get("aux_ingredients") or []
+        current_dish_category = data.get("dish_category") or None
 
-        print(f"[STATE] max_time={current_max_time}, ingredient={current_main_ingredient}, method={current_cooking_method}, excluded={excluded_keywords}, aux={aux_ingredients}")
+        print(f"[STATE] max_time={current_max_time}, ingredient={current_main_ingredient}, method={current_cooking_method}, excluded={excluded_keywords}, aux={aux_ingredients}, category={current_dish_category}")
         if not message:
             return jsonify({"error": "Empty message"}), 400
 
         msg_norm = normalize(message)
         system_prompt = SYSTEM_PROMPT
-        user_context = f"Current state:\n- max_time: {current_max_time}\n- main_ingredient: {current_main_ingredient}\n- cooking_method: {current_cooking_method}\n- excluded_keywords: {excluded_keywords}\n- aux_ingredients: {aux_ingredients}\n"
+        user_context = f"Current state:\n- max_time: {current_max_time}\n- main_ingredient: {current_main_ingredient}\n- cooking_method: {current_cooking_method}\n- excluded_keywords: {excluded_keywords}\n- aux_ingredients: {aux_ingredients}\n- dish_category: {current_dish_category}\n"
 
         ai_response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
@@ -1439,7 +1459,8 @@ def ai_reply_v3():
                         "max_time": {"type": "integer"},
                         "cooking_method": {"type": "array", "items": {"type": "string"}},
                         "excluded_keywords": {"type": "array", "items": {"type": "string"}},
-                        "aux_ingredients": {"type": "array", "items": {"type": "string"}}
+                        "aux_ingredients": {"type": "array", "items": {"type": "string"}},
+                        "dish_category": {"type": "string"}         # ΝΕΟ: dish_category
                     },
                     "required": []
                 }
@@ -1456,7 +1477,8 @@ def ai_reply_v3():
             "main_ingredient": current_main_ingredient,
             "cooking_method": current_cooking_method[:],
             "excluded_keywords": excluded_keywords[:],
-            "aux_ingredients": aux_ingredients[:]
+            "aux_ingredients": aux_ingredients[:],
+            "dish_category": current_dish_category             # ΝΕΟ: dish_category
         }
 
         # --- Αποθήκευση προτεινόμενου main_ingredient από free_text
@@ -1482,6 +1504,8 @@ def ai_reply_v3():
                 print(f"[EXCLUDE] ➖ Removed excluded ingredient: {excluded}")
 
         ai_fc_set_time = False
+        ai_fc_set_category = False
+
         if ai_msg.get("function_call") and ai_msg["function_call"]["name"] == "store_filters":
             raw_args = ai_msg["function_call"].get("arguments", "{}")
             print("[AI] function_call args:", raw_args)
@@ -1520,6 +1544,11 @@ def ai_reply_v3():
                             if ingr not in filters["aux_ingredients"]:
                                 filters["aux_ingredients"].append(ingr)
                                 print(f"[AUX] ➕ Added aux ingredient: {ingr}")
+
+                if "dish_category" in parsed and parsed["dish_category"]:
+                    filters["dish_category"] = parsed["dish_category"]
+                    ai_fc_set_category = True
+                    print(f"[CATEGORY] ✅ AI set category: {filters['dish_category']}")
 
                 print("[AI] parsed filters:", parsed)
 
@@ -1564,7 +1593,7 @@ def ai_reply_v3():
                 text_norm, list(NORMALIZED_METHODS.keys()), scorer=fuzz.partial_ratio
             )
             if best_match:
-                matched_norm, score, _ = best_match
+                matched_norm, score = best_match
                 best_method = NORMALIZED_METHODS[matched_norm]
                 print(f"[FUZZY] Matching method → '{best_method}' (score: {score})")
                 if score >= 85:
@@ -1634,7 +1663,21 @@ def ai_reply_v3():
             m for m in filters["cooking_method"] if normalize(m) not in filters["excluded_keywords"]
         ]
 
-        # --- Final reply
+        # --- Fuzzy matcher για dish_category (αν έχεις λίστα)
+        if not filters.get("dish_category") and "DISH_CATEGORIES" in globals():
+            result = process.extractOne(msg_norm, DISH_CATEGORIES, scorer=fuzz.partial_ratio)
+            if result:
+                best, score, _ = result
+                ni = normalize(best)
+                negation_phrases = [f"χωρις {ni}", f"οχι {ni}", f"δεν θελω {ni}", f"χωρις το {ni}"]
+                is_negated = any(phrase in msg_norm for phrase in negation_phrases)
+                if score > 80 and not is_negated:
+                    filters["dish_category"] = best
+                    print(f"[CATEGORY] ✅ Detected dish_category: {best}")
+                elif is_negated:
+                    print(f"[CATEGORY] 🚫 Ignored '{best}' as category because found in negation context")
+
+        # --- Τελική απάντηση
         if not filters["main_ingredient"]:
             if ai_free_text:
                 reply_text = ai_free_text
@@ -1642,6 +1685,8 @@ def ai_reply_v3():
                 reply_text = "Ποιο βασικό υλικό θα ήθελες να χρησιμοποιήσεις; 🙂"
         elif not filters["max_time"]:
             reply_text = "Πόσο χρόνο διαθέτεις για μαγείρεμα; 🙂"
+        elif not filters["dish_category"]:
+            reply_text = "Τι είδους πιάτο θέλεις; (π.χ. κυρίως, σαλάτα, συνοδευτικό)"
         else:
             changes = []
             if filters["max_time"] != current_max_time:
@@ -1657,6 +1702,8 @@ def ai_reply_v3():
             new_excluded = [x for x in filters["excluded_keywords"] if x not in excluded_keywords]
             if new_excluded:
                 changes.append(f"χωρίς {', '.join(new_excluded)}")
+            if filters["dish_category"] != current_dish_category and filters["dish_category"]:
+                changes.append(f"είδος {filters['dish_category']}")
             reply_text = "Οκ, ενημέρωσα: " + ", ".join(changes) if changes else ai_free_text
 
         print("[OUTPUT] 🤖 Reply:", reply_text)
@@ -1669,6 +1716,8 @@ def ai_reply_v3():
         print("[ERROR] ❌ Exception in ai_reply:", e)
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
 
 @app.route('/ai_suggest_dish', methods=['POST'])
 def ai_suggest_dish():
@@ -1835,67 +1884,134 @@ def ai_suggest_dish():
             new_ids = [rec["id"] for rec in results if rec["id"] not in already_suggested]
             session["suggested_dish_ids"] = already_suggested + new_ids
 
-            return jsonify({
-                "message": random.choice(suggestion_messages),
-                "dishes": results,
-                "matches_count": matches_count
-            })
+            if not results:
+                return jsonify({
+                    "success": False,
+                    "message": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια.. Θες να το ξαναπροσπαθήσουμε;; Πες μου με τι έχεις στο μυαλό σου για σήμερα! - 0",
+                    "dishes": [],
+                    "matches_count": matches_count
+                })
+            else:
+                return jsonify({
+                    "success": True,
+                    "message": random.choice(suggestion_messages),
+                    "dishes": results,
+                    "matches_count": matches_count
+                })
 
 
         # =============== Branch 1: lexical match ==================
         if user_message:
             print("[DEBUG] ========== Branch 1 ==========")
-            candidates = conn.execute("""
-                SELECT recipes.*, 
-                       CASE WHEN fav.recipe_id IS NOT NULL THEN 1 ELSE 0 END as is_favorite
+            sql = """
+                SELECT recipes.*,
+                CASE WHEN fav.recipe_id IS NOT NULL THEN 1 ELSE 0 END as is_favorite
                 FROM recipes
-                LEFT JOIN favorite_recipes fav 
-                     ON fav.recipe_id = recipes.id AND fav.user_id = ?
-            """, (session.get("user_id"),)).fetchall()
+                LEFT JOIN favorite_recipes fav
+                ON fav.recipe_id = recipes.id AND fav.user_id = ?
+                """
+            
+            print("[DEBUG] SQL Branch1:", sql)
+
+
+            candidates = conn.execute(sql, (session.get("user_id"),)).fetchall()
+
+            def normalize_token(s):
+                return remove_tonos(s.strip().lower()) if s else ""
+
+            user_tokens = [normalize_token(w) for w in user_message.split() if len(w.strip()) > 2]
+            user_message_norm = normalize_token(user_message)
+            print("[DEBUG] User tokens for title fuzzy:", user_tokens)
+            print("[DEBUG] Normalized user_message:", user_message_norm)
 
             matches = []
-            for row in candidates:
-                rid, raw_title, fav_flag = row["id"], row["title"], row["is_favorite"]
-                score = fuzz.token_set_ratio(user_message, preprocess_title(raw_title))
-                if score >= 80:
-                    matches.append((row, score, fav_flag, raw_title))
+            for idx, row in enumerate(candidates):
+                rec = dict(row)
+                rid = rec["id"]
+                raw_title = rec.get("title", "") or ""
+                main_ing = rec.get("main_ingredient", "") or ""
+                ingredients = rec.get("ingredients", "") or ""
+                fav_flag = rec["is_favorite"]
 
+                raw_title_norm = normalize_token(raw_title)
+                main_ing_norm = normalize_token(main_ing)
+                ingredients_norm = normalize_token(ingredients)
+
+                # Fuzzy per token στον τίτλο
+                token_scores = [fuzz.token_set_ratio(token, raw_title_norm) for token in user_tokens]
+                max_token_score = max(token_scores) if token_scores else 0
+                mean_token_score = sum(token_scores) / len(token_scores) if token_scores else 0
+
+                # Fuzzy σε main_ingredient
+                score_main_ing = fuzz.token_set_ratio(user_message_norm, preprocess_title(main_ing_norm))
+
+                # Ingredients: token in ingredients
+                matched_tokens = [token for token in user_tokens if token in ingredients_norm]
+                score_ingredient_like = len(matched_tokens) > 0
+
+                # Θεώρησε match αν έστω ένα token στον τίτλο >= 80 ή μέσος όρος >= 70 ή fuzzy main_ing >= 80 ή βρέθηκε token στα ingredients
+                is_title_match = max_token_score >= 80 or mean_token_score >= 70
+                is_main_ing_match = score_main_ing >= 80
+
+                
+                
+                if is_title_match or is_main_ing_match or score_ingredient_like:
+                    best_score = max(max_token_score, score_main_ing, 80 if score_ingredient_like else 0)
+                    matches.append((rec, best_score, fav_flag, raw_title, main_ing, ingredients, matched_tokens))
+                    print(f"[DEBUG]   --> MATCHED: {raw_title} (id={rid})")
+                
             if matches:
                 matches.sort(key=lambda x: (x[2], x[1]), reverse=True)
 
-                print("[DEBUG] 📊 Branch1 match details:")
-                for row, score, fav, raw_title in matches:
+                for rec, score, fav, raw_title, main_ing, ingredients, matched_tokens in matches:
                     fav_mark = "🍀" if fav else "—"
-                    print(f"    {raw_title} | score={score:.1f} | favorite={fav_mark}")
 
                 matched_ids = [m[0]["id"] for m in matches]
-                row_map = {row["id"]: row for row, _, _, _ in matches}
+                row_map = {rec["id"]: rec for rec, _, _, _, _, _, _ in matches}
 
                 def is_excluded(dish):
-                    ingredients_norm = remove_tonos((dish["ingredients"] or "").lower())
+                    ingredients_norm = normalize_token(dish.get("ingredients", "") or "")
                     for ex in excluded:
-                        ex_norm = remove_tonos(str(ex).lower())
+                        ex_norm = normalize_token(str(ex))
                         if ex_norm and ex_norm in ingredients_norm:
+                            print(f"[DEBUG]     - EXCLUDED λόγω excluded υλικού: {ex_norm} in {ingredients_norm}")
                             return True
                     return False
 
-                dishes_branch1 = [
-                    row_map[mid] for mid in matched_ids
-                    if mid in row_map and mid not in seen_ids and mid not in already_suggested
-                    and not is_excluded(row_map[mid])
-                ]
+                def exceeds_max_time(dish):
+                    t = dish.get("total_time", 0) or 0
+                    if max_time and t > int(max_time):
+                        print(f"[DEBUG]     - EXCLUDED λόγω max_time: {t} > {max_time}")
+                        return True
+                    return False
+
+
+                dishes_branch1 = []
+                
+                for mid in matched_ids:
+                    if mid in row_map and mid not in seen_ids and mid not in already_suggested:
+                        dish = row_map[mid]
+                        if not is_excluded(dish) and not exceeds_max_time(dish):
+                            dishes_branch1.append(dish)
+                        else:
+                            print(f"[DEBUG]     - ΚΟΠΗΚΕ μετά τα φίλτρα (excluded/max_time): {dish.get('title')} (id={dish.get('id')})")
 
                 print(f"[DEBUG] 🎯 Branch1 NEW results (μετά το φίλτρο & excluded) = {len(dishes_branch1)}:")
                 print("     ", [d["title"] for d in dishes_branch1])
 
                 if not dishes_branch1:
-                    print("[DEBUG] ⚠️ Όλα τα Branch1 matches έχουν ήδη προταθεί ή αποκλείονται λόγω excluded. Συνεχίζω στο Branch 2.")
+                    print("[DEBUG] ⚠️ Όλα τα Branch1 matches έχουν ήδη προταθεί ή αποκλείονται λόγω excluded/max_time.")
+                    conn.close()
+                    return jsonify({
+                        "success": False,
+                        "message": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια.. Θες να το ξαναπροσπαθήσουμε;; Πες μου με τι θα ήθελες να ξεκινήσουμε!",
+                        "dishes": []
+                    })
                 else:
                     conn.close()
                     step = data.get("step")
                     print(f"[DEBUG] ✅ Final returned from Branch1 (step={step})")
 
-                    # --- enrich results with image_url & chef_avatar ---
                     def enrich_dish_with_all(dish):
                         rec = dict(dish)
                         image_path = rec.get("image_path") or rec.get("image_url")
@@ -1926,6 +2042,15 @@ def ai_suggest_dish():
                     })
             else:
                 print("[DEBUG] ❌ Branch1 no strong matches")
+                conn.close()
+                return jsonify({
+                    "success": False,
+                    "message": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια.. Θες να το ξαναπροσπαθήσουμε;; Πες μου με τι θα ήθελες να ξεκινήσουμε!",
+                    "dishes": []
+                })
+
+
+
 
         # =============== Branch 2: normal filtering ==================
         print("[DEBUG] ========== Branch 2 ==========")
@@ -1996,7 +2121,7 @@ def ai_suggest_dish():
 
         if not final_dishes:
             response = {
-                "message": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια.. Θες να το ξαναπροσπαθήσουμε;; Πες μου με τι θα ήθελες να ξεκινήουμε!",
+                "message": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια.. Θες να το ξαναπροσπαθήσουμε;; Πες μου με τι θα ήθελες να ξεκινήσουμε!",
                 "step": 0,
                 "dishes": [],
                 "filters": {
