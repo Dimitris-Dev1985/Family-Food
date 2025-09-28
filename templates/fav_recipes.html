@@ -2,196 +2,215 @@
 {% block title %}Αγαπημένα Πιάτα • Family Food{% endblock %}
 {% block content %}
 
-<!-- =================== Topbar =================== -->
 <style>
-  .fav-title-main {
-    font-size: 2.1rem;
-    font-weight: 900;
-    color: var(--brand-hover, #218e46);
-    margin: 22px 0 16px 0;
-    padding: 0 24px;
-    letter-spacing: -1.1px;
-    line-height: 1.14;
-    text-align: center;
-    transition: opacity 0.2s;
-  }
-  .fav-recipes-list {
-    margin: 18px auto 30px auto;
-    padding: 0 8px;
-    max-width: 530px;
-  }
-  .fav-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    background: #fff;
-    border-radius: 14px;
-    box-shadow: 0 1.5px 10px #0001;
-    padding: 14px 14px 14px 8px;
-    margin-bottom: 18px;
-    border: 1px solid #e4e8ed;
-    transition: box-shadow 0.17s;
-  }
-  .fav-card:hover {
-    box-shadow: 0 3px 22px #0002;
-  }
-  .fav-card-img {
-    width: 150px;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 11px;
-    border: 1px solid #d5e6d5;
-    background: #f2f8f2;
-    flex-shrink: 0;
-  }
-  .fav-card-body {
-    flex: 1;
-    min-width: 0;
-	display: flex;
-    flex-direction: column;
-  }
-  .fav-card-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text);;
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.1;
-  }
-  .fav-card-desc {
-    color: var(--text-dim);
-    font-size: 1rem;
-    margin-bottom: 20px;
-    line-height: 1.32;
-    white-space: pre-line;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .fav-card-category {
-    color: var(--brand);
-    font-size: 0.95rem;
-    font-weight: 500;
-    margin-bottom: 3px;
-  }
-  /* Νέο styling για το meta row */
-  .fav-card-meta-row {
-    display: flex;
-    align-items: center;
-    max-width: 140px;
-    margin: 5px auto -2px auto;
-	justify-content: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    min-height: 20px;
-  }
-  .fav-card-meta-row .fa-clock {
-    font-size: 1.09rem;
-    color: var(--brand);
-    margin-right: 3px;
-    vertical-align: middle;
-    display: inline-block;
-    line-height: 1;
-  }
-  .fav-card-meta-row .fav-card-time-val {
-    font-size: 0.97rem;
-    color: #1a6e38;
-    font-weight: 500;
-    margin-right: 2px;
-    margin-left: 5px;
-    letter-spacing: 0.4px;
-    font-family: inherit;
-  }
-  .fav-card-meta-row .chef-by-label {
-    font-family: 'Indie Flower', cursive;
-    font-size: 0.91rem;
-    color: #bdbdbd;
-    margin-right: 5px;
-    margin-left: 13px;
-    font-style: italic;
-    letter-spacing: 0.08em;
-    line-height: 1;
-    position: relative;
-    top: 0.5px;
-  }
-  .fav-card-meta-row .chef-avatar-inline {
-    width: 23px;
-    height: 23px;
-    min-width: 23px;
-    min-height: 23px;
-    max-width: 23px;
-    max-height: 23px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: #fff;
-    margin: 0;
-    box-shadow: 0 2px 8px rgba(67,185,106,0.10);
-    display: inline-block;
-    vertical-align: middle;
-    padding: 0;
-    border: 1px solid #e1e1e1;
-  }
-  .fav-card .view-btn {
-    background: var(--brand, #218e46);
-    color: #fff;
-    border: none;
-    border-radius: 9px;
-    font-size: 0.97rem;
-    padding: 6px 18px;
-    margin-top: 6px;
-    transition: background 0.17s;
-    font-weight: 500;
-  }
-  .fav-card .view-btn:hover {
-    background: #1a6e38;
-  }
-  .no-favs {
-    margin: 36px 0 0 0;
-    text-align: center;
-    color: #90bfa7;
-    font-size: 1.16rem;
-    font-weight: 500;
-  }
-  @media (max-width: 600px) {
-    .fav-card { padding: 10px 8px 10px 3px; }
-    .fav-recipes-list { margin-top: 12px; }
-    .fav-title-main { font-size: 1.22rem; }
-    .fav-card-meta-row { font-size: 0.95rem; }
-  }
-</style>
-
-<style>
-.activity-action-btns,
-.activity-action-btns.active {
-  transition: none !important;
-}
-</style>
-
-<style>
-.fav-card-method-badges {
+.glass-fav-card {
+  background: linear-gradient(123deg, #f0fff4 60%, #c8f1d7 100%);
+  border-radius: 26px;
+  box-shadow: 0 3px 26px #218e4622, 0 1.5px 7px #1a6e3833;
+  padding: 0;
+  margin: 20px auto 32px auto;
+  max-width: 410px;
+  overflow: visible;
+  position: relative;
   display: flex;
-  gap: 7px;
-  margin-top: 2px;
-  margin-bottom: 7px;
+  align-items: stretch;
+  justify-content: center;
+}
+.glass-img-hero-wrap {
+  width: 100%;
+  position: relative;
+  overflow: visible;
+  border-radius: 24px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+.glass-hero-img {
+  width: 100%;
+  max-width: 410px;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 24px;
+  display: block;
+  box-shadow: 0 6px 36px #1a6e3833;
+}
+.glass-content-overlay {
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgb(18 129 56 / 79%) 100%);
+  padding: 0;
+  pointer-events: none;
+}
+.glass-inner-info {
+  position: absolute;
+  z-index: 3;
+  padding: 20px 20px 14px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+.glass-title {
+  color: #fff;
+  font-size: 1.45rem;
+  font-weight: 800;
+  text-shadow: 0 2px 16px #15471a99, 0 1px 2px #1a6e384d;
+  line-height: 1.14;
+  margin-bottom: 15px;
+  letter-spacing: 0.05em;
+  max-width: 90vw;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+.glass-methods {
+  display: flex;
+  gap: 9px;
+  margin: 0 0 20px 0;
   flex-wrap: wrap;
 }
-
-.fav-card-method-badge {
-  display: inline-block;
-  background: #e6faed;
-  color: #1a6e38;
-  border-radius: 8px;
-  padding: 2.5px 11px 2.5px 11px;
-  font-size: 0.97rem;
-  font-weight: 600;
-  box-shadow: 0 2px 8px #d8ffe661;
+.glass-method-badge {
+  background: rgba(234, 255, 240, 0.76);
+  color: #218e46;
+  border-radius: 13px;
+  padding: 3px 14px 3px 14px;
+  font-size: 1em;
+  font-weight: 700;
   letter-spacing: 0.01em;
-  border: 1px solid #d0f3df;
-  vertical-align: middle;
+  border: 1.2px solid #b8eec9;
+  box-shadow: 0 2px 6px #b2f0cc33;
+  backdrop-filter: blur(2px);
   white-space: nowrap;
 }
+.glass-cat {
+  background: rgba(255,255,255,0.79);
+  color: #187b40;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1em;
+  letter-spacing: 0.01em;
+  padding: 2px 16px;
+  margin-bottom: 13px;
+  margin-top: 0;
+  border: 1.1px solid #d1ead6;
+  box-shadow: 0 1px 4px #e6ffe661;
+  display: inline-block;
+}
+.glass-meta-bar {
+  top: 165px;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(250,255,250,0.5);
+  backdrop-filter: blur(6px);
+  border-radius: 18px;
+  padding: 6px 17px 6px 10px;
+  box-shadow: 0 2px 7px #18381a33;
+  margin-top: 8px;
+}
+.glass-meta-icon {
+  color: var(--brand);
+  font-size: 1.13em;
+  margin-right: 1px;
+  line-height: 1;
+  text-shadow: 0 2px 8px #18381a33;
+}
+.glass-meta-time {
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.09em;
+  margin-right: 7px;
+}
+.glass-meta-by {
+  font-family: 'Indie Flower', cursive;
+  color: #eafbe7;
+  font-size: 0.99em;
+  margin-right: 9px;
+  margin-left: 11px;
+  letter-spacing: 0.1em;
+}
+.glass-meta-chef {
+  width: 27px; height: 27px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  background: #fff;
+  box-shadow: 0 2px 8px #eafbe766;
+  display: inline-block;
+}
 
+.no-favs {
+  margin: 36px 0 0 0;
+  text-align: center;
+  color: #90bfa7;
+  font-size: 1.16rem;
+  font-weight: 500;
+}
+/* ========== Filters styling ========== */
+.profile-filters-row .form-select-sm {
+  min-height: 35px;
+  font-size: 1.04em;
+  border-radius: 8px;
+  background: #f8fcf9;
+  padding: 4px;
+  color: #1a6e38;
+  border: 1.1px solid #d6ead8;
+  transition: border 0.13s, box-shadow 0.13s;
+}
+.profile-filters-row .form-select-sm:focus {
+  border: 1.2px solid var(--brand);
+  box-shadow: 0 0 0 1.5px #eafbe7;
+}
+.profile-search-row input[type="text"].form-control-sm {
+  font-size: 1.07em;
+  border-radius: 10px;
+  background: #f8fcf9;
+  color: #1a6e38;
+  border: 1.1px solid #d6ead8;
+  min-height: 35px;
+  transition: border 0.13s, box-shadow 0.13s;
+}
+.profile-search-row input[type="text"].form-control-sm:focus {
+  border: 1.2px solid var(--brand);
+  box-shadow: 0 0 0 1.5px #eafbe7;
+}
+.profile-search-row .btn-sm {
+  font-size: 1.13em;
+  border-radius: 50%;
+  min-width: 35px;
+  min-height: 35px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-search-row .btn-outline-secondary {
+  border: 1.1px solid #e1e5e1;
+  background: #f7fdf8;
+  color: var(--brand);
+}
+.profile-search-row .btn-outline-secondary:hover {
+  background: #eafbe7;
+  color: #1a6e38;
+}
+.profile-search-row .btn-light {
+  background: #f4fbf5;
+  color: var(--brand);
+  border: 1.1px solid #e1e5e1;
+}
+.profile-search-row .btn-light:hover {
+  background: #eafbe7;
+  color: #1a6e38;
+}
+@media (max-width: 600px) {
+  .profile-search-row input[type="text"].form-control-sm { min-height: 34px; font-size: 1em; }
+  .profile-filters-row .form-select-sm { min-height: 32px; font-size: 0.98em; }
+}
 </style>
 
 <div class="recipe-topbar" id="topBar">
@@ -200,66 +219,40 @@
   <div style="width:44px;"></div>
 </div>
 
-<div class="fav-recipes-list">
-  {% if favorite_recipes|length == 0 %}
-    <div class="no-favs">Δεν έχεις αποθηκεύσει αγαπημένα πιάτα ακόμα!</div>
-  {% else %}
-    {% if favorite_recipes|length != 0 %}
-      <div class="tip" style="margin-top:10px;">
-        <span class="tip-label">TIP</span>
-        Πάτα πάνω σε μία κάρτα για να δεις ή να επεξεργαστείς μια συνταγή!
-      </div>
-		{% for rec in favorite_recipes %}
-		  <div class="fav-card" style="position:relative; cursor:pointer;">
-			<div style="display:flex; flex-direction:column;">
-			  <img src="/static/images/recipes/{{ rec.image_path or 'placeholder.jpg' }}"
-				   class="fav-card-img"
-				   alt="{{ rec.title }}"
-				   onerror="this.onerror=null;this.src='/static/images/recipes/placeholder.jpg';">
-			  <div class="fav-card-meta-row">
-				<i class="fa fa-clock"></i>
-				<span class="fav-card-time-val">{{ rec.total_time or '-' }}'</span>
-				<span class="chef-by-label">by</span>
-				<img class="chef-avatar-inline" src="{{ rec.chef_avatar or '/static/images/avatars/default.jpg' }}" alt="Chef">
-			  </div>
-			</div>
-			<div class="fav-card-body">
-			  <div class="fav-card-title" title="{{ rec.title }}">{{ rec.title }}</div>
-			  
-				{% if rec.description and rec.description != 'None' %}
-				  <div class="fav-card-desc">{{ rec.description }}</div>
-				{% endif %}
-
-			  <div class="fav-card-category">{{ rec.dish_category or '-' }}</div>
-			  
-			  {% if rec.method and rec.method != 'None' %}
-				  <div class="fav-card-method-badges">
-					{% for m in rec.method.split(',') %}
-					  {% if m.strip() %}
-						<span class="fav-card-method-badge">{{ m.strip() }}</span>
-					  {% endif %}
-					{% endfor %}
-				  </div>
-				{% endif %}
-
-			</div>
-			<div class="activity-action-btns">
-			  <button class="action-btn" title="Προβολή" onclick="hideActions(this); window.location.href='/recipe_page/{{ rec.id }}';">
-				<i class="fa fa-eye"></i>
-			  </button>
-			  <button class="action-btn" title="Επεξεργασία" onclick="hideActions(this); window.location.href='/edit_recipe/{{ rec.id }}';">
-				<i class="fa fa-pencil"></i>
-			  </button>
-			  <button class="action-btn" title="Διαγραφή" onclick="event.stopPropagation(); hideActions(this); openFavDeleteModal({{ rec.id }});">
-				<i class="fa fa-trash"></i>
-			  </button>
-			</div>
-		  </div>
-		{% endfor %}
-
-    {% endif %}
-  {% endif %}  
+<!-- =========== LIVE FILTERS SECTION =========== -->
+<div id="favorites-filters-section" style="margin: 10px 2vw 10px 2vw;">
+  <div class="row g-2 mb-2 profile-filters-row">
+    <div class="col-6">
+      <select id="filter-chef" class="form-select form-select-sm">
+        <option value="">Όλοι οι σεφ</option>
+      </select>
+    </div>
+    <div class="col-6">
+      <select id="filter-time" class="form-select form-select-sm"></select>
+    </div>
+    <div class="col-6">
+      <select id="filter-category" class="form-select form-select-sm">
+        <option value="">Όλες οι κατηγορίες</option>
+      </select>
+    </div>
+    <div class="col-6">
+      <select id="filter-method" class="form-select form-select-sm">
+        <option value="">Όλες οι μέθοδοι</option>
+      </select>
+    </div>
+  </div>
+  <div class="d-flex profile-search-row">
+    <input type="text" id="search-term" class="form-control form-control-sm voice-enabled" placeholder="Αναζήτησε... ή πάτα το μικρόφωνο:" data-voice-target="favorites">
+    <button class="btn btn-outline-secondary btn-sm ms-2" id="reset-filters-btn" type="button">
+      <i class="fa fa-rotate-left"></i>
+    </button>
+    <button class="btn btn-light btn-sm ms-2" type="button" id="voice-search-btn" title="Αναζήτηση με φωνή">
+      <i class="fa fa-microphone"></i>
+    </button>
+  </div>
 </div>
+
+<div class="fav-recipes-list" style="margin:0 2vw 0 2vw;" id="favoritesList"></div>
 
 {% endblock %}
 
@@ -293,47 +286,231 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  document.querySelectorAll('.fav-card').forEach(function(card) {
+window.favorites = {{ favorite_recipes|tojson }};
+</script>
+
+<script>
+function normalize(str) {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
+    .replace(/[·.,;!?]/g, "")
+    .trim();
+}
+function populateFilter(selectId, values, defaultLabel) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.innerHTML = "";
+  const opt = document.createElement("option");
+  opt.value = "";
+  opt.textContent = defaultLabel;
+  select.appendChild(opt);
+  (values || []).forEach(function(v) {
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = v;
+    select.appendChild(o);
+  });
+}
+function populateTimeFilter(selectId, timeList) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.innerHTML = "";
+  const opt = document.createElement("option");
+  opt.value = "";
+  opt.textContent = "Όλοι οι χρόνοι";
+  select.appendChild(opt);
+  if (!timeList || !timeList.length) return;
+  const ranges = [
+    { label: "Έως 30'", max: 30 },
+    { label: "Έως 60'", max: 60 },
+    { label: "Έως 90'", max: 90 },
+    { label: "Έως 120'", max: 120 }
+  ];
+  let shownRanges = [];
+  timeList.forEach(function(t) {
+    for (let i = 0; i < ranges.length; i++) {
+      if (t <= ranges[i].max) {
+        shownRanges.push(ranges[i].max);
+        break;
+      }
+    }
+  });
+  shownRanges = [...new Set(shownRanges)];
+  ranges.forEach(function(r) {
+    if (shownRanges.includes(r.max)) {
+      const o = document.createElement("option");
+      o.value = r.max;
+      o.textContent = r.label;
+      select.appendChild(o);
+    }
+  });
+  if (timeList.some(function(t) { return t > 120; })) {
+    const o = document.createElement("option");
+    o.value = "over120";
+    o.textContent = "Άνω των 120'";
+    select.appendChild(o);
+  }
+}
+function getUnique(arr, key) {
+  return [...new Set(arr.map(x => (x[key] || '').trim()).filter(x => x && x !== "None"))];
+}
+function getUniqueMethods(arr) {
+  let all = [];
+  arr.forEach(x => {
+    if (x.method && x.method !== "None") {
+      x.method.split(",").forEach(m => {
+        m = m.trim();
+        if (m) all.push(m);
+      });
+    }
+  });
+  return [...new Set(all)];
+}
+function getUniqueTimes(arr) {
+  return arr
+    .map(x => parseInt(String(x.total_time).replace(/[^0-9]/g,"")))
+    .filter(x => !isNaN(x));
+}
+function filterFavorites() {
+  const chef = document.getElementById("filter-chef").value;
+  const category = document.getElementById("filter-category").value;
+  const method = document.getElementById("filter-method").value;
+  const time = document.getElementById("filter-time").value;
+  const term = document.getElementById("search-term").value.trim();
+  let filtered = window.favorites.filter(function(rec) {
+    if (chef && rec.chef !== chef) return false;
+    if (category && rec.dish_category !== category) return false;
+    if (method) {
+      if (!rec.method || !rec.method.split(",").map(x=>x.trim()).includes(method)) return false;
+    }
+    if (time) {
+      const tval = parseInt(String(rec.total_time).replace(/[^0-9]/g,""));
+      if (time === "over120") {
+        if (!tval || tval <= 120) return false;
+      } else {
+        if (!tval || tval > parseInt(time)) return false;
+      }
+    }
+    if (term) {
+      let inTitle = normalize(rec.title).includes(normalize(term));
+      let inTags = normalize(rec.dish_tags || "").includes(normalize(term));
+      let inChef = normalize(rec.chef || "").includes(normalize(term));
+      let inCat = normalize(rec.dish_category || "").includes(normalize(term));
+      let inMethod = normalize(rec.method || "").includes(normalize(term));
+      if (!(inTitle || inTags || inChef || inCat || inMethod)) return false;
+    }
+    return true;
+  });
+  renderFavoritesCards(filtered);
+}
+
+function renderFavoritesCards(favorites) {
+  const wrapper = document.getElementById('favoritesList');
+  wrapper.innerHTML = "";
+  if (!favorites || favorites.length === 0) {
+    wrapper.innerHTML = '<div class="no-favs">Δεν έχεις αποθηκεύσει αγαπημένα πιάτα ακόμα!</div>';
+    return;
+  }
+  favorites.forEach(rec => {
+    const card = document.createElement('div');
+    card.className = 'glass-fav-card';
+    card.style.position = "relative";
+    // === Glass Hero Card Content ===
+    const heroWrap = document.createElement('div');
+    heroWrap.className = "glass-img-hero-wrap";
+    heroWrap.innerHTML =
+      '<img src="/static/images/recipes/' + (rec.image_path || 'placeholder.jpg') + '"' +
+        ' class="glass-hero-img"' +
+        ' alt="' + rec.title + '"' +
+        ' onerror="this.onerror=null;this.src=\'/static/images/recipes/placeholder.jpg\';">' +
+      '<div class="glass-content-overlay"></div>' +
+      '<div class="glass-inner-info">' +
+        '<div class="glass-title">' + rec.title + '</div>' +
+        (rec.method && rec.method !== "None"
+          ? '<div class="glass-methods">' +
+              rec.method.split(",").map(function(m) {
+                return m.trim() ? '<span class="glass-method-badge">' + m.trim() + '</span>' : "";
+              }).join("") +
+            '</div>'
+          : ""
+        ) +
+        '<div class="glass-cat">' + (rec.dish_category || '-') + '</div>' +
+        '<div class="glass-meta-bar">' +
+          '<span class="glass-meta-icon"><i class="fa fa-clock"></i></span>' +
+          '<span class="glass-meta-time">' + (rec.total_time || '-') + '\'</span>' +
+          '<span class="glass-meta-by">by</span>' +
+          '<img class="glass-meta-chef" src="' + (rec.chef_avatar || '/static/images/avatars/default.jpg') + '" alt="Chef">' +
+        '</div>' +
+      '</div>';
+
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = "activity-action-btns";
+    actions.innerHTML = `
+      <button class="action-btn" title="Προβολή" onclick="hideActions(this); window.location.href='/recipe_page/${rec.id}';">
+        <i class="fa fa-eye"></i>
+      </button>
+      <button class="action-btn" title="Επεξεργασία" onclick="hideActions(this); window.location.href='/edit_recipe/${rec.id}';">
+        <i class="fa fa-pencil"></i>
+      </button>
+      <button class="action-btn" title="Διαγραφή" onclick="event.stopPropagation(); hideActions(this); openFavDeleteModal(${rec.id});">
+        <i class="fa fa-trash"></i>
+      </button>
+    `;
+    card.appendChild(heroWrap);
+    card.appendChild(actions);
     card.addEventListener('click', function(e) {
       if (e.target.closest('.action-btn')) return;
       document.querySelectorAll('.activity-action-btns.active').forEach(function(btns){
-        if(btns !== card.querySelector('.activity-action-btns')) btns.classList.remove('active');
+        if(btns !== actions) btns.classList.remove('active');
       });
-      var btns = card.querySelector('.activity-action-btns');
-      if (btns) btns.classList.toggle('active');
+      actions.classList.toggle('active');
     });
+    wrapper.appendChild(card);
   });
   document.addEventListener('click', function(e) {
-    if (!e.target.closest('.fav-card')) {
+    if (!e.target.closest('.glass-fav-card')) {
       document.querySelectorAll('.activity-action-btns.active').forEach(function(btns){
         btns.classList.remove('active');
       });
     }
   });
-});
-
-function deleteFavoriteRecipe(recipe_id) {
-  if(confirm("Θέλεις σίγουρα να αφαιρέσεις το πιάτο από τα αγαπημένα;")) {
-    fetch("/toggle_favorite_recipe", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({recipe_id: recipe_id})
-    }).then(() => location.reload());
-  }
 }
-
+document.addEventListener("DOMContentLoaded", function () {
+  populateFilter("filter-chef", getUnique(window.favorites, "chef"), "Όλοι οι σεφ");
+  populateFilter("filter-category", getUnique(window.favorites, "dish_category"), "Όλες οι κατηγορίες");
+  populateFilter("filter-method", getUniqueMethods(window.favorites), "Όλες οι μέθοδοι");
+  populateTimeFilter("filter-time", getUniqueTimes(window.favorites));
+  ["filter-chef", "filter-category", "filter-method", "filter-time"].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener("change", filterFavorites);
+  });
+  var searchInput = document.getElementById("search-term");
+  if (searchInput) searchInput.addEventListener("input", function() {
+    if (this.value.trim().length === 0 || this.value.trim().length >= 2) {
+      filterFavorites();
+    }
+  });
+  var resetBtn = document.getElementById("reset-filters-btn");
+  if (resetBtn) resetBtn.addEventListener("click", function() {
+    ["filter-chef","filter-category","filter-method","filter-time"].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.selectedIndex = 0;
+    });
+    var s = document.getElementById("search-term"); if(s) s.value="";
+    filterFavorites();
+  });
+  renderFavoritesCards(window.favorites);
+});
 function hideActions(btn) {
-  var parent = btn.closest('.fav-card');
+  var parent = btn.closest('.glass-fav-card');
   if (!parent) return;
   var actions = parent.querySelector('.activity-action-btns');
   if (actions) actions.classList.remove('active');
 }
-</script>
-
-<script>
 let favToDeleteId = null;
-
 function openFavDeleteModal(recipeId) {
   favToDeleteId = recipeId;
   document.getElementById("favDeleteModal").classList.add("open");
@@ -346,15 +523,17 @@ function closeFavDeleteModal() {
   favToDeleteId = null;
   document.body.style.overflow = "";
 }
-document.getElementById("favDeleteConfirmBtn").onclick = function() {
-  if (!favToDeleteId) return;
-  fetch("/toggle_favorite_recipe", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({recipe_id: favToDeleteId})
-  }).then(() => location.reload());
-  closeFavDeleteModal();
-};
+document.addEventListener("DOMContentLoaded", function() {
+  var btn = document.getElementById("favDeleteConfirmBtn");
+  if (btn) btn.onclick = function() {
+    if (!favToDeleteId) return;
+    fetch("/toggle_favorite_recipe", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({recipe_id: favToDeleteId})
+    }).then(() => location.reload());
+    closeFavDeleteModal();
+  };
+});
 </script>
-
 {% endblock %}
