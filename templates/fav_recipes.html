@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% block title %}Αγαπημένα Πιάτα • Family Food{% endblock %}
+{% block content %}
+
+<!-- =================== Topbar =================== -->
+<style>
+  .fav-title-main {
+    font-size: 2.1rem;
+    font-weight: 900;
+    color: var(--brand-hover, #218e46);
+    margin: 22px 0 16px 0;
+    padding: 0 24px;
+    letter-spacing: -1.1px;
+    line-height: 1.14;
+    text-align: center;
+    transition: opacity 0.2s;
+  }
+  .fav-recipes-list {
+    margin: 18px auto 30px auto;
+    padding: 0 8px;
+    max-width: 530px;
+  }
+  .fav-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 1.5px 10px #0001;
+    padding: 14px 14px 14px 8px;
+    margin-bottom: 18px;
+    border: 1px solid #e4e8ed;
+    transition: box-shadow 0.17s;
+  }
+  .fav-card:hover {
+    box-shadow: 0 3px 22px #0002;
+  }
+  .fav-card-img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 11px;
+    border: 1px solid #d5e6d5;
+    background: #f2f8f2;
+    flex-shrink: 0;
+  }
+  .fav-card-body {
+    flex: 1;
+    min-width: 0;
+	display: flex;
+    flex-direction: column;
+  }
+  .fav-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.1;
+  }
+  .fav-card-desc {
+    color: var(--text-dim);
+    font-size: 1rem;
+    margin-bottom: 20px;
+    line-height: 1.32;
+    white-space: pre-line;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .fav-card-category {
+    color: var(--brand);
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  /* Νέο styling για το meta row */
+  .fav-card-meta-row {
+    display: flex;
+    align-items: center;
+    max-width: 140px;
+    margin: 5px auto -2px auto;
+	justify-content: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-height: 20px;
+  }
+  .fav-card-meta-row .fa-clock {
+    font-size: 1.09rem;
+    color: var(--brand);
+    margin-right: 3px;
+    vertical-align: middle;
+    display: inline-block;
+    line-height: 1;
+  }
+  .fav-card-meta-row .fav-card-time-val {
+    font-size: 0.97rem;
+    color: #1a6e38;
+    font-weight: 500;
+    margin-right: 2px;
+    margin-left: 5px;
+    letter-spacing: 0.4px;
+    font-family: inherit;
+  }
+  .fav-card-meta-row .chef-by-label {
+    font-family: 'Indie Flower', cursive;
+    font-size: 0.91rem;
+    color: #bdbdbd;
+    margin-right: 5px;
+    margin-left: 13px;
+    font-style: italic;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    position: relative;
+    top: 0.5px;
+  }
+  .fav-card-meta-row .chef-avatar-inline {
+    width: 23px;
+    height: 23px;
+    min-width: 23px;
+    min-height: 23px;
+    max-width: 23px;
+    max-height: 23px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #fff;
+    margin: 0;
+    box-shadow: 0 2px 8px rgba(67,185,106,0.10);
+    display: inline-block;
+    vertical-align: middle;
+    padding: 0;
+    border: 1px solid #e1e1e1;
+  }
+  .fav-card .view-btn {
+    background: var(--brand, #218e46);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-size: 0.97rem;
+    padding: 6px 18px;
+    margin-top: 6px;
+    transition: background 0.17s;
+    font-weight: 500;
+  }
+  .fav-card .view-btn:hover {
+    background: #1a6e38;
+  }
+  .no-favs {
+    margin: 36px 0 0 0;
+    text-align: center;
+    color: #90bfa7;
+    font-size: 1.16rem;
+    font-weight: 500;
+  }
+  @media (max-width: 600px) {
+    .fav-card { padding: 10px 8px 10px 3px; }
+    .fav-recipes-list { margin-top: 12px; }
+    .fav-title-main { font-size: 1.22rem; }
+    .fav-card-meta-row { font-size: 0.95rem; }
+  }
+</style>
+
+<style>
+.activity-action-btns,
+.activity-action-btns.active {
+  transition: none !important;
+}
+</style>
+
+<style>
+.fav-card-method-badges {
+  display: flex;
+  gap: 7px;
+  margin-top: 2px;
+  margin-bottom: 7px;
+  flex-wrap: wrap;
+}
+
+.fav-card-method-badge {
+  display: inline-block;
+  background: #e6faed;
+  color: #1a6e38;
+  border-radius: 8px;
+  padding: 2.5px 11px 2.5px 11px;
+  font-size: 0.97rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px #d8ffe661;
+  letter-spacing: 0.01em;
+  border: 1px solid #d0f3df;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+</style>
+
+<div class="recipe-topbar" id="topBar">
+  <button class="icon-btn" id="backBtn"><i class="fa fa-arrow-left"></i></button>
+  <div class="topbar-title" id="favTitle">Αγαπημένες Συνταγές</div>
+  <div style="width:44px;"></div>
+</div>
+
+<div class="fav-recipes-list">
+  {% if favorite_recipes|length == 0 %}
+    <div class="no-favs">Δεν έχεις αποθηκεύσει αγαπημένα πιάτα ακόμα!</div>
+  {% else %}
+    {% if favorite_recipes|length != 0 %}
+      <div class="tip" style="margin-top:10px;">
+        <span class="tip-label">TIP</span>
+        Πάτα πάνω σε μία κάρτα για να δεις ή να επεξεργαστείς μια συνταγή!
+      </div>
+		{% for rec in favorite_recipes %}
+		  <div class="fav-card" style="position:relative; cursor:pointer;">
+			<div style="display:flex; flex-direction:column;">
+			  <img src="/static/images/recipes/{{ rec.image_path or 'placeholder.jpg' }}"
+				   class="fav-card-img"
+				   alt="{{ rec.title }}"
+				   onerror="this.onerror=null;this.src='/static/images/recipes/placeholder.jpg';">
+			  <div class="fav-card-meta-row">
+				<i class="fa fa-clock"></i>
+				<span class="fav-card-time-val">{{ rec.total_time or '-' }}'</span>
+				<span class="chef-by-label">by</span>
+				<img class="chef-avatar-inline" src="{{ rec.chef_avatar or '/static/images/avatars/default.jpg' }}" alt="Chef">
+			  </div>
+			</div>
+			<div class="fav-card-body">
+			  <div class="fav-card-title" title="{{ rec.title }}">{{ rec.title }}</div>
+			  
+				{% if rec.description and rec.description != 'None' %}
+				  <div class="fav-card-desc">{{ rec.description }}</div>
+				{% endif %}
+
+			  <div class="fav-card-category">{{ rec.dish_category or '-' }}</div>
+			  
+			  {% if rec.method and rec.method != 'None' %}
+				  <div class="fav-card-method-badges">
+					{% for m in rec.method.split(',') %}
+					  {% if m.strip() %}
+						<span class="fav-card-method-badge">{{ m.strip() }}</span>
+					  {% endif %}
+					{% endfor %}
+				  </div>
+				{% endif %}
+
+			</div>
+			<div class="activity-action-btns">
+			  <button class="action-btn" title="Προβολή" onclick="hideActions(this); window.location.href='/recipe_page/{{ rec.id }}';">
+				<i class="fa fa-eye"></i>
+			  </button>
+			  <button class="action-btn" title="Επεξεργασία" onclick="hideActions(this); window.location.href='/edit_recipe/{{ rec.id }}';">
+				<i class="fa fa-pencil"></i>
+			  </button>
+			  <button class="action-btn" title="Διαγραφή" onclick="event.stopPropagation(); hideActions(this); openFavDeleteModal({{ rec.id }});">
+				<i class="fa fa-trash"></i>
+			  </button>
+			</div>
+		  </div>
+		{% endfor %}
+
+    {% endif %}
+  {% endif %}  
+</div>
+
+{% endblock %}
+
+{% block modals %}
+<div id="favDeleteModal" class="modal-logout">
+  <div class="modal-logout-content">
+    <div class="modal-logout-title">
+      <i class="fa fa-trash"></i> Αφαίρεση από αγαπημένα;
+    </div>
+    <div class="modal-logout-msg" id="favDeleteModalMsg">
+      Θέλεις σίγουρα να αφαιρέσεις αυτό το πιάτο από τα αγαπημένα σου;
+    </div>
+    <div class="modal-logout-actions">
+      <button class="btn-logout-cancel" onclick="closeFavDeleteModal()">Ακύρωση</button>
+      <button class="btn-logout-confirm" id="favDeleteConfirmBtn">Αφαίρεση</button>
+    </div>
+  </div>
+</div>
+<div id="favDeleteModalBackdrop" class="modal-logout-backdrop" onclick="closeFavDeleteModal()"></div>
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn) {
+    backBtn.onclick = function() { window.history.back(); };
+  }
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  document.querySelectorAll('.fav-card').forEach(function(card) {
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.action-btn')) return;
+      document.querySelectorAll('.activity-action-btns.active').forEach(function(btns){
+        if(btns !== card.querySelector('.activity-action-btns')) btns.classList.remove('active');
+      });
+      var btns = card.querySelector('.activity-action-btns');
+      if (btns) btns.classList.toggle('active');
+    });
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.fav-card')) {
+      document.querySelectorAll('.activity-action-btns.active').forEach(function(btns){
+        btns.classList.remove('active');
+      });
+    }
+  });
+});
+
+function deleteFavoriteRecipe(recipe_id) {
+  if(confirm("Θέλεις σίγουρα να αφαιρέσεις το πιάτο από τα αγαπημένα;")) {
+    fetch("/toggle_favorite_recipe", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({recipe_id: recipe_id})
+    }).then(() => location.reload());
+  }
+}
+
+function hideActions(btn) {
+  var parent = btn.closest('.fav-card');
+  if (!parent) return;
+  var actions = parent.querySelector('.activity-action-btns');
+  if (actions) actions.classList.remove('active');
+}
+</script>
+
+<script>
+let favToDeleteId = null;
+
+function openFavDeleteModal(recipeId) {
+  favToDeleteId = recipeId;
+  document.getElementById("favDeleteModal").classList.add("open");
+  document.getElementById("favDeleteModalBackdrop").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeFavDeleteModal() {
+  document.getElementById("favDeleteModal").classList.remove("open");
+  document.getElementById("favDeleteModalBackdrop").classList.remove("open");
+  favToDeleteId = null;
+  document.body.style.overflow = "";
+}
+document.getElementById("favDeleteConfirmBtn").onclick = function() {
+  if (!favToDeleteId) return;
+  fetch("/toggle_favorite_recipe", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({recipe_id: favToDeleteId})
+  }).then(() => location.reload());
+  closeFavDeleteModal();
+};
+</script>
+
+{% endblock %}

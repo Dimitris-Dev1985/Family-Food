@@ -61,10 +61,10 @@
   align-items: center;
   font-size: 1rem;
   font-family: 'Indie Flower', cursive, sans-serif;
-  margin: 5px 10px;
+  margin: 0px 10px;
 }
 .chef-signature2 .chef-name {
-  margin-right: 8px;
+  margin: 8px;
 }
 .chef-avatar-inline {
   height: 28px;
@@ -176,32 +176,7 @@
   .ingredient-qty { font-size: 1.25rem; color: var(--brand); font-weight: 600; }
   .ingredient-fulltext { font-size: 1.2rem; }
   
-.ingredients-tip {
-  max-width: 580px;
-  margin: 18px auto 18px auto;
-  padding: 12px 12px 12px 5px;
-  border-radius: 16px;
-  background: #f9f9f9;
-  border: 1.5px solid var(--outline);
-  font-size: 0.95rem;
-  color: var(--text-dim);
-  line-height: 1.5;
-  display: flex;
-  align-items: center;   /* κάθετο κεντράρισμα */
-  gap: 10px;
-  text-align: justify;   /* justified text */
-}
-.tip-label {
-  display: inline-block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-dim);
-  border: 1px solid var(--outline);
-  border-radius: 50px;   /* πιο στρογγυλεμένο */
-  padding: 3px 8px;
-  background: #fff;
-  flex-shrink: 0;        /* να μη τεντώνει */
-}  
+
 </style>
 
 <!-- =================== Comments =================== -->
@@ -814,7 +789,7 @@
   border: 1.2px solid #e0e0e0;
   border-radius: 16px;
   font-weight: 500;
-  color: var(--brand-hover);
+  color: var(--brand);
   font-size: 1.03rem;
   padding: 5px 16px 5px 11px;
   gap: 8px;
@@ -899,7 +874,7 @@
     </div>
   </div>
   
-  <div class="ingredients-tip">
+  <div class="tip">
 	  <span class="tip-label">TIP</span>
 	  Ξε-τσέκαρε όσα υλικά δεν έχεις διαθέσιμα, αυτόματα θα αποκλειστούν από άλλες συνταγές που θα σου προτείνουμε για σήμερα!
 	</div>
