@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash, get_flashed_messages
-import sqlite3, unicodedata, random, re, json, traceback, os, openai, logging
+import sqlite3, unicodedata, random, re, json, traceback, os, openai, logging, time
 from dotenv import load_dotenv
 from rapidfuzz import fuzz, process
 from datetime import datetime, timedelta
@@ -591,13 +591,14 @@ def main():
 @app.route('/recipe_page/<int:recipe_id>')
 @login_required
 def recipe_page(recipe_id):
+
     user_id = session.get('user_id', 0)
     user_name = None
     user_avatar = None
-    
+
     print("\n========== /recipe_page CALLED ==========")
     print("[INPUT] recipe_id:", recipe_id)
-    
+
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     recipe = conn.execute("""
@@ -622,25 +623,16 @@ def recipe_page(recipe_id):
     if not recipe:
         return "Recipe not found", 404
 
-    # Υλικά
     ingredients = [line.strip() for line in recipe['ingredients'].splitlines() if line.strip()]
-   
-    # dish_tags
     dish_tags = [line.strip() for line in recipe['dish_tags'].splitlines() if line.strip()]
-    
-   
-    # Οδηγίες
     instructions = [line.strip() for line in recipe['instructions'].splitlines() if line.strip()]
-    
-    # Εικόνα από static folder
     image_path = recipe['image_path'] if 'image_path' in recipe.keys() else ''
-    
+
     if image_path and image_path.strip() != '':
         image_url = url_for('static', filename=f"images/recipes/{image_path}")
     else:
         image_url = url_for('static', filename="images/placeholder.jpg")
 
-    # ========== ΕΛΕΓΧΟΣ FAVORITE ==========
     is_favorite = False
     if user_id:
         fav_row = conn.execute(
@@ -651,7 +643,6 @@ def recipe_page(recipe_id):
 
     user_row = conn.execute("SELECT servings FROM users WHERE id=?", (user_id,)).fetchone()
     servings = user_row["servings"] if user_row and "servings" in user_row.keys() else None
-
 
     conn.close()
 
@@ -670,8 +661,11 @@ def recipe_page(recipe_id):
         user_name = 'Επισκέπτης'
         user_avatar = '/static/images/avatars/default.jpg'
 
-    avatar_filename = CHEF_AVATAR_MAP.get(recipe['chef'], 'default.jpg')
-
+    chef_name = recipe['chef']
+    if chef_name == "Me!!":
+        chef_avatar = f"{user_id}.jpg"
+    else:
+        chef_avatar = f"{CHEF_AVATAR_MAP.get(chef_name, 'default.jpg')}"
 
     return render_template(
         'recipe_page.html',
@@ -685,7 +679,7 @@ def recipe_page(recipe_id):
         user_name=user_name,
         user_avatar=user_avatar,
         servings=servings,
-        chef_avatar=avatar_filename
+        chef_avatar=chef_avatar
     )
 
 @app.route("/profile")
@@ -944,7 +938,134 @@ def edit_profile():
     conn.close()
     return render_template("edit_profile.html", user=user_dict, avatar_path=user_dict["avatar"])
 
+@app.route("/fav_recipes")
+@login_required
+def fav_recipes():
 
+    user, _ = get_user()
+    if not user:
+        return redirect(url_for("login"))
+    user_id = user["id"]
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    favorite_recipes = conn.execute("""
+        SELECT r.*
+        FROM recipes r
+        JOIN favorite_recipes f ON f.recipe_id = r.id
+        WHERE f.user_id = ?
+        ORDER BY r.id DESC
+    """, (user_id,)).fetchall()
+
+    favs = []
+    for rec in favorite_recipes:
+        chef_name = rec["chef"]
+        if chef_name == "Me!!":
+            img_file = f"{user_id}.jpg"
+        else:
+            img_file = CHEF_AVATAR_MAP.get(chef_name, "default.jpg")
+        chef_avatar = f"/static/images/avatars/{img_file}"
+        rec_dict = dict(rec)
+        rec_dict["chef_avatar"] = chef_avatar
+        favs.append(rec_dict)
+
+    return render_template(
+        "fav_recipes.html",
+        favorite_recipes=favs
+    )
+
+@app.route("/edit_recipe/<int:recipe_id>", methods=["GET", "POST"])
+@login_required
+def edit_recipe(recipe_id):
+    import time, re
+    user, _ = get_user()
+    if not user:
+        return redirect(url_for("login"))
+    user_id = user["id"]
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+
+    # Χρησιμοποιούμε τη global COOKING_METHODS
+    global COOKING_METHODS
+
+    recipe = conn.execute("SELECT * FROM recipes WHERE id = ?", (recipe_id,)).fetchone()
+    if not recipe:
+        flash("Δεν βρέθηκε η συνταγή.", "danger")
+        return redirect(url_for("fav_recipes"))
+
+    # Parse υπάρχουσες μεθόδους της συνταγής (λίστα)
+    selected_methods = [m.strip() for m in re.split(r"[,\|]", recipe["method"] or "") if m.strip()]
+
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
+        servings = int(request.form.get("servings", 4))
+        ingredients = request.form.get("all_ingredients", "").strip()
+        image_file = request.files.get("image")
+        prep_time = int(request.form.get("prep_time", 0) or 0)
+        cook_time = int(request.form.get("cook_time", 0) or 0)
+        total_time = int(request.form.get("total_time", 0) or 0)
+        dish_tags = request.form.get("dish_tags", "").strip()
+
+        # Πάρε το method (chip select)
+        method = request.form.get("method", "").strip()
+
+        if image_file and image_file.filename:
+            ext = image_file.filename.rsplit('.', 1)[-1].lower()
+            img_name = f"user_{user_id}_{int(time.time())}.{ext}"
+            img_path = os.path.join("static/images/recipes", img_name)
+            image_file.save(img_path)
+        else:
+            img_name = recipe["image_path"]
+
+        chef_value = "Me!!"
+
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO recipes 
+                (title, main_ingredient, chef, ingredients, prep_time, cook_time, total_time,
+                 method, instructions, dish_category, allergens, url, created_by, parent_id, description, servings, dish_tags, image_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            title,
+            recipe["main_ingredient"],
+            chef_value,
+            ingredients,
+            prep_time,
+            cook_time,
+            total_time,
+            method,
+            recipe["instructions"],
+            recipe["dish_category"],
+            recipe["allergens"],
+            recipe["url"],
+            user_id,
+            recipe_id,
+            description,
+            servings,
+            dish_tags,
+            img_name
+        ))
+        conn.commit()
+        new_id = cur.lastrowid
+        
+        cur.execute(
+            "INSERT OR IGNORE INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)",
+            (user_id, new_id)
+        )
+        conn.commit()       
+        
+        flash("Η νέα συνταγή αποθηκεύτηκε και προστέθηκε στα αγαπημένα σου!", "success")
+        return redirect(url_for("fav_recipes"))
+
+    return render_template(
+        "edit_recipe.html",
+        recipe=recipe,
+        method_list=COOKING_METHODS,
+        selected_methods=selected_methods
+    )
 
 # ----------- RATINGS για recipe -----------
 
@@ -1732,12 +1853,20 @@ def ai_suggest_dish():
     COOKING_WORDS = {
         "στη","στο","στον","στις","στην","χυτρα","ταχυτητας","φουρνο","τηγανι","σχαρα","airfryer","air","fryer","ρυζι","πατατες"
     }
-
     def preprocess_title(title):
         words = [w for w in normalize(title).split() if w not in COOKING_WORDS]
         return " ".join(words[:2])
 
     STOPWORDS_GR = { normalize(w) for w in RAW_STOPWORDS }
+
+    INGREDIENT_STOPWORDS = {
+        "περίπου", "ψιλοκομμένο", "βρασμένο", "βρασμένα", "καβουρντισμένο", "καβουρντισμένα",
+        "φρεσκοτριμμένο", "φρεσκοτριμμένα", "ποσότητα", "γρ", "gr", "kg", "ml", "κ.σ.", "κ.σ", "κ.γ.", "κ.γ", 
+        "φλ.", "φλ", "κουταλιά", "κουταλιές", "κουτ.", "κουτ", "κομμάτι", "κομμάτια", "μεγάλο", "μικρό",
+        "μεγάλα", "μικρά", "καρέ", "χυμό", "ξύσμα", "σποράκια", "κομμένα", "καθαρισμένα", "βούτυρο", "lurpak", "ανάμικτο",
+        "ολικής", "άλεσης", "φυτικό", "γιαούρτι", "στραγγιστό", "τυρί", "φέτα", "και", "καρε", "ζαμπον", "που", "καροτο",
+        "φλασκες", "διαφανες"
+    }
 
     def clean_message(msg):
         text = normalize(msg)
@@ -1764,6 +1893,7 @@ def ai_suggest_dish():
         "Τέλεια, ορίστε μερικά πιάτα που ταιριάζουν στις προτιμήσεις σου, πάτα πάνω σε όποιο θες για να δεις λεπτομέρειες:"
     ]
 
+    
     try:
         print("\n========== /ai_suggest_dish CALLED ==========")
         data = request.get_json() or {}
@@ -1786,10 +1916,17 @@ def ai_suggest_dish():
         conn.row_factory = sqlite3.Row
         conn.create_function("remove_tonos", 1, remove_tonos)
 
+        # === Φέρε allergens ΠΑΝΤΑ από τον user της βάσης ===
+        user_id = session.get("user_id")
+        user_row = conn.execute("SELECT allergies FROM users WHERE id = ?", (user_id,)).fetchone()
+        allergens = []
+        if user_row and user_row["allergies"]:
+            allergens = [a.strip() for a in user_row["allergies"].split(",") if a.strip()]
+        print("[DEBUG] Allergens from user DB:", allergens)
+
         already_suggested = session.get("suggested_dish_ids", [])
         final_dishes = []
         seen_ids = set()
-
 
         # =============== Branch 0: Quick category+main_ingredient lookup ==============
         if data.get("step") == 0:
@@ -1799,19 +1936,15 @@ def ai_suggest_dish():
             excluded = data.get("excluded") or []
             if not isinstance(excluded, list):
                 excluded = []
-            allergens = data.get("allergens") or session.get("allergens") or []
-            if not isinstance(allergens, list):
-                allergens = []
+            # ---- allergens είναι ήδη ορισμένα εδώ ----
 
-            # ΝΕΟ: suggested_dish_ids
-            already_suggested = session.get("suggested_dish_ids", [])
             q_base = """
             FROM recipes
             LEFT JOIN favorite_recipes fav 
                  ON fav.recipe_id = recipes.id AND fav.user_id = ?
             WHERE 1=1
             """
-            params = [session.get("user_id")]
+            params = [user_id]
 
             if dish_category:
                 q_base += " AND remove_tonos(LOWER(dish_category)) LIKE ?"
@@ -1819,7 +1952,6 @@ def ai_suggest_dish():
             if main_ingredient:
                 q_base += " AND remove_tonos(LOWER(main_ingredient)) LIKE ?"
                 params.append(f"%{remove_tonos(main_ingredient.lower())}%")
-
             if max_time:
                 try:
                     q_base += " AND total_time <= ?"
@@ -1827,7 +1959,6 @@ def ai_suggest_dish():
                 except Exception as e:
                     print("[WARN] Invalid max_time (branch 0):", e)
 
-            # Excluded ηδη προτεινόμενα!
             if already_suggested:
                 placeholders = ",".join("?" * len(already_suggested))
                 q_base += f" AND recipes.id NOT IN ({placeholders})"
@@ -1837,9 +1968,11 @@ def ai_suggest_dish():
                 ex_norm = remove_tonos(str(item).lower())
                 q_base += " AND remove_tonos(ingredients) NOT LIKE ?"
                 params.append(f"%{ex_norm}%")
+
+            # --- CHECK στο recipes.allergens ΜΟΝΟ ---
             for allergen in allergens:
                 al_norm = remove_tonos(str(allergen).lower())
-                q_base += " AND remove_tonos(ingredients) NOT LIKE ?"
+                q_base += " AND remove_tonos(LOWER(allergens)) NOT LIKE ?"
                 params.append(f"%{al_norm}%")
 
             count_query = "SELECT COUNT(*) " + q_base
@@ -1847,10 +1980,6 @@ def ai_suggest_dish():
 
             print("[SQL]", select_query)
             print("[PARAMS]", params)
-
-            conn = sqlite3.connect(DB)
-            conn.row_factory = sqlite3.Row
-            conn.create_function("remove_tonos", 1, remove_tonos)
 
             count_res = conn.execute(count_query, params).fetchone()
             matches_count = count_res[0] if count_res else 0
@@ -1873,19 +2002,18 @@ def ai_suggest_dish():
                 else:
                     rec["image_url"] = "/static/images/recipes/default.jpg"
 
-                # --- Chef Avatar --- 
                 chef = rec.get("chef")
                 avatar_file = CHEF_AVATAR_MAP.get(chef, "default.jpg")
                 rec["chef_avatar"] = "/static/images/avatars/" + avatar_file
 
                 results.append(rec)
 
-            # Προσθήκη στα suggested (μόνο τα νέα)
             new_ids = [rec["id"] for rec in results if rec["id"] not in already_suggested]
             session["suggested_dish_ids"] = already_suggested + new_ids
 
             if not results:
                 return jsonify({
+                    "step":0,
                     "success": False,
                     "message": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια.. Θες να το ξαναπροσπαθήσουμε;; Πες μου με τι έχεις στο μυαλό σου για σήμερα! - 0",
                     "dishes": [],
@@ -1893,16 +2021,19 @@ def ai_suggest_dish():
                 })
             else:
                 return jsonify({
+                    "step":0,
                     "success": True,
                     "message": random.choice(suggestion_messages),
                     "dishes": results,
                     "matches_count": matches_count
                 })
+    
 
 
         # =============== Branch 1: lexical match ==================
         if user_message:
             print("[DEBUG] ========== Branch 1 ==========")
+            dishes_branch1 = []
             sql = """
                 SELECT recipes.*,
                 CASE WHEN fav.recipe_id IS NOT NULL THEN 1 ELSE 0 END as is_favorite
@@ -1910,9 +2041,7 @@ def ai_suggest_dish():
                 LEFT JOIN favorite_recipes fav
                 ON fav.recipe_id = recipes.id AND fav.user_id = ?
                 """
-            
             print("[DEBUG] SQL Branch1:", sql)
-
 
             candidates = conn.execute(sql, (session.get("user_id"),)).fetchall()
 
@@ -1953,28 +2082,31 @@ def ai_suggest_dish():
                 is_title_match = max_token_score >= 80 or mean_token_score >= 70
                 is_main_ing_match = score_main_ing >= 80
 
-                
-                
                 if is_title_match or is_main_ing_match or score_ingredient_like:
                     best_score = max(max_token_score, score_main_ing, 80 if score_ingredient_like else 0)
                     matches.append((rec, best_score, fav_flag, raw_title, main_ing, ingredients, matched_tokens))
                     print(f"[DEBUG]   --> MATCHED: {raw_title} (id={rid})")
-                
+            
             if matches:
                 matches.sort(key=lambda x: (x[2], x[1]), reverse=True)
-
-                for rec, score, fav, raw_title, main_ing, ingredients, matched_tokens in matches:
-                    fav_mark = "🍀" if fav else "—"
 
                 matched_ids = [m[0]["id"] for m in matches]
                 row_map = {rec["id"]: rec for rec, _, _, _, _, _, _ in matches}
 
                 def is_excluded(dish):
                     ingredients_norm = normalize_token(dish.get("ingredients", "") or "")
+                    allergens_norm = normalize_token(dish.get("allergens", "") or "")
+                    # 1. Excluded υλικά
                     for ex in excluded:
                         ex_norm = normalize_token(str(ex))
                         if ex_norm and ex_norm in ingredients_norm:
                             print(f"[DEBUG]     - EXCLUDED λόγω excluded υλικού: {ex_norm} in {ingredients_norm}")
+                            return True
+                    # 2. Allergens (από user)
+                    for allergen in allergens:
+                        al_norm = normalize_token(str(allergen))
+                        if al_norm and al_norm in allergens_norm:
+                            print(f"[DEBUG]     - EXCLUDED λόγω allergen: {al_norm} in {allergens_norm}")
                             return True
                     return False
 
@@ -1986,8 +2118,6 @@ def ai_suggest_dish():
                     return False
 
 
-                dishes_branch1 = []
-                
                 for mid in matched_ids:
                     if mid in row_map and mid not in seen_ids and mid not in already_suggested:
                         dish = row_map[mid]
@@ -1999,19 +2129,8 @@ def ai_suggest_dish():
                 print(f"[DEBUG] 🎯 Branch1 NEW results (μετά το φίλτρο & excluded) = {len(dishes_branch1)}:")
                 print("     ", [d["title"] for d in dishes_branch1])
 
-                if not dishes_branch1:
-                    print("[DEBUG] ⚠️ Όλα τα Branch1 matches έχουν ήδη προταθεί ή αποκλείονται λόγω excluded/max_time.")
+                if len(dishes_branch1) >= 3:
                     conn.close()
-                    return jsonify({
-                        "success": False,
-                        "message": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια.. Θες να το ξαναπροσπαθήσουμε;; Πες μου με τι θα ήθελες να ξεκινήσουμε!",
-                        "dishes": []
-                    })
-                else:
-                    conn.close()
-                    step = data.get("step")
-                    print(f"[DEBUG] ✅ Final returned from Branch1 (step={step})")
-
                     def enrich_dish_with_all(dish):
                         rec = dict(dish)
                         image_path = rec.get("image_path") or rec.get("image_url")
@@ -2028,118 +2147,127 @@ def ai_suggest_dish():
                         rec["chef_avatar"] = "/static/images/avatars/" + avatar_file
                         return rec
 
-                    if step == 2:
-                        session["suggested_dish_ids"] = already_suggested + [d["id"] for d in dishes_branch1]
-                        return jsonify({
-                            "message": random.choice(suggestion_messages),
-                            "dishes": [enrich_dish_with_all(d) for d in dishes_branch1]
-                        })
                     top_dishes = dishes_branch1[:3]
                     session["suggested_dish_ids"] = already_suggested + [d["id"] for d in top_dishes]
                     return jsonify({
+                        "step": 1,
+                        "success": True,
                         "message": random.choice(suggestion_messages),
                         "dishes": [enrich_dish_with_all(d) for d in top_dishes]
                     })
+                # αλλιώς απλά συνεχίζεις στο branch2 (χωρίς return)
             else:
                 print("[DEBUG] ❌ Branch1 no strong matches")
-                conn.close()
-                return jsonify({
-                    "success": False,
-                    "message": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια.. Θες να το ξαναπροσπαθήσουμε;; Πες μου με τι θα ήθελες να ξεκινήσουμε!",
-                    "dishes": []
-                })
-
-
+                # Προχώρα κανονικά στο branch2
 
 
         # =============== Branch 2: normal filtering ==================
-        print("[DEBUG] ========== Branch 2 ==========")
-        q = """
-        SELECT recipes.*, 
-               CASE WHEN fav.recipe_id IS NOT NULL THEN 1 ELSE 0 END as is_favorite
-        FROM recipes
-        LEFT JOIN favorite_recipes fav 
-             ON fav.recipe_id = recipes.id AND fav.user_id = ?
-        WHERE 1=1
-        """
-        params = [session.get("user_id")]
 
-        if already_suggested:
-            placeholders = ",".join("?" * len(already_suggested))
-            q += f" AND recipes.id NOT IN ({placeholders})"
-            params.extend(already_suggested)
+        # ... (Αφού έχει τελειώσει το branch1 και δεν έχεις βρει 3 πιάτα) ...
+        print(dishes_branch1)
+        print(len(dishes_branch1))
+        # Branch2: Ingredients token fuzzy match fallback
+        if len(dishes_branch1) < 3 and main_ingredient:
+            print("[DEBUG] ========== Branch 2 (fallback ingredients-token match) ==========")
+            # Φέρε όλα τα μη-ήδη προταθέντα πιάτα
+            sql = """
+                SELECT recipes.*,
+                       CASE WHEN fav.recipe_id IS NOT NULL THEN 1 ELSE 0 END as is_favorite
+                FROM recipes
+                LEFT JOIN favorite_recipes fav 
+                     ON fav.recipe_id = recipes.id AND fav.user_id = ?
+                WHERE 1=1
+            """
+            # Αποκλείουμε ήδη προταθέντα πιάτα
+            params = [session.get("user_id")]
+            if already_suggested:
+                placeholders = ",".join("?" * len(already_suggested))
+                sql += f" AND recipes.id NOT IN ({placeholders})"
+                params.extend(already_suggested)
 
-        if max_time:
-            try:
-                q += " AND total_time <= ?"
-                params.append(int(max_time))
-            except Exception as e:
-                print("[WARN] Invalid max_time:", e)
+            all_candidates = conn.execute(sql, params).fetchall()
 
-        if main_ingredient:
-            safe_ingr = remove_tonos(main_ingredient).lower().strip()
-            q += " AND (',' || LOWER(remove_tonos(ingredients)) || ',' LIKE ?)"
-            params.append(f"%,{safe_ingr},%")
+            found = []
+            main_ing_norm = remove_tonos(main_ingredient.lower().strip())
 
-        if excluded:
-            for item in excluded:
-                s = f"%{remove_tonos(item.lower())}%"
-                q += " AND remove_tonos(ingredients) NOT LIKE ?"
-                params.append(s)    
+            for idx, row in enumerate(all_candidates):
+                rec = dict(row)
+                # --- ΑΠΟΚΛΕΙΣΜΟΣ allergens & excluded ---
+                skip = False
+                allergens_norm = remove_tonos(rec.get("allergens", "") or "")
+                for allergen in allergens:
+                    al_norm = remove_tonos(str(allergen).strip().lower())
+                    if al_norm and al_norm in allergens_norm:
+                        print(f"[DEBUG][BR2] - SKIP λόγω allergen: {al_norm} in {allergens_norm}")
+                        skip = True
+                ingredients_norm = remove_tonos(rec.get("ingredients", "") or "")
+                for ex in excluded:
+                    ex_norm = remove_tonos(str(ex).strip().lower())
+                    if ex_norm and ex_norm in ingredients_norm:
+                        print(f"[DEBUG][BR2] - SKIP λόγω excluded: {ex_norm} in {ingredients_norm}")
+                        skip = True
+                if skip:
+                    continue
 
-        if preferred_method:
-            if isinstance(preferred_method, list):
-                placeholders = " OR ".join(["method LIKE ?"] * len(preferred_method))
-                q += f" AND ({placeholders})"
-                for m in preferred_method:
-                    params.append(f"%{m}%")
-            elif isinstance(preferred_method, str) and preferred_method.strip():
-                q += " AND method LIKE ?"
-                params.append(f"%{preferred_method.strip()}%")
+                # --- Τokenize & fuzzy main_ingredient ---
+                ingredients_tokens = [
+                    w.strip() for w in re.split(r"[,\s;()]", ingredients_norm)
+                    if w.strip() and w.strip() not in INGREDIENT_STOPWORDS and len(w.strip()) >= 3
+                ]
+                found_token_match = False
+                for token in ingredients_tokens:
+                    if len(token) >= 3:
+                        score = fuzz.partial_ratio(token, main_ing_norm)
+                        if score >= 80 or main_ing_norm in token or token in main_ing_norm:
+                            print(f"[DEBUG][BR2] MATCH: '{main_ing_norm}' ~ '{token}' (score={score}) στο '{rec.get('title')}' (id={rec.get('id')})")
+                            found_token_match = True
+                            break
+                if found_token_match:
+                    found.append(rec)
+                if len(found) + len(dishes_branch1) >= 3:
+                    break
 
-        if preferred_chef:
-            q += " ORDER BY is_favorite DESC, CASE WHEN chef LIKE ? THEN 0 ELSE 1 END, RANDOM()"
-            params.append(f"%{preferred_chef}%")
-        else:
-            q += " ORDER BY is_favorite DESC, RANDOM()"
+            print(f"[DEBUG] 🥈 Branch2 found {len(found)} extra πιάτα:", [d['title'] for d in found])
+            final_branch2 = dishes_branch1 + found
 
-        q += " LIMIT 10"
-        print("[SQL]", q)
-        print("[PARAMS]", params)
+            def enrich_dish_with_all(dish):
+                rec = dict(dish)
+                image_path = rec.get("image_path") or rec.get("image_url")
+                if image_path:
+                    if not image_path.startswith("http"):
+                        image_url = "/static/images/recipes/" + image_path.lstrip("/")
+                    else:
+                        image_url = image_path
+                    rec["image_url"] = image_url
+                else:
+                    rec["image_url"] = "/static/images/recipes/default.jpg"
+                chef = rec.get("chef")
+                avatar_file = CHEF_AVATAR_MAP.get(chef, "default.jpg")
+                rec["chef_avatar"] = "/static/images/avatars/" + avatar_file
+                return rec
 
-        dishes_branch2 = conn.execute(q, params).fetchall()
-        print(f"[DEBUG] 🍲 Branch2 returned {len(dishes_branch2)} dishes:", [d["title"] for d in dishes_branch2])
-        conn.close()
+            # Προσθήκη στα suggested
+            new_ids = [rec["id"] for rec in final_branch2 if rec["id"] not in already_suggested]
+            session["suggested_dish_ids"] = already_suggested + new_ids
 
-        for d in dishes_branch2:
-            if d["id"] not in seen_ids:
-                final_dishes.append(d)
+            if not final_branch2:
+                print("[DEBUG] ❌ Branch2: Ούτε εδώ βρέθηκαν πιάτα.")
+                conn.close()
+                return jsonify({
+                    "success": False,
+                    "step": 1,
+                    "message": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια.. Θες να το ξαναπροσπαθήσουμε; Πες μου με τι έχεις στο μυαλό σου για σήμερα ή επανεκκίνησε τη συνομιλία!",
+                    "dishes": []
+                })
+            else:
+                print(f"[DEBUG] ✅ Branch2 returned {len(final_branch2)} dishes:", [d['title'] for d in final_branch2])
+                conn.close()
+                return jsonify({
+                    "success": True,
+                    "message": random.choice(suggestion_messages),
+                    "dishes": [enrich_dish_with_all(d) for d in final_branch2[:3]]
+                })
 
-        final_dishes = final_dishes[:3]
-        session["suggested_dish_ids"] = already_suggested + [d["id"] for d in final_dishes]
-        print(f"[DEBUG] ✅ Final returned {len(final_dishes)} dishes:", [d["title"] for d in final_dishes])
-
-        if not final_dishes:
-            response = {
-                "message": "Δυστυχώς δεν έχουμε άλλα πιάτα να προτείνουμε με αυτά τα κριτήρια.. Θες να το ξαναπροσπαθήσουμε;; Πες μου με τι θα ήθελες να ξεκινήσουμε!",
-                "step": 0,
-                "dishes": [],
-                "filters": {
-                    "max_time": max_time,
-                    "main_ingredient": main_ingredient,
-                    "preferred_methods": preferred_method,
-                    "excluded": excluded,
-                    "chef": preferred_chef
-                }
-            }
-            print("[DEBUG] ❌ No dishes found, sending fallback response:", response)
-            clear_suggestions()
-            return jsonify(response)
-
-        return jsonify({
-            "message": random.choice(suggestion_messages),
-            "dishes": [enrich_dish_with_image_url(d) for d in final_dishes]
-        })
 
     except Exception as e:
         print("[ERROR]", e)
@@ -2236,84 +2364,6 @@ def delete_user_recipe():
     conn.close()
     return {'success': True}
 
-@app.route("/favorites/edit/<int:recipe_id>", methods=["GET", "POST"])
-def edit_favorite_recipe(recipe_id):
-    user, _ = get_user()
-    user_id = user["id"]
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-
-    recipe = conn.execute("SELECT * FROM recipes WHERE id=?", (recipe_id,)).fetchone()
-    if not recipe:
-        conn.close()
-        return "Recipe not found", 404
-
-    BASIC_TAGS = [
-        'Κόκκινο κρέας', 'Ψάρι', 'Όσπρια', 'Λαδερά', 'Ζυμαρικά', 'Πουλερικά', 'Σαλάτα'
-    ]
-    tags_rows = conn.execute("SELECT tags FROM recipes WHERE tags IS NOT NULL AND tags != ''").fetchall()
-    all_tags_set = set()
-    for row in tags_rows:
-        for tag in row["tags"].split(","):
-            tag = tag.strip()
-            if tag:
-                all_tags_set.add(tag)
-    all_tags = sorted(all_tags_set)
-
-
-    add_to_favorites = request.args.get("add_to_favorites")
-    if request.method == "POST":
-        form = request.form
-        prep = int(form.get("prep_time") or 0)
-        cook = int(form.get("cook_time") or 0)
-        total_time = prep + cook
-
-        # MULTI-SELECT TAGS
-        tags_list = form.getlist("tags")
-        tags = ",".join([t.strip() for t in tags_list if t.strip()])
-
-        # MULTI-SELECT COOKING METHODS
-        cooking_methods_list = form.getlist("cooking_methods")
-        cooking_methods = ",".join([m.strip() for m in cooking_methods_list if m.strip()])
-
-        # MULTI-SELECT ALLERGENS
-        allergens_list = form.getlist("allergens")
-        if "__other__" in allergens_list:
-            other = form.get("allergens_other", "").strip()
-            allergens_list.remove("__other__")
-            if other:
-                allergens_list.append(other)            
-        allergens = ",".join([a.strip() for a in allergens_list if a.strip()])
-
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO recipes (title, ingredients, prep_time, cook_time, total_time, method, instructions, allergens, tags, created_by, parent_id, chef)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            form["title"], form["ingredients"], prep, cook, total_time,
-            cooking_methods, form["instructions"], allergens, tags, user_id, recipe["id"], "Me!!"
-        ))
-        new_recipe_id = cur.lastrowid
-        
-        flag = add_to_favorites
-        if flag is None:
-            flag = "1"
-        if flag == "1":
-            cur.execute("INSERT OR IGNORE INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)", (user_id, new_recipe_id))
-        cur.execute("DELETE FROM favorite_recipes WHERE user_id=? AND recipe_id=?", (user_id, recipe_id))
-        conn.commit()
-        conn.close()
-        return redirect(url_for("favorites"))  
-
-    conn.close()
-    return render_template(
-        "edit_recipe.html",
-        recipe=recipe,
-        all_tags=all_tags,
-        all_allergs=get_all_allergens(),
-        basic_tags=BASIC_TAGS,
-        cooking_options=COOKING_METHODS
-    )
 
 @app.route("/reset_favorite_recipe", methods=["POST"])
 def reset_favorite_recipe():
