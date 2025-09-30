@@ -152,65 +152,116 @@
   font-weight: 500;
 }
 /* ========== Filters styling ========== */
-.profile-filters-row .form-select-sm {
-  min-height: 35px;
-  font-size: 1.04em;
-  border-radius: 8px;
-  background: #f8fcf9;
-  padding: 4px;
-  color: #1a6e38;
-  border: 1.1px solid #d6ead8;
-  transition: border 0.13s, box-shadow 0.13s;
-}
-.profile-filters-row .form-select-sm:focus {
-  border: 1.2px solid var(--brand);
-  box-shadow: 0 0 0 1.5px #eafbe7;
-}
+
 .profile-search-row input[type="text"].form-control-sm {
-  font-size: 1.07em;
-  border-radius: 10px;
-  background: #f8fcf9;
-  color: #1a6e38;
-  border: 1.1px solid #d6ead8;
-  min-height: 35px;
-  transition: border 0.13s, box-shadow 0.13s;
+  font-size: 1em;
+  border-radius: 21px;
+  background: rgba(250,255,250,0.82);
+  color: #187b40;
+  border: none;
+  min-height: 44px;
+  box-shadow: 0 2px 16px #c6f2d299, 0 1.5px 4px #e4ffe3a9 inset;
+  padding-left: 10px;
+  padding-right: 5px;
+  outline: none;
+  transition: box-shadow 0.13s, background 0.18s;
+  backdrop-filter: blur(3px);
 }
 .profile-search-row input[type="text"].form-control-sm:focus {
-  border: 1.2px solid var(--brand);
-  box-shadow: 0 0 0 1.5px #eafbe7;
+  background: rgba(240,255,249,0.98);
+  box-shadow: 0 4px 22px #b8eec9, 0 2px 8px #d2fad9a8 inset;
 }
 .profile-search-row .btn-sm {
-  font-size: 1.13em;
+  font-size: 1.16em;
   border-radius: 50%;
-  min-width: 35px;
-  min-height: 35px;
-  padding: 0;
+  min-width: 42px;
+  min-height: 42px;
+  margin-left: 7px;
+  border: none;
+  background: rgba(240,255,249,0.8);
+  color: #1a6e38;
+  box-shadow: 0 2px 7px #eafbe788;
+  transition: background 0.18s, color 0.18s;
+}
+.profile-search-row .btn-sm:active,
+.profile-search-row .btn-sm:focus {
+  background: #bdf5cd;
+  color: #187b40;
+}
+
+
+
+
+.glass-filter-row {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px 0;
   align-items: center;
   justify-content: center;
 }
-.profile-search-row .btn-outline-secondary {
-  border: 1.1px solid #e1e5e1;
-  background: #f7fdf8;
-  color: var(--brand);
+.glass-filter-chip {
+  background: rgba(240,255,249,0.76);
+  color: #218e46;
+  border: 1.2px solid #b8eec9;
+  border-radius: 19px;
+  font-weight: 700;
+  font-size: 1.07em;
+  padding: 7px 16px 7px 16px;
+  box-shadow: 0 2px 8px #d1ead666;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+  user-select: none;
+  min-width: 60px;
+  text-align: center;
 }
-.profile-search-row .btn-outline-secondary:hover {
+.glass-filter-chip.selected,
+.glass-filter-chip.active {
+  background: #bdf5cd;
+  color: #155d30;
+  border-color: #218e46;
+}
+.glass-filter-chip .chip-icon {
+  font-size: 1.13em;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.glass-chip-dropdown {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  min-width: 150px;
+  background: rgba(250,255,250,0.96);
+  box-shadow: 0 6px 24px #218e4622;
+  border-radius: 15px;
+  padding: 6px 0;
+  z-index: 25;
+  border: 1px solid #c2edd4;
+  display: none;
+  flex-direction: column;
+}
+.glass-chip-dropdown .dropdown-item {
+  padding: 7px 18px;
+  cursor: pointer;
+  font-size: 1em;
+  color: #187b40;
+  border: none;
+  background: none;
+  text-align: left;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+}
+.glass-chip-dropdown .dropdown-item:hover {
   background: #eafbe7;
-  color: #1a6e38;
+  color: #155d30;
 }
-.profile-search-row .btn-light {
-  background: #f4fbf5;
-  color: var(--brand);
-  border: 1.1px solid #e1e5e1;
+.glass-chip-dropdown .dropdown-item.selected {
+  background: #bdf5cd;
+  color: #155d30;
 }
-.profile-search-row .btn-light:hover {
-  background: #eafbe7;
-  color: #1a6e38;
-}
-@media (max-width: 600px) {
-  .profile-search-row input[type="text"].form-control-sm { min-height: 34px; font-size: 1em; }
-  .profile-filters-row .form-select-sm { min-height: 32px; font-size: 0.98em; }
-}
+
+
 </style>
 
 <div class="recipe-topbar" id="topBar">
@@ -220,27 +271,13 @@
 </div>
 
 <!-- =========== LIVE FILTERS SECTION =========== -->
-<div id="favorites-filters-section" style="margin: 10px 2vw 10px 2vw;">
-  <div class="row g-2 mb-2 profile-filters-row">
-    <div class="col-6">
-      <select id="filter-chef" class="form-select form-select-sm">
-        <option value="">Όλοι οι σεφ</option>
-      </select>
-    </div>
-    <div class="col-6">
-      <select id="filter-time" class="form-select form-select-sm"></select>
-    </div>
-    <div class="col-6">
-      <select id="filter-category" class="form-select form-select-sm">
-        <option value="">Όλες οι κατηγορίες</option>
-      </select>
-    </div>
-    <div class="col-6">
-      <select id="filter-method" class="form-select form-select-sm">
-        <option value="">Όλες οι μέθοδοι</option>
-      </select>
-    </div>
-  </div>
+<div id="favorites-filters-section" style="margin: 24px 2vw 10px 2vw;">
+
+
+  <div class="glass-filter-row" id="glassFilterRow"></div>
+  
+  
+  
   <div class="d-flex profile-search-row">
     <input type="text" id="search-term" class="form-control form-control-sm voice-enabled" placeholder="Αναζήτησε... ή πάτα το μικρόφωνο:" data-voice-target="favorites">
     <button class="btn btn-outline-secondary btn-sm ms-2" id="reset-filters-btn" type="button">
@@ -374,14 +411,17 @@ function getUniqueTimes(arr) {
     .filter(x => !isNaN(x));
 }
 function filterFavorites() {
-  const chef = document.getElementById("filter-chef").value;
-  const category = document.getElementById("filter-category").value;
-  const method = document.getElementById("filter-method").value;
-  const time = document.getElementById("filter-time").value;
+  const chef = filterValues.chef;
+  const category = filterValues.category;
+  const method = filterValues.method;
+  const time = filterValues.time;
   const term = document.getElementById("search-term").value.trim();
   let filtered = window.favorites.filter(function(rec) {
     if (chef && rec.chef !== chef) return false;
-    if (category && rec.dish_category !== category) return false;
+    if (category) {
+	  const categories = (rec.dish_category || "").split(",").map(x => x.trim());
+	  if (!categories.includes(category)) return false;
+	}
     if (method) {
       if (!rec.method || !rec.method.split(",").map(x=>x.trim()).includes(method)) return false;
     }
@@ -494,14 +534,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
   var resetBtn = document.getElementById("reset-filters-btn");
-  if (resetBtn) resetBtn.addEventListener("click", function() {
-    ["filter-chef","filter-category","filter-method","filter-time"].forEach(function(id){
-      var el = document.getElementById(id);
-      if (el) el.selectedIndex = 0;
-    });
-    var s = document.getElementById("search-term"); if(s) s.value="";
-    filterFavorites();
-  });
+	if (resetBtn) resetBtn.addEventListener("click", function() {
+	  // Reset glass chips filters
+	  filterValues = { chef:"", time:"", category:"", method:"" };
+	  renderFilterChips();
+	  // Reset search bar
+	  var s = document.getElementById("search-term");
+	  if(s) s.value="";
+	  filterFavorites();
+	});
+
   renderFavoritesCards(window.favorites);
 });
 function hideActions(btn) {
@@ -536,4 +578,175 @@ document.addEventListener("DOMContentLoaded", function() {
   };
 });
 </script>
+
+
+<script>
+const FILTERS = [
+  { key: "chef",   label: "Σεφ",     icon: "fa-user-tie", default: "Όλοι οι σεφ" },
+  { key: "category",label:"Κατηγορία",icon:"fa-utensils",default:"Όλες οι κατηγορίες" },
+  { key: "time",   label: "Χρόνοι",  icon: "fa-clock",    default: "Όλοι οι χρόνοι" },
+  { key: "method", label: "Μέθοδοι", icon: "fa-fire",     default: "Όλες οι μέθοδοι" }
+];
+let filterValues = {
+  chef: "",
+  time: "",
+  category: "",
+  method: ""
+};
+function createChipDropdown(items, key, current) {
+  const dd = document.createElement("div");
+  dd.className = "glass-chip-dropdown";
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "dropdown-item" + (item == current ? " selected" : "");
+    div.textContent = item;
+    div.onclick = function(e) {
+      e.stopPropagation();
+      filterValues[key] = item === FILTERS.find(f=>f.key==key).default ? "" : item;
+      document.querySelectorAll('.glass-chip-dropdown').forEach(x => x.style.display = "none");
+      renderFilterChips();
+      filterFavorites();
+    }
+    dd.appendChild(div);
+  });
+  return dd;
+}
+
+function getUniqueCategories(arr) {
+  let all = [];
+  arr.forEach(x => {
+    if (x.dish_category && x.dish_category !== "None") {
+      x.dish_category.split(",").forEach(cat => {
+        cat = cat.trim();
+        if (cat) all.push(cat);
+      });
+    }
+  });
+  return [...new Set(all)];
+}
+
+
+function renderFilterChips() {
+  const row = document.getElementById("glassFilterRow");
+  row.innerHTML = "";
+  FILTERS.forEach(filt => {
+    let allVals;
+    if (filt.key == "chef") allVals = getUnique(window.favorites, "chef");
+    else if (filt.key == "category") allVals = getUniqueCategories(window.favorites);
+    else if (filt.key == "method") allVals = getUniqueMethods(window.favorites);
+    else if (filt.key == "time") allVals = getUniqueTimes(window.favorites);
+    let vals;
+    if (filt.key == "time") {
+      vals = [];
+      if (allVals.some(x => x <= 30)) vals.push("Έως 30'");
+      if (allVals.some(x => x > 30 && x <= 60)) vals.push("Έως 60'");
+      if (allVals.some(x => x > 60 && x <= 90)) vals.push("Έως 90'");
+      if (allVals.some(x => x > 90 && x <= 120)) vals.push("Έως 120'");
+      if (allVals.some(x => x > 120)) vals.push("Άνω των 120'");
+    } else {
+      vals = [filt.default, ...allVals.filter(v=>!!v)];
+    }
+    const chip = document.createElement("div");
+    chip.className = "glass-filter-chip" + (filterValues[filt.key] ? " selected" : "");
+    chip.innerHTML = `<span class="chip-icon fa ${filt.icon}"></span>${filterValues[filt.key] || filt.default}`;
+	
+	chip.onclick = function(e) {
+	  e.stopPropagation();
+	  document.querySelectorAll('.glass-chip-dropdown').forEach(x => {
+		if (x !== chip.querySelector('.glass-chip-dropdown')) x.style.display = "none";
+	  });
+	  let dd = chip.querySelector('.glass-chip-dropdown');
+	  if (!dd) {
+		dd = createChipDropdown(vals, filt.key, filterValues[filt.key] || filt.default);
+		chip.appendChild(dd);
+	  }
+	  // === TOGGLE ===
+	  if (dd.style.display === "flex") {
+		dd.style.display = "none";
+		return;
+	  }
+	  dd.style.display = "flex";
+	  // === Smart position ===
+	  setTimeout(function() {
+		const rect = dd.getBoundingClientRect();
+		if (rect.right > (window.innerWidth-10)) {
+		  dd.style.left = "auto";
+		  dd.style.right = "0";
+		} else {
+		  dd.style.left = "0";
+		  dd.style.right = "auto";
+		}
+	  }, 1);
+	};
+
+
+    row.appendChild(chip);
+  });
+  document.body.onclick = function(e) {
+    if (!e.target.classList.contains('glass-filter-chip') && !e.target.classList.contains('dropdown-item')) {
+      document.querySelectorAll('.glass-chip-dropdown').forEach(x => x.style.display = "none");
+    }
+  }
+}
+document.addEventListener("DOMContentLoaded", function () {
+  renderFilterChips();
+});
+
+
+</script>
+
+
+
+<!-------------- Voice recognition ---------------->
+<script>
+// === Φωνητική αναζήτηση στο search-term για όλα τα tabs ===
+document.addEventListener('DOMContentLoaded', function () {
+  var voiceBtn = document.getElementById("voice-search-btn");
+  var input = document.getElementById("search-term");
+
+  if (voiceBtn && input && 'webkitSpeechRecognition' in window) {
+    voiceBtn.addEventListener("click", function () {
+      try {
+        var recognition = new webkitSpeechRecognition();
+        recognition.lang = 'el-GR';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onaudiostart = function () {
+          input.classList.add('listening');
+          input.placeholderBackup = input.placeholder;
+          input.placeholder = "🎙️ Μιλήστε τώρα…";
+        };
+
+        recognition.onresult = function (event) {
+          var transcript = event.results[0][0].transcript.trim();
+          input.value = transcript;
+          input.classList.remove('listening');
+          if (input.placeholderBackup) {
+            input.placeholder = input.placeholderBackup;
+            delete input.placeholderBackup;
+          }
+          if (typeof filterFavorites === "function") {
+            filterFavorites();
+          }
+        };
+
+        recognition.onend = function () {
+          input.classList.remove('listening');
+          if (input.placeholderBackup) {
+            input.placeholder = input.placeholderBackup;
+            delete input.placeholderBackup;
+          }
+        };
+
+        recognition.start();
+      } catch (e) {
+        alert("Το μικρόφωνο δεν υποστηρίζεται σε αυτόν τον browser.");
+      }
+    });
+  }
+});
+</script>
+
+
 {% endblock %}

@@ -47,7 +47,7 @@
     border-radius: 50%; border: none; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     font-size: 2.3rem;
-    background: var(--pink); color: #fff;
+    background: var(--brand); color: #fff;
     box-shadow: 0 3px 18px rgba(0,0,0,0.15);
     opacity: 0.96; z-index: 1;
   }
@@ -902,7 +902,7 @@
 	{% endfor %}
   </div>
   <div class="recipe-method-row">
-    <span class="method-chip"><i class="fa fa-utensils"></i> {{ recipe.method or '—' }}</span>
+    <span class="method-chip"><i class="fa fa-fire"></i> {{ recipe.method or '—' }}</span>
   </div>
 </div>
 

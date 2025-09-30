@@ -347,19 +347,23 @@
 }
 .modal-logout.open, .modal-logout-backdrop.open {
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: all;
 }
 .modal-logout {
-  display: block;
   position: fixed;
-  z-index: 250;
-  left: 50%; top: 50%;
+  z-index: 1102;
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%);
-  background: #fffaf5;
-  border-radius: 15px;
-  box-shadow: 0 6px 24px rgba(33,142,70,0.17);
-  min-width: 288px; max-width: 95vw;
-  padding: 28px 20px 20px 20px;
+  min-width: 290px;
+  max-width: 92vw;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 38px 0 #18442022;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s;
+  /* Όχι transition στο transform! */
 }
 .modal-logout-content { text-align: center; }
 .modal-logout-title {
@@ -412,6 +416,18 @@
   background: rgba(44, 44, 44, 0.15);
   backdrop-filter: blur(1.5px);
 }
+.modal-logout:not(.open) {
+  visibility: hidden;
+}
+
+.modal-logout {
+  visibility: hidden;
+}
+.modal-logout.open {
+  visibility: visible;
+}
+
+
 </style>
 
 <!-- =================== RESTART BUTTON =================== -->
@@ -487,191 +503,72 @@
     </button>
   </div>
   <div class="offcanvas-content">
-	<button class="offcanvas-link" onclick="location.href='/fav_recipes'">
-	  <i class="fa fa-heart icon-green"></i> Αγαπημένες συνταγές
-	</button>
-	<button class="offcanvas-link" onclick="location.href='/ingredients'">
-	  <i class="fa fa-lemon icon-brand"></i> Διαχείριση υλικών
-	</button>
-	<button class="offcanvas-link" onclick="location.href='/history'">
-	  <i class="fa fa-history icon-brand"></i> Ιστορικό
-	</button>
-	<button class="offcanvas-link" onclick="location.href='/weekly_menu'">
-	  <i class="fa fa-calendar-week icon-brand"></i> Μενού εβδομάδας
-	</button>
-	<button class="offcanvas-link offcanvas-exit" onclick="logoutUser()">
-	  <i class="fa fa-sign-out-alt icon-pink"></i> Έξοδος
-	</button>
-
+    <button class="offcanvas-link" data-href="/fav_recipes">
+      <i class="fa fa-heart icon-green"></i> Αγαπημένες συνταγές
+    </button>
+    <button class="offcanvas-link" data-href="/ingredients">
+      <i class="fa fa-lemon icon-brand"></i> Διαχείριση υλικών
+    </button>
+    <button class="offcanvas-link" data-href="/history">
+      <i class="fa fa-history icon-brand"></i> Ιστορικό
+    </button>
+    <button class="offcanvas-link" data-href="/weekly_menu">
+      <i class="fa fa-calendar-week icon-brand"></i> Μενού εβδομάδας
+    </button>
+    <button class="offcanvas-link offcanvas-exit" onclick="logoutUser()">
+      <i class="fa fa-sign-out-alt icon-pink"></i> Έξοδος
+    </button>
   </div>
 </div>
+
+
 <div id="offcanvas-backdrop" class="offcanvas-backdrop" onclick="closeOffcanvas()"></div>
-
-
 
 
 </body>
 
-{% endblock %}
 
 
-
-{% block scripts %}
-
-<!------------- Backend Init ------------->
+<!------------ Restart Chat ------------->
 <script>
-  window.BACKEND_FAVORITE_RECIPE_IDS = {{ favorite_recipe_ids|tojson }};
-  window.cookingMethodsFromBackend = {{ cooking_methods|tojson }};
-</script>
 
-<!------------- Fanorites Handling ------------->
-<script>
-function toggleFavorite(wrapper, recipe_id) {
-  // Βεβαιώσου ότι το recipe_id είναι ΠΑΝΤΑ αριθμός!
-  recipe_id = Number(recipe_id);
-
-  let favIds = [];
-  try {
-    favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
-  } catch (e) {}
-
-  // Ενημέρωση backend
-  fetch('/toggle_favorite_recipe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recipe_id: recipe_id })
-  })
-  .then(r => {
-    console.log('RAW fetch response:', r);
-    return r.json();
-  })
-  .then(data => {
-    console.log('Parsed JSON data:', data, 'favIds before:', favIds);
-
-    const isAdded = data.status === "added";
-    let idx = favIds.findIndex(x => Number(x) === recipe_id);
-
-    console.log('isAdded:', isAdded, 'idx:', idx, 'recipe_id:', recipe_id);
-
-    if (isAdded && idx === -1) {
-      favIds.push(recipe_id);
-      console.log('>>> Προστέθηκε:', recipe_id);
-    } else if (!isAdded && idx !== -1) {
-      favIds.splice(idx, 1);
-      console.log('>>> Αφαιρέθηκε:', recipe_id);
-    }
-    localStorage.setItem('favorite_recipe_ids', JSON.stringify(favIds));
-    console.log('favIds after:', favIds);
-
-    // === Ενημέρωσε το εικονίδιο ===
-    wrapper.innerHTML = '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color: var(--brand); font-size: 18px; vertical-align: -2px; cursor: pointer;"></i>';
-    const icon = wrapper.querySelector("i");
-    if (icon) {
-      icon.onclick = function(e) {
-        e.stopPropagation();
-        toggleFavorite(wrapper, recipe_id);
-      };
-    }
-  })
-  .catch(err => {
-    console.error('toggleFavorite error:', err);
-  });
-}
-
-function isFavorite(recipe_id) {
-  recipe_id = Number(recipe_id);
-  try {
-    const favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
-    return favIds.map(x => Number(x)).includes(recipe_id);
-  } catch (e) {
-    return false;
-  }
-}
-
-function refreshFavorites() {
-  const allCards = document.querySelectorAll('.similar-card-item');
-
-  allCards.forEach(card => {
-    const recipeId = card.getAttribute('data-recipe-id');
-
-    const favWrapper = card.querySelector('span[style*="position: absolute"]');
-    if (!favWrapper) {
-      return;
-    }
-
-    const fav = isFavorite(recipeId);
-
-    favWrapper.innerHTML =
-      '<i class="' + (fav ? 'fas' : 'far') + ' fa-heart" style="color: #1a6e38; font-size: 20px; filter: drop-shadow(0 2px 5px #fff2);"></i>';
-
-    const icon = favWrapper.querySelector("i");
-    if (icon) {
-      icon.onclick = function(e) {
-        e.stopPropagation();
-        toggleFavorite(favWrapper, recipeId);
-      };
-    } else {
-    }
-  });
-}
-
-</script>
-
-<!------------ OffCanvas ------------->
-<script>
-// === OFFCANVAS LOGIC ===
-
-// Άνοιγμα από το hamburger button
-document.querySelector('.fa-bars').closest('button').onclick = openOffcanvas;
-
-function openOffcanvas() {
-  document.getElementById('offcanvas').classList.add('open');
-  document.getElementById('offcanvas-backdrop').classList.add('open');
-  document.body.style.overflow = 'hidden'; // για να μην scrollάρει το body
-}
-
-function closeOffcanvas() {
-  document.getElementById('offcanvas').classList.remove('open');
-  document.getElementById('offcanvas-backdrop').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-// Προαιρετικά: Κλείσιμο με ESC
-document.addEventListener('keydown', function(e) {
-  if (e.key === "Escape") closeOffcanvas();
+window.addEventListener("DOMContentLoaded", function() {
+  const btn = document.getElementById("restartChatBtn");
+  if (!btn) return;
+  const hasHistory = !!sessionStorage.getItem('chatHistory');
+  btn.style.display = hasHistory ? 'inline-flex' : 'none';
 });
-</script>
 
-<!------------ Logout ------------->
-<script>
+function restartChat() {
+  showRestartModal();
+}
 
-// === LOGOUT CONFIRM LOGIC (ΔΥΝΑΜΙΚΟ MODAL) ===
-function logoutUser() {
+function showRestartModal() {
   // Αν υπάρχει ήδη, μην το ξαναβάλεις
-  if (document.getElementById('logoutConfirmModal')) return;
+  if (document.getElementById('restartConfirmModal')) return;
 
   // Δημιουργία backdrop
   const backdrop = document.createElement('div');
-  backdrop.id = 'logoutModalBackdrop';
+  backdrop.id = 'restartModalBackdrop';
   backdrop.className = 'modal-logout-backdrop open';
-  backdrop.onclick = closeLogoutModal;
+  backdrop.onclick = closeRestartModal;
 
   // Δημιουργία modal
   const modal = document.createElement('div');
-  modal.id = 'logoutConfirmModal';
+  modal.id = 'restartConfirmModal';
   modal.className = 'modal-logout open';
   modal.innerHTML = `
     <div class="modal-logout-content">
       <div class="modal-logout-title">
-        <i class="fa fa-sign-out-alt"></i> Αποσύνδεση;
+        <i class="fa fa-undo"></i> Επαναφορά συνομιλίας;
       </div>
       <div class="modal-logout-msg">
-        Επιθυμείς σίγουρα να αποσυνδεθείς;<br>
+        Θέλεις σίγουρα να επαναφέρεις το ιστορικό της συνομιλίας;<br>
         <span style="color:var(--red); font-weight:600;">Οι προτιμήσεις σου για σήμερα θα διαγραφούν!</span>
       </div>
       <div class="modal-logout-actions">
-        <button class="btn-logout-cancel" onclick="closeLogoutModal()">Ακύρωση</button>
-        <button class="btn-logout-confirm" onclick="confirmLogout()">Αποσύνδεση</button>
+        <button class="btn-logout-cancel" onclick="closeRestartModal()">Ακύρωση</button>
+        <button class="btn-logout-confirm" onclick="confirmRestart()">Επαναφορά</button>
       </div>
     </div>
   `;
@@ -679,29 +576,49 @@ function logoutUser() {
   document.body.appendChild(backdrop);
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
-
-  // Κλείσε το offcanvas αν είναι ανοιχτό
-  if (typeof closeOffcanvas === 'function') closeOffcanvas();
 }
 
-function closeLogoutModal() {
-  const modal = document.getElementById('logoutConfirmModal');
-  const backdrop = document.getElementById('logoutModalBackdrop');
+function closeRestartModal() {
+  const modal = document.getElementById('restartConfirmModal');
+  const backdrop = document.getElementById('restartModalBackdrop');
   if (modal) modal.remove();
   if (backdrop) backdrop.remove();
   document.body.style.overflow = '';
 }
 
-function confirmLogout() {
-  localStorage.clear();
-  window.location.href = '/logout';
+function confirmRestart() {
+  clearChatHistory();
+  localStorage.removeItem("aux_ingredients");
+  localStorage.removeItem("dish_category");
+  localStorage.removeItem("excluded");
+  localStorage.removeItem("main_ingredient");
+  localStorage.removeItem("max_time");
+  localStorage.removeItem("method_prefs");
+  location.reload();
 }
 
-// Προαιρετικά: Κλείσιμο με Escape
+// Κλείσιμο με Escape
 document.addEventListener('keydown', function(e) {
-  if (e.key === "Escape") closeLogoutModal();
+  if (e.key === "Escape") closeRestartModal();
 });
 </script>
+
+
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+
+
+<!------------- Backend Init ------------->
+<script>
+  window.BACKEND_FAVORITE_RECIPE_IDS = {{ favorite_recipe_ids|tojson }};
+  window.cookingMethodsFromBackend = {{ cooking_methods|tojson }};
+</script>
+
 
 <!------------- Main Logic ------------->
 <script>
@@ -1443,46 +1360,85 @@ function resetInputUI() {
 
 </script>
 
-<!------------ Restart Chat ------------->
+
+<!------------ OffCanvas ------------->
 <script>
+// === OFFCANVAS LOGIC ===
 
-window.addEventListener("DOMContentLoaded", function() {
-  const btn = document.getElementById("restartChatBtn");
-  if (!btn) return;
-  const hasHistory = !!sessionStorage.getItem('chatHistory');
-  btn.style.display = hasHistory ? 'inline-flex' : 'none';
-});
+// Άνοιγμα από το hamburger button
+document.querySelector('.fa-bars').closest('button').onclick = openOffcanvas;
 
-function restartChat() {
-  showRestartModal();
+function openOffcanvas() {
+  document.getElementById('offcanvas').classList.add('open');
+  document.getElementById('offcanvas-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden'; // για να μην scrollάρει το body
 }
 
-function showRestartModal() {
+function closeOffcanvas() {
+  document.getElementById('offcanvas').classList.remove('open');
+  document.getElementById('offcanvas-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Προαιρετικά: Κλείσιμο με ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === "Escape") closeOffcanvas();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  var offcanvas = document.getElementById('offcanvas');
+  if (!offcanvas) return;
+  var links = offcanvas.querySelectorAll('.offcanvas-link');
+  links.forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      // Διάβασε που θα πάει:
+      var href = link.getAttribute('data-href');
+      if (href) {
+        e.preventDefault(); // μην γίνει default navigation
+        closeOffcanvas();
+        setTimeout(function() {
+          window.location.href = href;
+        }, 170); // μπορείς να το αυξήσεις λίγο αν χρειαστεί
+      } else {
+        // Αν δεν έχει href (π.χ. logout modal), απλά κλείσε
+        closeOffcanvas();
+      }
+    });
+  });
+});
+
+</script>
+
+<!------------ Logout ------------->
+<script>
+
+// === LOGOUT CONFIRM LOGIC (ΔΥΝΑΜΙΚΟ MODAL) ===
+function logoutUser() {
   // Αν υπάρχει ήδη, μην το ξαναβάλεις
-  if (document.getElementById('restartConfirmModal')) return;
+  if (document.getElementById('logoutConfirmModal')) return;
 
   // Δημιουργία backdrop
   const backdrop = document.createElement('div');
-  backdrop.id = 'restartModalBackdrop';
+  backdrop.id = 'logoutModalBackdrop';
   backdrop.className = 'modal-logout-backdrop open';
-  backdrop.onclick = closeRestartModal;
+  backdrop.onclick = closeLogoutModal;
 
   // Δημιουργία modal
   const modal = document.createElement('div');
-  modal.id = 'restartConfirmModal';
+  modal.id = 'logoutConfirmModal';
   modal.className = 'modal-logout open';
   modal.innerHTML = `
     <div class="modal-logout-content">
       <div class="modal-logout-title">
-        <i class="fa fa-undo"></i> Επαναφορά συνομιλίας;
+        <i class="fa fa-sign-out-alt"></i> Αποσύνδεση;
       </div>
       <div class="modal-logout-msg">
-        Θέλεις σίγουρα να επαναφέρεις το ιστορικό της συνομιλίας;<br>
+        Επιθυμείς σίγουρα να αποσυνδεθείς;<br>
         <span style="color:var(--red); font-weight:600;">Οι προτιμήσεις σου για σήμερα θα διαγραφούν!</span>
       </div>
       <div class="modal-logout-actions">
-        <button class="btn-logout-cancel" onclick="closeRestartModal()">Ακύρωση</button>
-        <button class="btn-logout-confirm" onclick="confirmRestart()">Επαναφορά</button>
+        <button class="btn-logout-cancel" onclick="closeLogoutModal()">Ακύρωση</button>
+        <button class="btn-logout-confirm" onclick="confirmLogout()">Αποσύνδεση</button>
       </div>
     </div>
   `;
@@ -1490,31 +1446,123 @@ function showRestartModal() {
   document.body.appendChild(backdrop);
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
+
+  // Κλείσε το offcanvas αν είναι ανοιχτό
+  if (typeof closeOffcanvas === 'function') closeOffcanvas();
 }
 
-function closeRestartModal() {
-  const modal = document.getElementById('restartConfirmModal');
-  const backdrop = document.getElementById('restartModalBackdrop');
+function closeLogoutModal() {
+  const modal = document.getElementById('logoutConfirmModal');
+  const backdrop = document.getElementById('logoutModalBackdrop');
   if (modal) modal.remove();
   if (backdrop) backdrop.remove();
   document.body.style.overflow = '';
 }
 
-function confirmRestart() {
-  clearChatHistory();
-  localStorage.removeItem("aux_ingredients");
-  localStorage.removeItem("dish_category");
-  localStorage.removeItem("excluded");
-  localStorage.removeItem("main_ingredient");
-  localStorage.removeItem("max_time");
-  localStorage.removeItem("method_prefs");
-  location.reload();
+function confirmLogout() {
+  localStorage.clear();
+  window.location.href = '/logout';
 }
 
-// Κλείσιμο με Escape
+// Προαιρετικά: Κλείσιμο με Escape
 document.addEventListener('keydown', function(e) {
-  if (e.key === "Escape") closeRestartModal();
+  if (e.key === "Escape") closeLogoutModal();
 });
+</script>
+
+
+
+<!------------- Fanorites Handling ------------->
+<script>
+function toggleFavorite(wrapper, recipe_id) {
+  // Βεβαιώσου ότι το recipe_id είναι ΠΑΝΤΑ αριθμός!
+  recipe_id = Number(recipe_id);
+
+  let favIds = [];
+  try {
+    favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
+  } catch (e) {}
+
+  // Ενημέρωση backend
+  fetch('/toggle_favorite_recipe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe_id: recipe_id })
+  })
+  .then(r => {
+    console.log('RAW fetch response:', r);
+    return r.json();
+  })
+  .then(data => {
+    console.log('Parsed JSON data:', data, 'favIds before:', favIds);
+
+    const isAdded = data.status === "added";
+    let idx = favIds.findIndex(x => Number(x) === recipe_id);
+
+    console.log('isAdded:', isAdded, 'idx:', idx, 'recipe_id:', recipe_id);
+
+    if (isAdded && idx === -1) {
+      favIds.push(recipe_id);
+      console.log('>>> Προστέθηκε:', recipe_id);
+    } else if (!isAdded && idx !== -1) {
+      favIds.splice(idx, 1);
+      console.log('>>> Αφαιρέθηκε:', recipe_id);
+    }
+    localStorage.setItem('favorite_recipe_ids', JSON.stringify(favIds));
+    console.log('favIds after:', favIds);
+
+    // === Ενημέρωσε το εικονίδιο ===
+    wrapper.innerHTML = '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color: var(--brand); font-size: 18px; vertical-align: -2px; cursor: pointer;"></i>';
+    const icon = wrapper.querySelector("i");
+    if (icon) {
+      icon.onclick = function(e) {
+        e.stopPropagation();
+        toggleFavorite(wrapper, recipe_id);
+      };
+    }
+  })
+  .catch(err => {
+    console.error('toggleFavorite error:', err);
+  });
+}
+
+function isFavorite(recipe_id) {
+  recipe_id = Number(recipe_id);
+  try {
+    const favIds = JSON.parse(localStorage.getItem('favorite_recipe_ids') || '[]');
+    return favIds.map(x => Number(x)).includes(recipe_id);
+  } catch (e) {
+    return false;
+  }
+}
+
+function refreshFavorites() {
+  const allCards = document.querySelectorAll('.similar-card-item');
+
+  allCards.forEach(card => {
+    const recipeId = card.getAttribute('data-recipe-id');
+
+    const favWrapper = card.querySelector('span[style*="position: absolute"]');
+    if (!favWrapper) {
+      return;
+    }
+
+    const fav = isFavorite(recipeId);
+
+    favWrapper.innerHTML =
+      '<i class="' + (fav ? 'fas' : 'far') + ' fa-heart" style="color: #1a6e38; font-size: 20px; filter: drop-shadow(0 2px 5px #fff2);"></i>';
+
+    const icon = favWrapper.querySelector("i");
+    if (icon) {
+      icon.onclick = function(e) {
+        e.stopPropagation();
+        toggleFavorite(favWrapper, recipeId);
+      };
+    } else {
+    }
+  });
+}
+
 </script>
 
 
