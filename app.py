@@ -1524,6 +1524,85 @@ def update_cooked_note(cooked_id):
         print('[ERROR] update_cooked_note:', e)
         return jsonify({'success': False, 'error': 'DB error'}), 500
 
+@app.route("/api/cooked_dish", methods=["POST"])
+@login_required
+def api_cooked_dish():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    recipe_id = data.get("recipe_id")
+    day = data.get("day")
+    method = data.get("method", "")
+    servings = data.get("servings", None)
+    force = data.get("force", False)  # <-- ΠΡΟΣΘΗΚΗ
+
+    # Υπολογισμός ημερομηνίας βάσει day
+    from datetime import date, timedelta
+    base_date = date.today()
+    if day == "tomorrow":
+        target_date = base_date + timedelta(days=1)
+    elif day == "overmorrow":
+        target_date = base_date + timedelta(days=2)
+    else:
+        target_date = base_date
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    # Έλεγχος αν υπάρχει ήδη πιάτο για user+date ΜΟΝΟ αν force ΔΕΝ είναι True
+    if not force:
+        cur.execute("SELECT id FROM cooked_dishes WHERE user_id=? AND date=?", (user_id, target_date))
+        row = cur.fetchone()
+        if row:
+            conn.close()
+            return jsonify({"exists": True, "old_id": row[0]})
+
+    # Καταχώρηση (πάντα αν force==True, αλλιώς μόνο αν δεν βρέθηκε)
+    cur.execute("""
+        INSERT INTO cooked_dishes (user_id, recipe_id, method, servings, date)
+        VALUES (?, ?, ?, ?, ?)
+    """, (user_id, recipe_id, method, servings, target_date))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route("/api/cooked_dish_replace", methods=["POST"])
+@login_required
+def api_cooked_dish_replace():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    recipe_id = data.get("recipe_id")
+    day = data.get("day")
+    method = data.get("method", "")
+    servings = data.get("servings", None)
+
+    from datetime import date, timedelta
+    base_date = date.today()
+    if day == "tomorrow":
+        target_date = base_date + timedelta(days=1)
+    elif day == "overmorrow":
+        target_date = base_date + timedelta(days=2)
+    else:
+        target_date = base_date
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+    # Κάνε αντικατάσταση (σβήσε το παλιό & βάλε το νέο)
+    cur.execute("DELETE FROM cooked_dishes WHERE user_id=? AND date=?", (user_id, target_date))
+    cur.execute("""
+        INSERT INTO cooked_dishes (user_id, recipe_id, method, servings, date)
+        VALUES (?, ?, ?, ?, ?)
+    """, (user_id, recipe_id, method, servings, target_date))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
 
 # ----------- LAST SEEN DISHES -----------
 @app.route("/api/mark_recipe_seen", methods=["POST"])
