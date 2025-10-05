@@ -785,9 +785,33 @@
 
 </style>
 
+<style>
+.premium-badge-big {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(270deg, #e9c891 0%, #b89c52 50%, #9c864a 100%);
+  color: #47380c;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 7px 18px 7px 15px;
+  box-shadow: 0 2px 8px rgba(185,156,82,0.08);
+  margin: 12px 0 4px 0;
+  letter-spacing: 0.02em;
+}
+.premium-badge-big .fa-gem,
+.premium-badge-big .svg-inline--fa.fa-gem {
+  color: #40c4ff !important;
+  font-size: 1.1em;
+  margin-right: 2px;
+  filter: drop-shadow(0 1px 0 #fff4cc);
+}
+</style>
 
 <!-- ========= CONTENT ========= -->
 
+<!-- Topbar -->
 <div class="recipe-topbar" id="profileTopbar">
   <button class="icon-btn" id="backBtn"><i class="fa fa-arrow-left"></i></button>
   <span class="topbar-title">Το προφίλ μου</span>
@@ -796,13 +820,27 @@
   </button>
 </div>
 
-<div class="profile-header-card">
+<!-- Προφίλ header card -->
+<div class="profile-header-card" style="position:relative;">
   <div class="profile-avatar-wrap">
     <img class="profile-avatar-img" src="{{ avatar_path }}" alt="Avatar">
   </div>
   <div class="profile-username">{{ first_name }}</div>
+  <!-- Κουμπί Αναβάθμισης -->
+	{% if is_premium %}
+	  <div class="premium-badge-big">
+		<i class="fa fa-gem"></i>
+		Premium μέλος
+	  </div>
+	{% else %}
+	  <button class="upgrade-btn" id="upgradeBtn">
+		<i class="fa fa-gem"></i>
+		Αναβάθμιση σε Premium
+	  </button>
+	{% endif %}
 </div>
 
+<!-- Status bar -->
 <div class="profile-status-bar">
   <div class="profile-status-item" id="status-favorites">
     <div class="profile-status-value" id="stats-favorites">{{ stats.favorites }}</div>
@@ -822,13 +860,12 @@
   </div>
 </div>
 
-
+<!-- Tabs -->
 <div class="profile-tabs-row" id="profileTabs">
   <button class="profile-tab-btn active" data-tab="favoritesList">Αγαπημένες Συνταγές</button>
   <button class="profile-tab-btn" data-tab="lastSeenList">Είδες πρόσφατα</button>
   <button class="profile-tab-btn" data-tab="activityList">Δραστηριότητα</button>
 </div>
-
 
 <!-- === Φίλτρα & Search για Αγαπημένες === -->
 <div id="favorites-filters-section" style="display:;">
@@ -956,6 +993,7 @@
   </div>
 </div>
 <div id="confirmEditModalBackdrop" class="modal-logout-backdrop" onclick="closeConfirmEditModal()"></div>
+
 
 {% endblock %}
 
@@ -2057,6 +2095,22 @@ document.getElementById("confirmEditBtn").onclick = function() {
   closeConfirmEditModal();
 };
 
+</script>
+
+<!-------------- Premium Modal ---------------->
+<script>
+document.getElementById("upgradeBtn").addEventListener("click", function() {
+  document.getElementById("upgradeModal").style.display = "flex";
+  document.getElementById("upgradeModalBackdrop").style.display = "block";
+});
+document.getElementById("closeUpgradeModalBtn").addEventListener("click", function() {
+  document.getElementById("upgradeModal").style.display = "none";
+  document.getElementById("upgradeModalBackdrop").style.display = "none";
+});
+document.getElementById("upgradeModalBackdrop").addEventListener("click", function() {
+  document.getElementById("upgradeModal").style.display = "none";
+  document.getElementById("upgradeModalBackdrop").style.display = "none";
+});
 </script>
 
 {% endblock %}
