@@ -353,7 +353,7 @@
   transition: background 0.18s;
 }
 .upgrade-offcanvas-btn:hover {
-  background: linear-gradient(90deg,#1a6e38,#218e46);
+  background: linear-gradient(90deg,#1a6e38,var(--brand));
 }
 
 </style>
@@ -386,10 +386,6 @@
 <!-- =================== PREMIUM MODAL =================== -->
 <style>
 
-
-
-
-
 .modal-card {
   background: #fff;
   border-radius: 18px;
@@ -404,7 +400,7 @@
   font-weight: 700;
   font-size: 1.3rem;
   margin-bottom: 10px;
-  color: #218e46;
+  color: var(--brand);
   display: flex;
   align-items: center;
   gap: 7px;
@@ -422,16 +418,17 @@
   padding: 0px 5px;
 }
 .modal-close:hover { color: #218e46; }
+
 .modal-cancel-btn {
   background: var(--pink);
-  border: 1px solid var(--pink);
+  border: none;
   color: #fff;
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 8px 26px;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.14s;
+  transition: background 0.13s;
 }
 .modal-cancel-btn:hover {
   background: #ffe6b3;
@@ -561,8 +558,169 @@
 
 </style>
 
+<!-- =================== CHOOSE DISH MODAL =================== -->
+<style>
+/* ---------- Modal Container ---------- */
+.modal-choose-dish {
+  max-width: 420px;
+}
+.choose-dish-modal-content {
+  background: #fffaf5;
+  border-radius: 15px;
+  box-shadow: 0 6px 24px rgba(33,142,70,0.17);
+}
+.choose-dish-modal-header {
+  border-bottom: 1px solid #e0e0e0;
+}
+.choose-dish-modal-body {
+  padding: 20px;
+}
+.choose-dish-modal-footer {
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* ---------- Επιλογή ημέρας (Badges) ---------- */
+.dish-day-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 34px;
+  justify-content: center;
+}
+.dish-day-badge {
+  background: var(--bg-badge, #f8faf7);
+  color: var(--brand, #218e46);
+  border: 1.3px solid #dbdbdb;
+  border-radius: 24px;
+  font-size: 1.2em;
+  padding: 4px 16px;
+  cursor: pointer;
+  transition: background 0.13s, color 0.13s, border 0.13s;
+  outline: none;
+  font-weight: 500;
+  user-select: none;
+}
+.dish-day-badge.selected,
+.dish-day-badge:active {
+  background: #e4f6e8;
+  color: #1a6e38;
+  border: 1.8px solid var(--brand);
+}
+
+/* ---------- Επιλογή πιάτου (Options) ---------- */
+.dish-options {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.dish-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1.6px solid #dbdbdb;
+  border-radius: 16px;
+  padding: 13px 15px;
+  transition: border 0.15s, background 0.12s;
+  cursor: pointer;
+  position: relative;
+}
+
+.dish-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1.6px solid #dbdbdb;
+  border-radius: 16px;
+  padding: 13px 15px;
+  transition: border 0.15s, background 0.12s;
+  cursor: pointer;
+  position: relative;
+}
+
+/* ΜΟΝΟ το .selected κάνει highlight */
+.dish-option.selected {
+  background: #f6fbf6;
+  border-color: #218e46;
+}
+
+/* Το input radio μπορεί να μείνει hidden, εκτός αν θες να φαίνεται */
+.dish-option input[type="radio"] {
+  accent-color: var(--brand, #218e46);
+  width: 18px;
+  height: 18px;
+  margin-right: 12px;
+}
 
 
+/* ----------- Πιάτο: Εικόνα & Τίτλος ----------- */
+.dish-label {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.dish-img-title-wrap {
+  display: flex;
+  align-items: center;
+}
+.dish-img {
+  width: 45px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-right: 11px;
+}
+
+/* ----------- Πιάτο: Κείμενο ----------- */
+.dish-title {
+  font-weight: 500;
+  font-size: 1.10em;
+  color: #234a26;
+}
+.dish-desc {
+  font-size: 0.96em;
+  color: #788484;
+}
+
+/* ----------- Option Icon ----------- */
+.dish-icon {
+  font-size: 1.75em;
+  margin-left: 12px;
+  min-width: 32px;
+  text-align: right;
+  opacity: 0.94;
+  transition: filter 0.15s;
+}
+.dish-option.selected .dish-icon {
+  filter: drop-shadow(0 1px 3px #1a6e3830);
+}
+
+
+.btn-close {
+  /* Κρύβει το default icon και βάζει custom SVG X σε #218e46 */
+  background: none;
+  width: 1.3em;
+  height: 1.3em;
+  opacity: 1;
+  border: none;
+  padding: 0.25em 0.25em;
+  /* Εμφάνιση custom X */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23218e46' stroke-width='2' viewBox='0 0 16 16'%3E%3Cpath stroke-linecap='round' d='M4 4l8 8M12 4l-8 8'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 1em 1em;
+}
+.btn-close:hover,
+.btn-close:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%231a6e38' stroke-width='2' viewBox='0 0 16 16'%3E%3Cpath stroke-linecap='round' d='M4 4l8 8M12 4l-8 8'/%3E%3C/svg%3E");
+  opacity: 0.95;
+}
+
+</style>
 
 <body style="min-height:100vh; display:flex; flex-direction:column;">
 
@@ -632,10 +790,10 @@
       <i class="fa fa-lemon icon-brand"></i> Διαχείριση υλικών
     </button>
     <button class="offcanvas-link" data-href="/history">
-      <i class="fa fa-history icon-brand"></i> Ιστορικό
+      <i class="fa fa-history icon-brand"></i> Ιστορικό μαγειρεμένων πιάτων
     </button>
     <button class="offcanvas-link" data-href="/weekly_menu">
-      <i class="fa fa-calendar-week icon-brand"></i> Μενού εβδομάδας
+      <i class="fa fa-calendar-week icon-brand"></i> Εβδομαδιαίο μενού
     </button>
     <button class="offcanvas-link offcanvas-exit" onclick="logoutUser()">
       <i class="fa fa-sign-out-alt icon-pink"></i> Έξοδος
@@ -677,7 +835,6 @@
   </div>
 </div>
 
-
 <div id="cancelConfirmModal">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -694,6 +851,83 @@
   </div>
 </div>
 
+<div class="modal fade" id="chooseDishModal" tabindex="-1" aria-labelledby="chooseDishLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-choose-dish">
+    <div class="modal-content choose-dish-modal-content">
+      <div class="modal-header choose-dish-modal-header">
+        <h5 class="modal-title" id="chooseDishLabel" style="margin-bottom:0;">
+          Μαγειρεύω για...
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Κλείσιμο"></button>
+      </div>
+      <div class="modal-body choose-dish-modal-body">
+        <!-- Επιλογή ημέρας (BADGES) -->
+        <div class="dish-day-row">
+          <span class="dish-day-badge selected" id="choose-today-badge">Σήμερα</span>
+          <span class="dish-day-badge" id="choose-tomorrow-badge">Αύριο</span>
+          <span class="dish-day-badge" id="choose-overmorrow-badge">Μεθαύριο</span>
+        </div>
+        <!-- Λίστα πιάτων (OPTIONS) -->
+        <form id="chooseDishForm">
+          <div class="dish-options">
+            <!-- ΕΔΩ ΤΑ ΠΙΑΤΑ ΘΑ ΜΠΑΙΝΟΥΝ ΔΥΝΑΜΙΚΑ ΑΠΟ JS -->
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer choose-dish-modal-footer">
+        <button type="button" class="onboarding-next-btn" id="confirmDishBtn" disabled>Επιβεβαίωση</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="cookedDishExistsModal" tabindex="-1" aria-labelledby="cookedDishExistsLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-choose-dish">
+    <div class="modal-content choose-dish-modal-content">
+      <div class="modal-header choose-dish-modal-header">
+        <h5 class="modal-title" id="cookedDishExistsLabel" style="margin-bottom:0;">
+          Ουπς..
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Κλείσιμο"></button>
+      </div>
+      <div class="modal-body choose-dish-modal-body">
+        <div style="font-size:1.1em;">
+          Υπάρχει ήδη καταχωρημένο μαγειρεμένο πιάτο για αυτή τη μέρα.<br><br>
+          Τι θα ήθελες να κάνεις;
+        </div>
+        <form id="conflictActionForm" style="margin-top: 18px;">
+          <div class="dish-options">
+            <label class="dish-option conflict-option">
+              <input type="radio" name="conflictAction" value="replace" style="margin-right:12px;" checked>
+              <span class="dish-label">
+                <span class="dish-title">Αντικατάσταση του πιάτου με αυτό</span>
+                <span class="dish-desc">Το προηγούμενο πιάτο θα αφαιρεθεί</span>
+              </span>
+            </label>
+            <label class="dish-option conflict-option">
+              <input type="radio" name="conflictAction" value="keep_old" style="margin-right:12px;">
+              <span class="dish-label">
+                <span class="dish-title">Διατήρηση του προηγούμενου</span>
+                <span class="dish-desc">Το νέο πιάτο δεν θα καταχωρηθεί</span>
+              </span>
+            </label>
+            <label class="dish-option conflict-option">
+              <input type="radio" name="conflictAction" value="keep_both" style="margin-right:12px;">
+              <span class="dish-label">
+                <span class="dish-title">Διατήρηση και των 2 πιάτων</span>
+                <span class="dish-desc">Και τα δύο πιάτα θα αποθηκευτούν για τη μέρα</span>
+              </span>
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer choose-dish-modal-footer">
+        <button type="button" class="onboarding-next-btn" id="conflictActionConfirmBtn" disabled>Συνέχεια</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 {% endblock %}
 
@@ -703,9 +937,13 @@
 
 <!------------- Backend Init ------------->
 <script>
-  window.BACKEND_FAVORITE_RECIPE_IDS = {{ favorite_recipe_ids|tojson }};
-  window.cookingMethodsFromBackend = {{ cooking_methods|tojson }};
-  window.is_premium = {{ is_premium|tojson }};
+window.BACKEND_FAVORITE_RECIPE_IDS = {{ favorite_recipe_ids|tojson }};
+window.cookingMethodsFromBackend = {{ cooking_methods|tojson }};
+window.is_premium = {{ is_premium|tojson }};
+
+/* === GLOBAL: Τα πιάτα της τελευταίας πρότασης AI === */
+window.lastAISuggestedDishes = [];
+
 </script>
 
 <!------------- Main Logic ------------->
@@ -1081,10 +1319,11 @@ function handleQuickReply(btn) {
 	}
 
   if (action === "confirm_choice") {
-    document.getElementById("typing-indicator")?.remove();
-    renderAIBubble("....to be continued", "system");
-    return;
-  }
+	  var typingIndicator = document.getElementById("typing-indicator");
+	  if (typingIndicator) typingIndicator.remove();
+	  showChooseDishModal(); // <-- Ανοίγει το modal και γεμίζει τα πιάτα
+	  return;
+	}
 
   if (action === "time") {
     renderUserBubble(value);
@@ -1393,8 +1632,13 @@ function callAISuggest(userMessage = "", step) {
 	  
       if (data.message) renderAIBubble(data.message);
 	  console.log("dishes = ",data.dishes);
-      if (data.dishes?.length) renderDishCards(data.dishes);
-      if (!data.dishes || data.dishes.length === 0) {
+      
+	  if (data.dishes?.length) {
+		  window.lastAISuggestedDishes = data.dishes
+		  renderDishCards(data.dishes); 
+		}
+      
+	  if (!data.dishes || data.dishes.length === 0) {
         if (typeof initLocalState === "function") initLocalState();
       }
 	  
@@ -1473,44 +1717,6 @@ document.addEventListener('keydown', function(e) {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-  var offcanvas = document.getElementById('offcanvas');
-  if (!offcanvas) return;
-  var links = offcanvas.querySelectorAll('.offcanvas-link');
-	links.forEach(function(link) {
-	  link.addEventListener('click', function(e) {
-		var href = link.getAttribute('data-href');
-		// --- Ειδική διαχείριση για το history αν ΔΕΝ είναι premium ---
-		if (href === "/history" && (!window.is_premium || window.is_premium == 0 || window.is_premium === false || window.is_premium === "0")) {
-		  e.preventDefault();
-		  closeOffcanvas();
-		  var modal = document.getElementById("upgradeModal");
-		  var backdrop = document.getElementById("upgradeModalBackdrop");
-		  setTimeout(function() {
-			if (modal && backdrop) {
-			  modal.style.display = "flex";
-			  backdrop.style.display = "block";
-			}
-		  }, 170); // περίμενε να κλείσει το offcanvas
-		  return false;
-		}
-		// --- Όλα τα άλλα, ή είναι premium ---
-		if (href) {
-		  e.preventDefault();
-		  closeOffcanvas();
-		  setTimeout(function() {
-			window.location.href = href;
-		  }, 170);
-		} else {
-		  closeOffcanvas();
-		}
-	  });
-	});
-
-});
-
-
-
-document.addEventListener('DOMContentLoaded', function() {
   var historyBtn = document.querySelector('button.offcanvas-link[data-href="/history"]');
   if (!historyBtn) return;
 
@@ -1519,7 +1725,7 @@ document.addEventListener('DOMContentLoaded', function() {
     e.preventDefault();
     e.stopImmediatePropagation();
 
-    if (!window.is_premium || window.is_premium == 0 || window.is_premium === false || window.is_premium === "0") {
+    if ( window.is_premium === false ) {
       var modal = document.getElementById("upgradeModal");
       var backdrop = document.getElementById("upgradeModalBackdrop");
       if (modal && backdrop) {
@@ -1529,12 +1735,11 @@ document.addEventListener('DOMContentLoaded', function() {
       return false;
     }
     // Αν είναι premium κάνε redirect
+	if (typeof closeOffcanvas === "function") closeOffcanvas();
     window.location.href = "/history";
   }, true); // <-- ΣΗΜΕΙΩΣΗ: Δες το true! (useCapture)
 
 });
-
-
 
 
 </script>
@@ -1618,26 +1823,19 @@ function toggleFavorite(wrapper, recipe_id) {
     body: JSON.stringify({ recipe_id: recipe_id })
   })
   .then(r => {
-    console.log('RAW fetch response:', r);
     return r.json();
   })
   .then(data => {
-    console.log('Parsed JSON data:', data, 'favIds before:', favIds);
 
     const isAdded = data.status === "added";
     let idx = favIds.findIndex(x => Number(x) === recipe_id);
 
-    console.log('isAdded:', isAdded, 'idx:', idx, 'recipe_id:', recipe_id);
-
     if (isAdded && idx === -1) {
       favIds.push(recipe_id);
-      console.log('>>> Προστέθηκε:', recipe_id);
     } else if (!isAdded && idx !== -1) {
       favIds.splice(idx, 1);
-      console.log('>>> Αφαιρέθηκε:', recipe_id);
     }
     localStorage.setItem('favorite_recipe_ids', JSON.stringify(favIds));
-    console.log('favIds after:', favIds);
 
     // === Ενημέρωσε το εικονίδιο ===
     wrapper.innerHTML = '<i class="' + (isAdded ? 'fas' : 'far') + ' fa-heart" style="color: var(--brand); font-size: 18px; vertical-align: -2px; cursor: pointer;"></i>';
@@ -1805,7 +2003,6 @@ if (cancelBtn && modal) {
   cancelBtn.addEventListener('click', function(e) {
      if (typeof closePremiumModal === "function") closePremiumModal();
 	e.preventDefault();
-    console.log('OPENING MODAL');
     modal.classList.add('open');
   });
 }
@@ -1814,7 +2011,6 @@ if (cancelBtn && modal) {
 if (undoBtn && modal) {
   undoBtn.addEventListener('click', function() {
     modal.classList.remove('open');
-	console.log('CLOSING MODAL');
     // Επαναφέρουμε το κουμπί ακύρωσης (σε περίπτωση που ακύρωσε πριν)
     if (confirmBtn) {
       confirmBtn.disabled = false;
@@ -1887,6 +2083,212 @@ if (resumeBtn) {
 
 </script>
 
+<!------------ Dish Select Modal ------------->
+<script>
+/* === Συμπλήρωση του modal με τα πιάτα === */
+function fillDishModalOptions(dishes) {
+  const container = document.querySelector("#chooseDishModal .dish-options");
+  if (!container) return;
+  container.innerHTML = "";
+
+  (dishes || []).forEach((dish, i) => {
+    const label = document.createElement("label");
+    label.className = "dish-option";
+    label.innerHTML = `
+      <input type="radio" name="selectedDish" value="${dish.id}">
+      <span class="dish-label">
+        <span class="dish-img-title-wrap">
+          <img class="dish-img" src="${dish.image_url || '/static/images/recipes/noimg.jpg'}" alt="${dish.title}">
+          <span>
+            <span class="dish-title">${dish.title}</span><br>
+            <span class="dish-desc">${dish.desc || ""}</span>
+          </span>
+        </span>
+      </span>
+    `;
+    container.appendChild(label);
+  });
+
+  // Περιμένουμε λίγο πριν προσθέσουμε το selected (για render)
+  setTimeout(() => {
+    const firstLabel = container.querySelector('.dish-option');
+    const firstRadio = container.querySelector('input[type="radio"]');
+    if (firstLabel) firstLabel.classList.add('selected');
+    if (firstRadio) {
+      firstRadio.checked = true;
+      firstRadio.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    const confirmBtn = document.getElementById("confirmDishBtn");
+    if (confirmBtn) confirmBtn.disabled = false;
+  }, 0);
+}
+
+/* === Άνοιγμα modal & συμπλήρωση === */
+function showChooseDishModal() {
+  fillDishModalOptions(window.lastAISuggestedDishes || []);
+  var modalElem = document.getElementById('chooseDishModal');
+  if (modalElem) {
+    var modal = bootstrap.Modal.getOrCreateInstance(modalElem);
+    modal.show();
+  }
+}
+
+
+/* === Ενεργοποίηση badges ημέρας & επιλογή πιάτου === */
+document.addEventListener("DOMContentLoaded", function() {
+  // Badge selection (ημέρα)
+  document.querySelectorAll('.dish-day-badge').forEach(function(badge) {
+    badge.addEventListener('click', function() {
+      document.querySelectorAll('.dish-day-badge').forEach(b => b.classList.remove('selected'));
+      badge.classList.add('selected');
+    });
+  });
+
+  // Option selection (πιάτο)
+  const dishOptionsParent = document.querySelector("#chooseDishModal .dish-options");
+  if (dishOptionsParent) {
+    dishOptionsParent.addEventListener("change", function(e) {
+      if (e.target.name === "selectedDish") {
+        document.querySelectorAll("#chooseDishModal .dish-option").forEach(function(opt) {
+          opt.classList.remove('selected');
+        });
+        const selected = e.target.closest(".dish-option");
+        if (selected) selected.classList.add('selected');
+        document.getElementById("confirmDishBtn").disabled = false;
+      }
+    });
+  }
+
+  // Modal επιλογής ενέργειας σε conflict (radio highlight)
+  const conflictForm = document.getElementById('conflictActionForm');
+  const conflictBtn = document.getElementById('conflictActionConfirmBtn');
+  if (conflictForm && conflictBtn) {
+    conflictForm.addEventListener('change', function() {
+      const checked = conflictForm.querySelector('input[name="conflictAction"]:checked');
+      document.querySelectorAll("#cookedDishExistsModal .dish-option").forEach(function(opt) {
+        opt.classList.remove('selected');
+      });
+      if (checked) {
+        checked.closest(".dish-option").classList.add('selected');
+        conflictBtn.disabled = false;
+      }
+    });
+  }
+
+  if (conflictBtn) {
+    conflictBtn.addEventListener('click', function() {
+      const checked = conflictForm.querySelector('input[name="conflictAction"]:checked');
+      if (!checked) return;
+      if (checked.value === "replace") {
+        // Αντικατάσταση: fetch στο /api/cooked_dish_replace
+        fetch("/api/cooked_dish_replace", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(window.pendingCookedDish)
+        })
+        .then(r => r.json())
+        .then(data => { if (data.success) showFlash('success', 'Το πιάτο αντικαταστάθηκε!'); });
+      } else if (checked.value === "keep_both") {
+        // Νέα εγγραφή χωρίς να σβήνεις το προηγούμενο
+        fetch("/api/cooked_dish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...window.pendingCookedDish, force: true })
+        })
+        .then(r => r.json())
+        .then(data => { if (data.success) showFlash('success', 'Προστέθηκαν και τα δύο πιάτα!'); });
+      }
+      // Κλείσιμο conflict modal (όποια επιλογή και να κάνεις)
+      var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('cookedDishExistsModal'));
+      modal.hide();
+    });
+  }
+
+  // Αν για οποιοδήποτε λόγο το modal ανοίγει με JS, το button ξεκινάει disabled
+  const confirmBtn = document.getElementById("confirmDishBtn");
+	confirmBtn.addEventListener('click', function() {
+	  const selectedRadio = document.querySelector("#chooseDishModal input[name='selectedDish']:checked");
+	  const day =
+		document.getElementById('choose-today-badge')?.classList.contains('selected') ? "today"
+		: document.getElementById('choose-tomorrow-badge')?.classList.contains('selected') ? "tomorrow"
+		: "overmorrow";
+
+	  if (selectedRadio) {
+		// === ΕΛΕΓΧΟΣ PREMIUM ===
+		if (window.is_premium === false) {
+		  var modal = document.getElementById("upgradeModal");
+		  var backdrop = document.getElementById("upgradeModalBackdrop");
+		  if (modal && backdrop) {
+			modal.style.display = "flex";
+			backdrop.style.display = "block";
+		  }
+		  // Κλείσε το chooseDishModal αφού ζητήσεις upgrade
+		  var chooseDish = bootstrap.Modal.getOrCreateInstance(document.getElementById('chooseDishModal'));
+		  chooseDish.hide();
+		  return false;
+		}
+
+		// === Αν είναι premium, προχώρα κανονικά ===
+		const selectedDishId = selectedRadio.value;
+		const selectedMethod = ""; // ή συμπλήρωσε αν υπάρχει
+		const servings = "";       // ή συμπλήρωσε αν υπάρχει
+
+		fetch("/api/cooked_dish", {
+		  method: "POST",
+		  headers: { "Content-Type": "application/json" },
+		  body: JSON.stringify({
+			recipe_id: selectedDishId,
+			day: day,
+			method: selectedMethod,
+			servings: servings
+		  })
+		})
+		.then(r => r.json())
+		.then(data => {
+		  if (data.success) {
+			showFlash('success', 'Το πιάτο καταχωρήθηκε επιτυχώς στα μαγειρεμένα!');
+		  } else if (data.exists) {
+			window.pendingCookedDish = {
+			  recipe_id: selectedDishId,
+			  day: day,
+			  method: selectedMethod,
+			  servings: servings
+			};
+			setTimeout(function() {
+			  var conflictModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('cookedDishExistsModal'));
+			  conflictModal.show();
+			}, 250);
+		  }
+		});
+
+		// Κλείσιμο modal
+		var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('chooseDishModal'));
+		modal.hide();
+	  }
+	});
+
+  // Reset confirm button όταν ξανανοίγει το modal
+  document.getElementById('chooseDishModal')?.addEventListener('show.bs.modal', function() {
+    document.getElementById("confirmDishBtn").disabled = true;
+    document.querySelectorAll("#chooseDishModal .dish-option").forEach(function(opt) {
+      opt.classList.remove('selected');
+    });
+    document.querySelectorAll("#chooseDishModal input[name='selectedDish']").forEach(function(inp) {
+      inp.checked = false;
+    });
+  });
+
+  // Reset conflict modal στο άνοιγμα (πάντα η πρώτη επιλογή)
+  document.getElementById('cookedDishExistsModal')?.addEventListener('show.bs.modal', function() {
+    document.querySelectorAll("#cookedDishExistsModal .dish-option").forEach(function(opt, i) {
+      opt.classList.toggle('selected', i === 0);
+      opt.querySelector('input[type=\"radio\"]').checked = (i === 0);
+    });
+    const conflictBtn = document.getElementById('conflictActionConfirmBtn');
+    if (conflictBtn) conflictBtn.disabled = false;
+  });
+});
+</script>
 
 
 {% endblock %}
