@@ -1,8 +1,8 @@
+import sqlite3, unicodedata, random, re, json, traceback, os, openai, logging, time, stripe
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash, get_flashed_messages
-import sqlite3, unicodedata, random, re, json, traceback, os, openai, logging, time
 from dotenv import load_dotenv
 from rapidfuzz import fuzz, process
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from jinja2 import pass_context
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -11,6 +11,7 @@ from flask_mail import Mail, Message
 from fuzzywuzzy import process
 from stopwords_gr import RAW_STOPWORDS
 
+load_dotenv()
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.WARNING)
@@ -18,6 +19,8 @@ log.setLevel(logging.WARNING)
 
 app = Flask(__name__)
 app.secret_key = "d7gAq2d9bJz@7qK2kLxw!"
+
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
@@ -30,7 +33,6 @@ DB = "family_food_app.db"
 
 
 
-load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 import requests
@@ -265,6 +267,170 @@ known_ingredients = [
 
 default_minutes = 60
 
+# ----------- PAYMENTS -----------
+
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY")
+STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
+
+# ----------- SUBSCRIPTIONS -----------
+@app.route('/create_checkout_session', methods=['POST'])
+@login_required
+def create_checkout_session():
+    user, _ = get_user()
+    if not user:
+        return jsonify({"ok": False, "error": "not logged in"})
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=user["email"],
+            payment_method_types=["card"],
+            line_items=[{
+                "price": STRIPE_PRICE_ID,
+                "quantity": 1,
+            }],
+            mode="subscription",
+            success_url=request.host_url.rstrip("/") + url_for('payment_success') + "?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=request.host_url.rstrip("/") + url_for('profile'),
+            metadata={
+                "user_id": user["id"]
+            }
+        )
+        return jsonify({"ok": True, "url": checkout_session.url})
+    except Exception as e:
+        print("Stripe error:", e)
+        return jsonify({"ok": False, "error": str(e)})
+
+@app.route('/payment_success')
+@login_required
+def payment_success():
+    return render_template("payment_success.html")
+
+@app.route('/stripe_webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
+    print("Payload length:", len(payload))
+    print("Stripe-Signature:", sig_header)
+    print("Using webhook secret:", STRIPE_WEBHOOK_SECRET)
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except Exception as e:
+        print("Webhook error:", e)
+        return '', 400
+
+    if event['type'] == 'checkout.session.completed':
+        session_obj = event['data']['object']
+        user_id = session_obj['metadata'].get('user_id')
+        stripe_customer_id = session_obj['customer']
+        stripe_subscription_id = session_obj['subscription']
+        # Βρες το subscription object για να πάρεις την expiry date
+        subscription = stripe.Subscription.retrieve(stripe_subscription_id)
+        items = subscription['items']['data']
+        if not items:
+            print("[ERROR] No subscription items!")
+            return '', 400
+        period_end = items[0].get('current_period_end')
+        if not period_end:
+            print("[ERROR] No current_period_end in item!", items[0])
+            return '', 400
+
+        period_end_dt = datetime.fromtimestamp(period_end, UTC)
+        now_dt = datetime.now(UTC)
+
+        # Update χρήστη
+        conn = sqlite3.connect(DB)
+        conn.execute(
+            "UPDATE users SET is_premium=1, subscription_expires=?, premium_since=? WHERE id=?",
+            (period_end_dt, now_dt, user_id)
+        )
+        # Νέα εγγραφή event "created" στο subscriptions
+        conn.execute(
+            """INSERT INTO subscriptions (user_id, event_type, event_time, amount, currency, payment_id, payment_method, event_note)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (user_id, 'created', now_dt, 2.99, "EUR", stripe_subscription_id, "stripe", "checkout.session.completed webhook")
+        )
+        conn.commit()
+        print("✅ Premium ενεργοποιήθηκε για χρήστη", user_id)
+        conn.close()
+    return '', 200
+
+@app.route('/cancel_subscription', methods=['POST'])
+@login_required
+def cancel_subscription():
+    user, _ = get_user()
+    user_id = user["id"]
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT payment_id FROM subscriptions WHERE user_id=? AND event_type='created' ORDER BY event_time DESC LIMIT 1", 
+        (user_id,)
+    ).fetchone()
+    if not row:
+        return jsonify({'success': False, 'error': 'Δεν βρέθηκε ενεργή συνδρομή.'}), 404
+
+    subscription_id = row["payment_id"]
+    try:
+        import stripe
+        stripe.api_key = STRIPE_SECRET_KEY
+        stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
+    except Exception as e:
+        print("Stripe cancel error:", e)
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+    # Νέο event row (δεν κάνεις update σε παλιό!)
+    now_dt = datetime.now(UTC)
+    conn.execute(
+        """INSERT INTO subscriptions (user_id, event_type, event_time, payment_id, payment_method, event_note)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (user_id, 'canceled', now_dt, subscription_id, "stripe", "User canceled subscription")
+    )
+    # Προαιρετικά update τον πίνακα users
+    conn.execute(
+        "UPDATE users SET is_premium=0 WHERE id=?",
+        (user_id,)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
+
+@app.route('/resume_subscription', methods=['POST'])
+@login_required
+def resume_subscription():
+    user, _ = get_user()
+    user_id = user["id"]
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT payment_id FROM subscriptions WHERE user_id=? AND event_type='canceled' ORDER BY event_time DESC LIMIT 1", 
+        (user_id,)
+    ).fetchone()
+    if not row:
+        return jsonify({'success': False, 'error': 'Δεν βρέθηκε ακυρωμένη συνδρομή προς επανενεργοποίηση.'}), 404
+
+    subscription_id = row["payment_id"]
+    try:
+        sub = stripe.Subscription.modify(subscription_id, cancel_at_period_end=False)
+    except Exception as e:
+        print("Stripe resume error:", e)
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+    now_dt = datetime.now(UTC)
+    # Νέο event "resumed"
+    conn.execute(
+        """INSERT INTO subscriptions (user_id, event_type, event_time, payment_id, payment_method, event_note)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (user_id, 'resumed', now_dt, subscription_id, "stripe", "User resumed subscription")
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
 
 
 # ----------- START -----------
@@ -579,20 +745,76 @@ def main():
     favs = conn.execute("SELECT recipe_id FROM favorite_recipes WHERE user_id=?", (user_id,)).fetchall()
     favorite_recipe_ids = [row[0] for row in favs]
 
-    # Διάβασε το cooking_method του χρήστη
-    user_row = conn.execute("SELECT cooking_method FROM users WHERE id=?", (user_id,)).fetchone()
+    # Διάβασε το cooking_method του χρήστη και τα στοιχεία συνδρομής (αν θες για fallback)
+    user_row = conn.execute("SELECT cooking_method, subscription_expires, is_premium FROM users WHERE id=?", (user_id,)).fetchone()
     cooking_method = user_row["cooking_method"] if user_row else ""
-        
+    subscription_expires = user_row["subscription_expires"] if user_row else None
+    is_premium_flag = user_row["is_premium"] if user_row else 0
+
+    # Τελευταίο event συνδρομής (όχι status!)
+    last_sub = conn.execute("""
+        SELECT * FROM subscriptions
+        WHERE user_id = ?
+        ORDER BY event_time DESC, id DESC
+        LIMIT 1
+    """, (user_id,)).fetchone()
+
+    is_premium = False
+    is_pending_cancel = False
+    formatted_expires = ""
+    last_event_type = None
+    payment_id = None
+
+    if last_sub:
+        last_event_type = last_sub["event_type"]
+        payment_id = last_sub["payment_id"]
+
+        # (1) Τι status έχουμε τώρα;
+        # Αν το τελευταίο event είναι 'created' ή 'resumed' => ενεργό
+        # Αν το τελευταίο event είναι 'canceled' => έχει ζητηθεί ακύρωση
+        if last_event_type in ('created', 'resumed'):
+            is_premium = True
+        elif last_event_type == 'canceled':
+            # Σε Stripe, παραμένει ενεργή ως το τέλος της περιόδου (cancel_at_period_end)
+            is_premium = True
+            is_pending_cancel = True
+        # Αν το τελευταίο event είναι 'expired' ή 'payment_failed', δεν είναι premium
+        elif last_event_type in ('expired', 'payment_failed'):
+            is_premium = False
+
+        # Πάρε την ημερομηνία λήξης από το users.subscription_expires (ή αν θέλεις, αναζήτησέ την δυναμικά από Stripe/invoice αν έχεις αποθηκευμένο το τέλος)
+        if subscription_expires:
+            try:
+                expires_dt = datetime.fromisoformat(subscription_expires)
+                if expires_dt.tzinfo is None:
+                    expires_dt = expires_dt.replace(tzinfo=UTC)
+                formatted_expires = expires_dt.strftime('%d/%m/%Y %H:%M')
+                now_utc = datetime.now(UTC)
+                if expires_dt <= now_utc:
+                    is_premium = False
+            except Exception:
+                formatted_expires = subscription_expires
+        else:
+            formatted_expires = "-"
+    else:
+        # No subs ever, fallback σε χρήστη
+        is_premium = bool(is_premium_flag)
+        formatted_expires = "-"
+        is_pending_cancel = False
+
     # Σπάσε τα σε λίστα (αν θες λίστα)
     cooking_methods = [m.strip() for m in cooking_method.split(",")] if cooking_method else []    
-    
+
     conn.close()
-    
     
     return render_template(
         "main.html",
         favorite_recipe_ids=favorite_recipe_ids,
-        cooking_methods=cooking_methods
+        cooking_methods=cooking_methods,
+        is_premium=is_premium,
+        subscription_expires=subscription_expires,
+        formatted_expires=formatted_expires,
+        is_pending_cancel=is_pending_cancel
     )
 
 @app.route('/recipe_page/<int:recipe_id>')
@@ -697,15 +919,33 @@ def profile():
         return redirect(url_for("login"))
 
     conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
     # --- User Info ---
-    cur.execute("SELECT first_name FROM users WHERE id = ?", (user_id,))
+    cur.execute("SELECT first_name, subscription_expires, is_premium FROM users WHERE id = ?", (user_id,))
     row = cur.fetchone()
     if not row:
         return "User not found", 404
-    first_name = row[0]
+    first_name = row["first_name"]
     avatar_path = f"/static/images/avatars/{user_id}.jpg"
+
+    # --- Premium flag ---
+    subscription_expires = row["subscription_expires"]
+    is_premium = False
+    if subscription_expires:
+        try:
+            expires_dt = datetime.fromisoformat(subscription_expires)
+        except Exception:
+            expires_dt = None
+        # Κάνε το datetime.now() να έχει την ίδια ζώνη ώρας (ή δουλεψε σε UTC)
+        if expires_dt:
+            now = datetime.now(expires_dt.tzinfo) if expires_dt.tzinfo else datetime.now()
+            if expires_dt > now:
+                is_premium = True
+    # Fallback: αν έχεις και is_premium int flag
+    if not is_premium and row["is_premium"]:
+        is_premium = True
 
     # --- User Stats ---
     cur.execute("SELECT COUNT(*) FROM favorite_recipes WHERE user_id = ?", (user_id,))
@@ -721,12 +961,10 @@ def profile():
     comments_count = cur.fetchone()[0]
 
     # --- Αγαπημένα ---
-    
-    
     def get_chef_avatar(chef_name):
         filename = CHEF_AVATAR_MAP.get(chef_name, 'default.jpg')
         return f"/static/images/avatars/{filename}"
-        
+
     cur.execute("""
     SELECT r.id, r.title, r.image_path, r.chef, r.total_time, r.main_ingredient, r.method
     FROM favorite_recipes f
@@ -747,7 +985,6 @@ def profile():
             "main_ingredient": row[5],
             "method": row[6]
         })
-
 
     # --- Είδες πρόσφατα (last seen) ---
     cur.execute("""
@@ -773,7 +1010,6 @@ def profile():
         })
 
     # --- Δραστηριότητα (comments, ratings, cooked) --- 
-    
     # Comments
     cur.execute("""
         SELECT rc.id as comment_id, rc.recipe_id, r.title, r.image_path, r.total_time, r.chef, rc.created_at, 'comment' as type, rc.comment, NULL as rating
@@ -848,8 +1084,6 @@ def profile():
         for row in cur.fetchall()
     ]
 
-
-
     # Ταξινόμηση όλης της activity κατά timestamp (πιο πρόσφατα πρώτα)
     activity = comments + ratings + cooked_activity
     activity.sort(key=lambda x: x['timestamp'], reverse=True)
@@ -860,6 +1094,7 @@ def profile():
         user_id=user_id,
         avatar_path=avatar_path,
         first_name=first_name,
+        is_premium=is_premium,
         stats={
             "favorites": favorites_count,
             "cooked": cooked_count,
@@ -3490,20 +3725,21 @@ def cooked_history():
     res = conn.execute("""
         SELECT cd.*,
                r.id AS recipe_id,
+               r.title AS title,
                r.chef,
-               r.tags,
-               r.total_time,
-               r.method,
+               r.dish_tags,
+               r.method AS recipe_method,
                r.prep_time,
                r.cook_time,
+               r.total_time,
                r.ingredients,
                r.instructions,
                r.url,
-               r.main_dish_tag
+               r.dish_category
         FROM cooked_dishes cd
         LEFT JOIN recipes r ON cd.recipe_id = r.id
         WHERE cd.user_id=?
-        ORDER BY cd.date DESC, cd.recorded_at DESC
+        ORDER BY cd.date DESC, cd.cooked_at DESC
     """, (user["id"],)).fetchall()
 
     favorite_ids = set(
@@ -3514,23 +3750,27 @@ def cooked_history():
 
     history = []
     for row in res:
-        tags = row['tags'] or ""
+        tags = row['dish_tags'] or ""
         tag_list = [t.strip() for t in tags.split(",") if t.strip()]
         basic_category = next((t for t in tag_list if t in BASIC_CATEGORIES), "-")
         d = dict(row)
         d['basic_category'] = basic_category
         rec_id = d.get('recipe_id')
         d['is_favorite'] = rec_id in favorite_ids if rec_id else False
+        # === ΕΔΩ προσθέτουμε το σωστό image_path ===
+        if rec_id:
+            d['image_path'] = f"{rec_id}.jpg"
+        else:
+            d['image_path'] = "placeholder.jpg"
         history.append(d)
 
     today = datetime.now().date()
     days_to_check = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(1, 3)]
-    existing_dates = [row['date'] for row in history]
+    existing_dates = [row['date'] for row in history if row.get('date')]
     missing_days = [d for d in days_to_check if d not in existing_dates]
     conn.close()
 
     return render_template('history.html', history=history, missing_days=missing_days)
-
 
 @app.route('/delete_history_entry', methods=['POST'])
 def delete_history_entry():
