@@ -1183,7 +1183,7 @@ def edit_profile():
 @app.route("/fav_recipes")
 @login_required
 def fav_recipes():
-
+    print("called")
     user, _ = get_user()
     if not user:
         return redirect(url_for("login"))
@@ -1309,6 +1309,21 @@ def edit_recipe(recipe_id):
         selected_methods=selected_methods
     )
 
+@app.route("/pantry")
+@login_required
+def pantry():
+    user_id = session.get("user_id")
+    is_premium = False
+    if user_id:
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT is_premium FROM users WHERE id=?", (user_id,)).fetchone()
+        is_premium = row["is_premium"] if row else False
+        conn.close()
+    return render_template(
+        "pantry.html",
+        is_premium=is_premium
+    )
 
 # ----------- RATINGS για recipe -----------
 
@@ -1601,6 +1616,171 @@ def api_cooked_dish_replace():
     conn.commit()
     conn.close()
     return jsonify({"success": True})
+
+
+# ----------- INGREDIENTS MANAGEMENT -----------
+
+@app.route("/api/pantry", methods=["GET"])
+@login_required
+def get_pantry():
+    user_id = session.get("user_id")
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        "SELECT id, ingredient_core, location, quantity, unit, added_at FROM pantry WHERE user_id=? ORDER BY location, ingredient_core",
+        (user_id,)
+    ).fetchall()
+    conn.close()
+    pantry = {"fridge": [], "pantry": [], "freezer": []}
+    for row in rows:
+        loc = row["location"]
+        item = {
+            "id": row["id"],
+            "ingredient_core": row["ingredient_core"],
+            "quantity": row["quantity"],
+            "unit": row["unit"],
+            "added_at": row["added_at"]
+        }
+        if loc in pantry:
+            pantry[loc].append(item)
+    return jsonify({"success": True, "pantry": pantry})
+
+@app.route("/api/pantry", methods=["POST"])
+@login_required
+def add_to_pantry():
+    user_id = session.get("user_id")
+    data = request.get_json() or {}
+    ingredient_core = data.get("ingredient_core", "").strip()
+    location = data.get("location", "").strip()
+    quantity = data.get("quantity", 1)
+    unit = data.get("unit", "τμχ")
+    if not ingredient_core or location not in ["fridge", "pantry", "freezer"]:
+        return jsonify({"success": False, "error": "Invalid input"}), 400
+    conn = sqlite3.connect(DB)
+    try:
+        conn.execute(
+            "INSERT INTO pantry (user_id, ingredient_core, location, quantity, unit) VALUES (?, ?, ?, ?, ?)",
+            (user_id, ingredient_core, location, quantity, unit)
+        )
+        conn.commit()
+        return jsonify({"success": True})
+    except sqlite3.IntegrityError:
+        return jsonify({"success": False, "error": "Ingredient already exists"}), 409
+    finally:
+        conn.close()
+
+@app.route("/api/pantry", methods=["DELETE"])
+@login_required
+def remove_from_pantry():
+    user_id = session.get("user_id")
+    data = request.get_json() or {}
+    ingredient_core = data.get("ingredient_core", "").strip()
+    location = data.get("location", "").strip()
+    if not ingredient_core or location not in ["fridge", "pantry", "freezer"]:
+        return jsonify({"success": False, "error": "Invalid input"}), 400
+
+    conn = sqlite3.connect(DB)
+    conn.execute(
+        "DELETE FROM pantry WHERE user_id=? AND ingredient_core=? AND location=?",
+        (user_id, ingredient_core, location)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route("/api/pantry", methods=["PATCH"])
+@login_required
+def update_pantry_quantity():
+    user_id = session.get("user_id")
+    data = request.get_json() or {}
+    ingredient_core = data.get("ingredient_core", "").strip()
+    location = data.get("location", "").strip()
+    quantity = data.get("quantity")
+
+    if not ingredient_core or location not in ["fridge", "pantry", "freezer"]:
+        return jsonify({"success": False, "error": "Invalid input"}), 400
+
+    conn = sqlite3.connect(DB)
+    conn.execute(
+        "UPDATE pantry SET quantity=? WHERE user_id=? AND ingredient_core=? AND location=?",
+        (quantity, user_id, ingredient_core, location)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route("/api/excluded", methods=["GET"])
+@login_required
+def get_excluded_ingredients():
+    user_id = session.get("user_id")
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        "SELECT id, ingredient_core, reason, added_at FROM excluded_ingredients WHERE user_id=? ORDER BY ingredient_core",
+        (user_id,)
+    ).fetchall()
+    conn.close()
+    excluded = [
+        {
+            "id": row["id"],
+            "ingredient_core": row["ingredient_core"],
+            "reason": row["reason"],
+            "added_at": row["added_at"]
+        }
+        for row in rows
+    ]
+    return jsonify({"success": True, "excluded": excluded})
+
+@app.route("/api/excluded", methods=["POST"])
+@login_required
+def add_to_excluded():
+    user_id = session.get("user_id")
+    data = request.get_json() or {}
+    ingredient_core = data.get("ingredient_core", "").strip()
+    reason = data.get("reason", "").strip()
+    if not ingredient_core:
+        return jsonify({"success": False, "error": "Invalid input"}), 400
+
+    conn = sqlite3.connect(DB)
+    try:
+        conn.execute(
+            "INSERT INTO excluded_ingredients (user_id, ingredient_core, reason) VALUES (?, ?, ?)",
+            (user_id, ingredient_core, reason)
+        )
+        conn.commit()
+        return jsonify({"success": True})
+    except sqlite3.IntegrityError:
+        return jsonify({"success": False, "error": "Ingredient already excluded"}), 409
+    finally:
+        conn.close()
+
+@app.route("/api/excluded", methods=["DELETE"])
+@login_required
+def remove_from_excluded():
+    user_id = session.get("user_id")
+    data = request.get_json() or {}
+    ingredient_core = data.get("ingredient_core", "").strip()
+    if not ingredient_core:
+        return jsonify({"success": False, "error": "Invalid input"}), 400
+
+    conn = sqlite3.connect(DB)
+    conn.execute(
+        "DELETE FROM excluded_ingredients WHERE user_id=? AND ingredient_core=?",
+        (user_id, ingredient_core)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route("/api/ingredient_cores")
+@login_required
+def api_ingredient_cores():
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute("SELECT DISTINCT core FROM normalized_ingredients WHERE core IS NOT NULL AND TRIM(core) != '' ORDER BY core COLLATE NOCASE").fetchall()
+    cores = [row["core"] for row in rows]
+    conn.close()
+    return jsonify({"cores": cores})
 
 
 
