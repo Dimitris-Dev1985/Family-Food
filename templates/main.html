@@ -722,6 +722,9 @@
 
 </style>
 
+
+
+
 <body style="min-height:100vh; display:flex; flex-direction:column;">
 
   <div class="recipe-topbar" id="topBar">
@@ -783,16 +786,16 @@
 	{% endif %}
 
 
-    <button class="offcanvas-link" data-href="/fav_recipes">
-      <i class="fa fa-heart icon-green"></i> Αγαπημένες συνταγές
-    </button>
-    <button class="offcanvas-link" data-href="/ingredients">
+    <button class="offcanvas-link" id="favRecipesBtn">
+	  <i class="fa fa-heart icon-green"></i> Αγαπημένες συνταγές
+	</button>
+    <button class="offcanvas-link" id="PantryBtn">
       <i class="fa fa-lemon icon-brand"></i> Διαχείριση υλικών
     </button>
     <button class="offcanvas-link" data-href="/history">
       <i class="fa fa-history icon-brand"></i> Ιστορικό μαγειρεμένων πιάτων
     </button>
-    <button class="offcanvas-link" data-href="/weekly_menu">
+    <button class="offcanvas-link" id="WeeklyMenuBtn">
       <i class="fa fa-calendar-week icon-brand"></i> Εβδομαδιαίο μενού
     </button>
     <button class="offcanvas-link offcanvas-exit" onclick="logoutUser()">
@@ -1741,6 +1744,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('favRecipesBtn');
+  if(btn) {
+    btn.addEventListener('click', function() {
+      if (typeof closeOffcanvas === "function") closeOffcanvas();
+	  window.location = "/fav_recipes";
+    });
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('PantryBtn');
+  if(btn) {
+    btn.addEventListener('click', function() {
+      if (typeof closeOffcanvas === "function") closeOffcanvas();
+	  window.location = "/pantry";
+    });
+  }
+});
 
 </script>
 

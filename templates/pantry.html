@@ -1,0 +1,642 @@
+{% extends "base.html" %}
+{% block title %}Διαχείριση Υλικών • Family Food{% endblock %}
+{% block content %}
+
+<style>
+.pantry-card {
+  background: #f7fff9;
+  border-radius: 22px;
+  box-shadow: 0 3px 18px #eafbe733, 0 1.5px 7px #1a6e3822;
+  max-width: 430px;
+  margin: 36px 1vh 10px 1vh;
+  position: relative;
+}
+.pantry-tabs-row {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  position: absolute;
+  left: 0; right: 0;
+  top: -26px; /* ανεβάζει τα tabs πάνω από την κάρτα */
+  z-index: 3;
+}
+.pantry-tab-btn {
+  border: none;
+  outline: none;
+  background: #eafbe7;
+  color: #218e46;
+  font-weight: 700;
+  font-size: 1.13em;
+  padding: 12px 15px 10px 15px;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 2px 12px #eafbe777;
+  border-bottom: 3px solid transparent;
+  transition: background .16s, color .15s, border .17s;
+  margin: 0 0px;
+  position: relative;
+  z-index: 3;
+}
+.pantry-tab-btn.active {
+  background: var(--brand);
+  color: #fff;
+
+}
+
+.pantry-tab-btn#tab-excluded-btn {
+  background: #ffd7d6;
+  color: #a53d45;
+}
+.pantry-tab-btn#tab-excluded-btn.active {
+  background: #e8787d ;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 1px 8px #d85b6540;
+}
+.pantry-card-inner {
+  padding: 36px 20px 20px 20px;
+  width:100%;
+}
+.pantry-section {
+  max-width: 430px;
+  margin: 0 auto 34px auto;
+}
+.pantry-category-title {
+  font-size: 1.13em;
+  color: #218e46;
+  font-weight: 800;
+  margin-top: 20px;
+  margin-bottom: 9px;
+  margin-left: 8px;
+  letter-spacing: 0.02em;
+}
+.pantry-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px 0;
+}
+.pantry-item-card {
+  background: #e4f6e8;
+  border: 1.8px solid var(--brand);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 5px 10px;
+  margin-bottom: 9px;
+  box-shadow: 0 2px 10px #d0ecd633;
+  font-size: 1.1em;
+}
+.pantry-item-img {
+  width: 33px; height: 33px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #eafbe7;
+  box-shadow: 0 1px 4px #eafbe766;
+}
+.pantry-item-name {
+  flex: 1 1 auto;
+  font-weight: 600;
+  color: #1a6e38;
+}
+.pantry-qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pantry-qty-btn {
+  background: #eafbe7;
+  border: 1.2px solid #b8eec9;
+  border-radius: 50%;
+  color: #18913e;
+  font-size: 1.1em;
+  width: 27px; height: 27px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .13s;
+  font-weight: bold;
+}
+.pantry-qty-btn:hover { background: #bdf7cf; }
+.pantry-qty-num {
+  min-width: 23px; text-align: center; font-weight: 700; color: #146b33;
+}
+.pantry-remove-btn {
+  background: none;
+  color: var(--red);
+  border: none;
+  border-radius: 9px;
+  font-size: 1.25em;
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  margin-left: 2px;
+  transition: background 0.13s, color 0.13s;
+  cursor: pointer;
+}
+.pantry-remove-btn:hover {background: #efc2c7; color: #c71637;}
+
+.pantry-add-btn {
+  background: #187b40;
+  color: #fff;
+  border-radius: 13px;
+  font-weight: 700;
+  border: none;
+  font-size: 1.04em;
+  padding: 7px 24px;
+  margin: 17px 0 7px 0;
+  box-shadow: 0 2px 7px #b2f0cc33;
+  cursor: pointer;
+  transition: background .14s;
+}
+.pantry-add-btn:hover { background: #139b47; }
+.pantry-empty {
+  color: #b4cfc1;
+  text-align: center;
+  font-size: 1.1em;
+  font-weight: 500;
+  margin: 23px 0 17px 0;
+}
+.pantry-ai-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px auto 0 auto;
+  padding: 13px 27px 11px 24px;
+  background: linear-gradient(90deg,#ffeab5 70%,#fff7e6 100%);
+  border-radius: 20px;
+  border: none;
+  color: #986b1c;
+  font-size: 1.16em;
+  font-weight: 800;
+  box-shadow: 0 2px 18px #ffe6b580;
+  cursor: pointer;
+  transition: background .18s, color .14s;
+  max-width: 350px;
+  justify-content: center;
+}
+.pantry-ai-btn:active, .pantry-ai-btn:hover {
+  background: linear-gradient(90deg,#ffe4a4 70%,#fff3ce 100%);
+  color: #b8911c;
+}
+.pantry-excluded-reason {
+  color: #b34444;
+  font-size: 0.99em;
+  font-style: italic;
+  margin-left: 8px;
+  font-weight: 500;
+}
+.pantry-modal-backdrop {
+  display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(30,45,30,0.37); z-index: 97;
+}
+.pantry-modal {
+  display: none;
+  position: fixed; z-index: 98; left: 0; top: 0; width: 100vw; height: 100vh;
+  align-items: center; justify-content: center;
+  background: none;
+}
+.pantry-modal-inner {
+  background: #fffaf5;
+  border-radius: 15px;
+  max-width: 95%;
+  margin: 20vh auto 0 auto;
+  box-shadow: 0 6px 24px rgba(33,142,70,0.17);
+  padding: 34px 29px 27px 29px;
+  text-align: center;
+  position: relative;
+}
+
+.pantry-modal-inner h3 {
+  font-size: 1.3em;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.pantry-modal-close {
+  background: none; border: none; color: var(--brand); position: absolute; top: 8px; right: 13px; font-size: 1.34em; cursor: pointer;
+}
+
+.pantry-loc-btn.active, .pantry-loc-btn:active {
+    background: #e4f6e8;
+    color: #1a6e38;
+    border: 1.8px solid var(--brand);
+}
+
+.pantry-loc-btn {
+    background: var(--bg-badge, #f8faf7);
+    color: var(--brand, #218e46);
+    border: 1.3px solid #dbdbdb;
+    border-radius: 12px;
+    font-size: 1.2em;
+    padding: 4px 16px;
+    cursor: pointer;
+    transition: background 0.13s, color 0.13s, border 0.13s;
+    outline: none;
+    font-weight: 500;
+}
+
+.qty-btn {
+  font-size: 1.14em;
+  font-weight: 700;
+  border-radius: 50%;
+  background: #eafbe7;
+  color: #218e46;
+  border: 1.1px solid #b8eec9;
+  width: 33px; height: 33px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .13s;
+  margin: 0;
+  padding: 0;
+}
+.qty-btn:active, .qty-btn:hover { background: #d3f8e0; color: #156c34; }
+
+
+</style>
+
+<div class="recipe-topbar" id="topBar">
+  <button class="icon-btn" id="backBtn"><i class="fa fa-arrow-left"></i></button>
+  <div class="topbar-title">Διαχείριση Υλικών</div>
+  <div style="width:44px;"></div>
+</div>
+
+
+<div class="pantry-card">
+  <div class="pantry-tabs-row">
+    <button class="pantry-tab-btn active" style="padding-left:75px;padding-right:75px;" id="tab-pantry-btn">Διαθέσιμα</button>
+    <button class="pantry-tab-btn" id="tab-excluded-btn">Αποκλεισμένα</button>
+  </div>
+  <div class="pantry-card-inner">
+    <div id="pantry-section" class="pantry-section"></div>
+	<button class="pantry-ai-btn" id="ai-suggest-btn">
+	  <i class="fa fa-magic"></i>
+	  Τι μπορώ να φτιάξω με τα υλικά που έχω;
+	</button>
+    <div id="excluded-section" class="pantry-section" style="display:none;"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block modals %}
+
+<div id="addPantryModalBackdrop" class="pantry-modal-backdrop"></div>
+<div id="addPantryModal" class="pantry-modal" style="z-index: 200;">
+  <div class="pantry-modal-inner">
+    <button class="pantry-modal-close" onclick="closeAddPantryModal()"><i class="fa fa-times"></i></button>
+    <h3 style="color:#218e46;margin-bottom:17px;"><i class="fa fa-lemon"></i> Προσθήκη Υλικού</h3>
+    <div style="margin-bottom:11px; position:relative;">
+      <label style="font-weight:600;display:block;margin-bottom:10px;text-align:left;color:var(--brand);">Τί;</label>
+      <input id="addPantryCoreInput" class="form-control" placeholder="π.χ. αυγό, γάλα..." autocomplete="off" style="font-size:1.09em;">
+    </div>
+    <div style="margin-bottom:13px;">
+      <label style="font-weight:600;display:block;margin-bottom:10px;text-align:left;color:var(--brand);">Που;</label>
+      <div id="addPantryLocBtns" style="display:flex;gap:8px;">
+        <button type="button" class="btn btn-light pantry-loc-btn" data-loc="fridge"><i class="fa fa-snowflake"></i> Ψυγείο</button>
+        <button type="button" class="btn btn-light pantry-loc-btn" data-loc="pantry"><i class="fa fa-box"></i> Ράφι</button>
+        <button type="button" class="btn btn-light pantry-loc-btn" data-loc="freezer"><i class="fa fa-icicles"></i> Καταψύκτης</button>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+	  <label style="font-weight:600;display:block;margin-bottom:10px;text-align:left;color:var(--brand);">Πόσο;</label>
+	  <div style="display:flex;align-items:center;gap:9px;">
+		<button type="button" class="btn btn-light qty-btn" onclick="addPantryModalDecQty()"><i class="fa fa-minus"></i></button>
+		<input id="addPantryQtyInput" type="number" min="1" value="1" class="form-control" style="width:62px;text-align:center;">
+		<button type="button" class="btn btn-light qty-btn" onclick="addPantryModalIncQty()"><i class="fa fa-plus"></i></button>
+		<select id="addPantryUnitInput" class="form-control" style="width:80px;margin-left:10px;">
+		  <option value="τμχ">τμχ</option>
+		  <option value="γρ">γρ</option>
+		  <option value="ml">ml</option>
+		</select>
+	  </div>
+	</div>
+    <div style="display:flex;gap:14px;justify-content:center;margin-top:10px;">
+      <button class="btn-edit-cancel" onclick="closeAddPantryModal()">Ακύρωση</button>
+      <button class="btn-edit-submit" onclick="submitAddPantry()">Προσθήκη</button>
+    </div>
+  </div>
+</div>
+
+<div id="addExcludedModalBackdrop" class="pantry-modal-backdrop"></div>
+<div id="addExcludedModal" class="pantry-modal" style="z-index:201;">
+  <div class="pantry-modal-inner" style="max-width:350px;">
+    <button class="pantry-modal-close" onclick="closeAddExcludedModal()"><i class="fa fa-times"></i></button>
+    <h3 style="color:var(--red);margin-bottom:16px;"><i class="fa fa-ban"></i> Προσθήκη αποκλεισμένου υλικού</h3>
+    <div style="margin-bottom:13px; position:relative;">
+      <label style="font-weight:600;display:block;margin-bottom:4px;">Υλικό</label>
+      <input id="addExcludedCoreInput" class="form-control" placeholder="π.χ. αυγό, γάλα..." autocomplete="off" style="font-size:1.09em;">
+    </div>
+<!--    <div style="margin-bottom:17px;">
+      <label style="font-weight:600;display:block;margin-bottom:4px;">Λόγος (προαιρετικό)</label>
+      <input id="addExcludedReasonInput" class="form-control" placeholder="allergy, dislike, ..." autocomplete="off" style="font-size:1.09em;">
+    </div> -->
+    <div style="display:flex;gap:14px;justify-content:center;margin-top:10px;">
+      <button class="btn-logout-cancel" onclick="closeAddExcludedModal()">Ακύρωση</button>
+      <button class="btn-logout-confirm" onclick="submitAddExcluded()">Προσθήκη</button>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// === Tabs (show/hide sections & κουμπί AI) ===
+document.addEventListener("DOMContentLoaded", function() {
+  const tabPantryBtn = document.getElementById('tab-pantry-btn');
+  const tabExcludedBtn = document.getElementById('tab-excluded-btn');
+  const pantrySection = document.getElementById('pantry-section');
+  const excludedSection = document.getElementById('excluded-section');
+  const aiBtn = document.getElementById('ai-suggest-btn');
+
+  tabPantryBtn.onclick = function() {
+    tabPantryBtn.classList.add("active");
+    tabExcludedBtn.classList.remove("active");
+    pantrySection.style.display = "";
+    excludedSection.style.display = "none";
+    if (aiBtn) aiBtn.style.display = "";
+  };
+  tabExcludedBtn.onclick = function() {
+    tabPantryBtn.classList.remove("active");
+    tabExcludedBtn.classList.add("active");
+    pantrySection.style.display = "none";
+    excludedSection.style.display = "";
+    if (aiBtn) aiBtn.style.display = "none";
+  };
+});
+
+// === API Helpers ===
+async function fetchPantry() {
+  const resp = await fetch("/api/pantry");
+  const data = await resp.json();
+  return data.pantry || {};
+}
+async function fetchExcluded() {
+  const resp = await fetch("/api/excluded");
+  const data = await resp.json();
+  return data.excluded || [];
+}
+async function addPantryItem(core, location, qty=1, unit="τμχ") {
+  return fetch("/api/pantry", {
+    method: "POST",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ ingredient_core: core, location: location, quantity: qty, unit: unit })
+  }).then(r=>r.json());
+}
+async function removePantryItem(core, location) {
+  return fetch("/api/pantry", {
+    method: "DELETE",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ ingredient_core: core, location: location })
+  }).then(r=>r.json());
+}
+async function updatePantryQty(core, location, qty) {
+  return fetch("/api/pantry", {
+    method: "PATCH",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ ingredient_core: core, location: location, quantity: qty })
+  }).then(r=>r.json());
+}
+async function addExcludedItem(core) {
+  return fetch("/api/excluded", {
+    method: "POST",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ ingredient_core: core })
+  }).then(r=>r.json());
+}
+async function removeExcludedItem(core) {
+  return fetch("/api/excluded", {
+    method: "DELETE",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ ingredient_core: core })
+  }).then(r=>r.json());
+}
+
+// === Pantry Rendering ===
+const PANTRY_CATEGORIES = [
+  { key: "fridge", label: "Ψυγείο", icon: "fa-snowflake" },
+  { key: "pantry", label: "Ράφι", icon: "fa-box" },
+  { key: "freezer", label: "Καταψύκτης", icon: "fa-icicles" }
+];
+
+function pantryImage(core) {
+  return "/static/images/ingredients/" + core + ".png";
+}
+
+async function renderPantrySection() {
+  var wrapper = document.getElementById('pantry-section');
+  var pantry = await fetchPantry();
+  wrapper.innerHTML = "";
+  PANTRY_CATEGORIES.forEach(function(cat) {
+    var items = pantry[cat.key] || [];
+    var catTitle = document.createElement("div");
+    catTitle.className = "pantry-category-title";
+    catTitle.innerHTML = '<i class="fa ' + cat.icon + ' me-2"></i>' + cat.label;
+    wrapper.appendChild(catTitle);
+    if (items.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "pantry-empty";
+      empty.textContent = "Δεν έχεις προσθέσει υλικά.";
+      wrapper.appendChild(empty);
+      return;
+    }
+    var ul = document.createElement("ul");
+    ul.className = "pantry-list";
+    items.forEach(function(item) {
+      var li = document.createElement("li");
+      li.className = "pantry-item-card";
+      li.innerHTML =
+        '<span class="pantry-item-name">' + item.ingredient_core + '</span>' +
+        '<div class="pantry-qty-controls">' +
+          '<button class="pantry-qty-btn" title="Μείωση" onclick="pantryDecQty(\'' + item.ingredient_core + '\',\'' + cat.key + '\',' + item.quantity + ')">-</button>' +
+          '<span class="pantry-qty-num">' + item.quantity + ' ' + (item.unit || 'τμχ') + '</span>' +
+          '<button class="pantry-qty-btn" title="Αύξηση" onclick="pantryIncQty(\'' + item.ingredient_core + '\',\'' + cat.key + '\',' + item.quantity + ')">+</button>' +
+        '</div>' +
+        '<button class="pantry-remove-btn" title="Αφαίρεση" onclick="removePantryUI(\'' + item.ingredient_core + '\',\'' + cat.key + '\')"><i class="fa fa-trash"></i></button>';
+      ul.appendChild(li);
+    });
+    wrapper.appendChild(ul);
+  });
+  var addBtn = document.createElement("button");
+  addBtn.className = "pantry-add-btn";
+  addBtn.textContent = "+ Προσθήκη υλικού";
+  addBtn.onclick = openAddPantryModal;
+  wrapper.appendChild(addBtn);
+}
+async function pantryDecQty(core, location, qty) {
+  if (qty <= 1) { await removePantryItem(core, location); }
+  else { await updatePantryQty(core, location, qty-1); }
+  await renderPantrySection();
+}
+async function pantryIncQty(core, location, qty) {
+  await updatePantryQty(core, location, qty+1);
+  await renderPantrySection();
+}
+async function removePantryUI(core, location) {
+  if (!confirm("Να αφαιρεθεί αυτό το υλικό;")) return;
+  await removePantryItem(core, location);
+  await renderPantrySection();
+}
+
+// === Excluded Rendering ===
+async function renderExcludedSection() {
+  var wrapper = document.getElementById('excluded-section');
+  wrapper.innerHTML = "";
+  var excluded = await fetchExcluded();
+  if (!excluded.length) {
+    var empty = document.createElement("div");
+    empty.className = "pantry-empty";
+    empty.textContent = "Δεν έχεις προσθέσει αποκλεισμένα υλικά.";
+    wrapper.appendChild(empty);
+  }
+  var ul = document.createElement("ul");
+  ul.className = "pantry-list";
+  excluded.forEach(function(item) {
+    var li = document.createElement("li");
+    li.className = "pantry-item-card";
+    li.innerHTML =
+      '<span class="pantry-item-name">' + item.ingredient_core + '</span>' +
+      (item.reason ? '<span class="pantry-excluded-reason">(' + item.reason + ')</span>' : '') +
+      '<button class="pantry-remove-btn" title="Αφαίρεση" onclick="removeExcludedUI(\'' + item.ingredient_core + '\')"><i class="fa fa-trash"></i></button>';
+    ul.appendChild(li);
+  });
+  wrapper.appendChild(ul);
+  var addBtn = document.createElement("button");
+  addBtn.className = "pantry-add-btn";
+  addBtn.textContent = "+ Προσθήκη αποκλεισμένου υλικού";
+  addBtn.onclick = openAddExcludedModal;
+  wrapper.appendChild(addBtn);
+}
+async function removeExcludedUI(core) {
+  if (!confirm("Να αφαιρεθεί από τα αποκλεισμένα;")) return;
+  await removeExcludedItem(core);
+  await renderExcludedSection();
+}
+document.addEventListener("DOMContentLoaded", async function() {
+  await renderPantrySection();
+  await renderExcludedSection();
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn) backBtn.onclick = function() { window.history.back(); };
+});
+
+// === Modals + Autocomplete ===
+let selectedPantryLoc = null;
+function openAddPantryModal() {
+  document.getElementById('addPantryModal').style.display = "flex";
+  document.getElementById('addPantryModalBackdrop').style.display = "block";
+  document.getElementById('addPantryCoreInput').value = "";
+  document.getElementById('addPantryQtyInput').value = "1";
+  selectedPantryLoc = null;
+  Array.from(document.querySelectorAll('.pantry-loc-btn')).forEach(btn => btn.classList.remove('active'));
+}
+function closeAddPantryModal() {
+  document.getElementById('addPantryModal').style.display = "none";
+  document.getElementById('addPantryModalBackdrop').style.display = "none";
+}
+function addPantryModalDecQty() {
+  var inp = document.getElementById('addPantryQtyInput');
+  var val = parseInt(inp.value) || 1;
+  if (val > 1) inp.value = val - 1;
+}
+function addPantryModalIncQty() {
+  var inp = document.getElementById('addPantryQtyInput');
+  var val = parseInt(inp.value) || 1;
+  inp.value = val + 1;
+}
+async function submitAddPantry() {
+  const core = document.getElementById('addPantryCoreInput').value.trim();
+  const qty = parseInt(document.getElementById('addPantryQtyInput').value);
+  const unit = document.getElementById('addPantryUnitInput').value;
+  const location = selectedPantryLoc;
+  if (!core) { alert("Συμπλήρωσε υλικό!"); return; }
+  if (!location) { alert("Επίλεξε τοποθεσία!"); return; }
+  if (!qty || qty < 1) { alert("Μη έγκυρη ποσότητα!"); return; }
+  await addPantryItem(core, location, qty, unit);
+  closeAddPantryModal();
+  await renderPantrySection();
+}
+document.addEventListener("DOMContentLoaded", function() {
+  window.openAddPantryModal = openAddPantryModal;
+  Array.from(document.querySelectorAll('.pantry-loc-btn')).forEach(btn => {
+    btn.onclick = function() {
+      Array.from(document.querySelectorAll('.pantry-loc-btn')).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedPantryLoc = btn.getAttribute('data-loc');
+    }
+  });
+});
+function openAddExcludedModal() {
+  document.getElementById('addExcludedModal').style.display = "flex";
+  document.getElementById('addExcludedModalBackdrop').style.display = "block";
+  document.getElementById('addExcludedCoreInput').value = "";
+}
+function closeAddExcludedModal() {
+  document.getElementById('addExcludedModal').style.display = "none";
+  document.getElementById('addExcludedModalBackdrop').style.display = "none";
+}
+async function submitAddExcluded() {
+  const core = document.getElementById('addExcludedCoreInput').value.trim();
+  if (!core) { alert("Συμπλήρωσε υλικό!"); return; }
+  await addExcludedItem(core);
+  closeAddExcludedModal();
+  await renderExcludedSection();
+}
+
+// === Autocomplete (και για τα δύο modals) ===
+let pantryCoreSuggestions = [];
+async function loadPantryCoreSuggestions() {
+  if (pantryCoreSuggestions.length > 0) return pantryCoreSuggestions;
+  const resp = await fetch("/api/ingredient_cores");
+  const data = await resp.json();
+  pantryCoreSuggestions = data.cores || [];
+  return pantryCoreSuggestions;
+}
+function enableAutocomplete(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  let acList = document.createElement('div');
+  acList.className = "autocomplete-list";
+  input.parentNode.appendChild(acList);
+  acList.style.position = "absolute";
+  acList.style.zIndex = "301";
+  acList.style.border = "1px solid var(--brand-hover)";
+  acList.style.overflowY = "auto";
+  acList.style.width = "100%";
+  acList.style.borderRadius = "9px";
+  acList.style.boxShadow = "0 2px 8px #aeeec033";
+  acList.style.display = "none";
+  input.addEventListener('input', async function() {
+    const val = input.value.trim().toLowerCase();
+    acList.innerHTML = "";
+    if (!val) { acList.style.display = "none"; return; }
+    const suggestions = (await loadPantryCoreSuggestions())
+      .filter(core => core.toLowerCase().includes(val))
+      .slice(0, 14);
+    if (!suggestions.length) { acList.style.display = "none"; return; }
+    suggestions.forEach(core => {
+      const item = document.createElement('div');
+      item.className = "autocomplete-item";
+      item.textContent = core;
+      item.style.padding = "6px 12px";
+      item.style.cursor = "pointer";
+      item.onmousedown = function(e) {
+        e.preventDefault();
+        input.value = core;
+        acList.style.display = "none";
+      };
+      acList.appendChild(item);
+    });
+    acList.style.display = "block";
+  });
+  input.addEventListener('blur', function() {
+    setTimeout(() => { acList.style.display = "none"; }, 120);
+  });
+  input.addEventListener('focus', function() {
+    if (input.value.trim()) input.dispatchEvent(new Event('input'));
+  });
+}
+document.addEventListener("DOMContentLoaded", function() {
+  enableAutocomplete('addPantryCoreInput');
+  enableAutocomplete('addExcludedCoreInput');
+});
+</script>
+{% endblock %}
