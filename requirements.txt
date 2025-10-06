@@ -7,6 +7,6 @@ itsdangerous==2.2.0
 Flask-Mail==0.10.0
 requests==2.32.4
 gunicorn==23.0.0
-fuzzywuzzy==0.18.0
 python-Levenshtein==0.12.2
+fuzzywuzzy==0.18.0
 stripe>=8.0.0
