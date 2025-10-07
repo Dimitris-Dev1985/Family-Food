@@ -722,7 +722,103 @@
 
 </style>
 
-
+<!-- =================== CΟΝΤΑCT MODAL =================== -->
+<style>
+.contact-modal-content {
+  max-width: 96vw;
+  width: 370px;
+  margin: 1vw;
+  box-shadow: var(--shadow);
+  border: 1.5px solid var(--outline);
+  position: relative;
+  background: #fff;
+  border-radius: 18px;
+  padding: 30px 20px 28px 20px;
+  text-align: center;
+}
+.contact-modal-title {
+  font-weight: 700;
+  font-size: 1.19em;
+  color: var(--brand);
+  margin: 0 10px 20px 10px;
+  display: flex;
+  align-items: center;
+}
+.contact-close {
+  position: absolute;
+  top: 14px;
+  right: 15px;
+  font-size: 1.7em;
+  color: var(--brand);
+  font-weight: bold;
+  background: none;
+  border: none;
+  z-index: 10;
+  transition: color 0.13s;
+  line-height: 1.1;
+}
+.contact-close:hover, .contact-close:focus {
+  color: var(--brand-hover);
+}
+.contact-modal-content .form-group {
+  margin-bottom: 14px;
+  text-align: left;
+}
+.contact-modal-content label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.94em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.contact-modal-content input,
+.contact-modal-content textarea {
+  width: 100%;
+  border: 1.4px solid var(--outline);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.96em;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.contact-modal-content input:focus,
+.contact-modal-content textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px #218e4622;
+}
+.contact-submit {
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+.contact-submit:hover {
+  background: var(--brand-hover);
+}
+.voice-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  background: none;
+  border: none;
+  color: var(--brand);
+  font-size: 1.25em;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.voice-btn:hover { color: var(--brand-hover); }
+.voice-active { color: var(--red) !important; }
+.textarea-wrapper {
+  position: relative;
+}
+</style>
 
 
 <body style="min-height:100vh; display:flex; flex-direction:column;">
@@ -798,9 +894,21 @@
     <button class="offcanvas-link" id="WeeklyMenuBtn">
       <i class="fa fa-calendar-week icon-brand"></i> Εβδομαδιαίο μενού
     </button>
-    <button class="offcanvas-link offcanvas-exit" onclick="logoutUser()">
-      <i class="fa fa-sign-out-alt icon-pink"></i> Έξοδος
-    </button>
+    
+		
+	<!-- === ΚΟΥΜΠΙ FAQS === -->
+	<button class="offcanvas-link" onclick="loadAndOpenFaqModal()" style="margin-top:30px;">
+	  <i class="fa fa-question-circle icon-brand"></i> Συχνές Ερωτήσεις (FAQ)
+	</button>
+
+	<!-- === ΚΟΥΜΠΙ ΥΠΟΣΤΗΡΙΞΗ === -->
+	<button class="offcanvas-link" onclick="openContactModal()" style="margin-top:7px;">
+	  <i class="fa fa-envelope icon-brand"></i> Επικοινωνία / Υποστήριξη
+	</button>
+
+	<button class="offcanvas-link offcanvas-exit" onclick="logoutUser()" style="margin-top:30px;">
+	  <i class="fa fa-sign-out-alt icon-pink"></i> Έξοδος
+	</button>
   </div>
 </div>
 
@@ -930,6 +1038,43 @@
     </div>
   </div>
 </div>
+
+<!-- =================== Contact Modal =================== -->
+<div id="contactModal" class="modal" style="display:none;">
+  <div class="contact-modal-content">
+    <button class="contact-close" onclick="closeContactModal()" title="Κλείσιμο">&times;</button>
+    <div class="contact-modal-title">
+      <i class="fa fa-envelope" style="color:var(--brand);margin-right:6px;font-size:1.2em;"></i>
+      Επικοινωνία/Υποστήριξη
+    </div>
+
+    <form id="contactForm" onsubmit="sendContactForm(event)">
+<!--      <div class="form-group">
+        <label for="contactName">Όνομα</label>
+        <input type="text" id="contactName" name="name" required>
+      </div>
+      <div class="form-group">
+        <label for="contactEmail">Email</label>
+        <input type="email" id="contactEmail" name="email" required>
+      </div> -->
+
+	  <div class="form-group">
+		  <label for="contactMessage">Στείλε μας το μήνυμά σου και πολύ σύντομα θα λάβεις με mail την απάντησή μας!</label>
+		  <div class="textarea-wrapper">
+			<textarea id="contactMessage" name="message" rows="4" required></textarea>
+			<button type="button" class="voice-btn" onclick="toggleVoiceInput(this)" title="Φωνητική εισαγωγή">
+			  <i class="fa fa-microphone"></i>
+			</button>
+		  </div>
+		</div>
+      <button type="submit" class="contact-submit">
+        <i class="fa fa-paper-plane" style="margin-right:6px;"></i> Αποστολή
+      </button>
+    </form>
+  </div>
+</div>
+
+
 
 
 {% endblock %}
@@ -2312,5 +2457,105 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
+<!------------ FAQs Modal ------------->
+<script>
+function loadAndOpenFaqModal() {
+  if (document.getElementById('faqModal')) {
+    document.getElementById('faqModal').style.display = 'flex';
+    return;
+  }
+  fetch('/static/html/faq_modal.html')
+    .then(res => res.text())
+    .then(html => {
+      var div = document.createElement('div');
+      div.innerHTML = html;
+      document.body.appendChild(div.firstElementChild);
+      document.getElementById('faqModal').style.display = 'flex';
+    });
+}
+function closeFaqModal() {
+  var modal = document.getElementById('faqModal');
+  if (modal) modal.style.display = 'none';
+}
+function toggleFaq(btn) {
+  var item = btn.parentElement;
+  item.classList.toggle('open');
+}
+</script>
+
+
+<!------------ Contact Modal ------------->
+<script>
+function openContactModal() {
+  document.getElementById("contactModal").style.display = "flex";
+}
+function closeContactModal() {
+  document.getElementById("contactModal").style.display = "none";
+}
+function sendContactForm(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = {
+    name: form.name.value.trim(),
+    email: form.email.value.trim(),
+    message: form.message.value.trim()
+  };
+  if (!data.name || !data.email || !data.message) return alert("Συμπλήρωσε όλα τα πεδία.");
+  alert("✅ Το μήνυμά σου στάλθηκε επιτυχώς! Θα επικοινωνήσουμε σύντομα.");
+  closeContactModal();
+  form.reset();
+}
+</script>
+
+<!------------ Contact message voice recognition ------------->
+<script>
+let recognition;
+let isListening = false;
+
+function initVoiceRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("Η φωνητική αναγνώριση δεν υποστηρίζεται σε αυτόν τον browser.");
+    return null;
+  }
+  const recog = new SpeechRecognition();
+  recog.lang = "el-GR"; // Ελληνικά
+  recog.continuous = false;
+  recog.interimResults = false;
+  return recog;
+}
+
+function toggleVoiceInput(btn) {
+  if (!recognition) recognition = initVoiceRecognition();
+  if (!recognition) return;
+
+  const textarea = document.getElementById("contactMessage");
+  
+  if (!isListening) {
+    btn.classList.add("voice-active");
+    recognition.start();
+    isListening = true;
+  } else {
+    btn.classList.remove("voice-active");
+    recognition.stop();
+    isListening = false;
+  }
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    textarea.value += (textarea.value ? " " : "") + transcript;
+  };
+  
+  recognition.onerror = function() {
+    btn.classList.remove("voice-active");
+    isListening = false;
+  };
+  
+  recognition.onend = function() {
+    btn.classList.remove("voice-active");
+    isListening = false;
+  };
+}
+</script>
 
 {% endblock %}
