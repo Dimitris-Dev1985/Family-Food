@@ -22,11 +22,11 @@ app.secret_key = "d7gAq2d9bJz@7qK2kLxw!"
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_SERVER'] = 'mail.family-food.gr'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'dpap.ee@gmail.com'
-app.config['MAIL_PASSWORD'] = 'ednvljshnmwajhus'
+app.config['MAIL_USERNAME'] = 'support@family-food.gr'
+app.config['MAIL_PASSWORD'] = 'Arkadias8'
 mail = Mail(app)
 
 DB = "family_food_app.db"
@@ -374,7 +374,6 @@ def cancel_subscription():
 
     subscription_id = row["payment_id"]
     try:
-        import stripe
         stripe.api_key = STRIPE_SECRET_KEY
         stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
     except Exception as e:
@@ -669,7 +668,7 @@ def forgot_password():
                 sender=("Family Food", app.config['MAIL_USERNAME']),
                 recipients=[email]
             )
-            msg.body = f"Για να επαναφέρεις τον κωδικό σου, κάνε κλικ στον παρακάτω σύνδεσμο:\n\n{reset_link}\n\nΑν δεν ζήτησες επαναφορά, αγνόησέ το."
+            msg.body = f"Για να επαναφέρεις τον κωδικό σου στο Family Food, κάνε κλικ στον παρακάτω σύνδεσμο:\n\n{reset_link}\n\nΑν δεν ζήτησες επαναφορά κωδικού, αγνόησε αυτό το μήνυμα."
 
             try:
                 mail.send(msg)
@@ -1220,7 +1219,6 @@ def fav_recipes():
 @app.route("/edit_recipe/<int:recipe_id>", methods=["GET", "POST"])
 @login_required
 def edit_recipe(recipe_id):
-    import time, re
     user, _ = get_user()
     if not user:
         return redirect(url_for("login"))
@@ -1324,6 +1322,38 @@ def pantry():
         "pantry.html",
         is_premium=is_premium
     )
+
+
+# === Route για αποστολή μηνύματος υποστήριξης ===
+@app.route("/send_message", methods=["POST"])
+def send_message():
+    user, _ = get_user()
+    user_email = user["email"]
+    user_name = user["first_name"]
+    user_id = user["id"]
+    data = request.get_json()
+    user_message = data.get("message", "").strip()
+
+    if not user_message:
+        return jsonify({"success": False, "error": "Λείπουν πεδία."}), 400
+
+    try:
+        subject = f"Support request from user id {user_id} -  {user_email}"
+        body = f"Όνομα: {user_name}\n\nΜήνυμα:\n{user_message}"
+
+        msg = Message(
+            subject=subject,
+            sender=("FamilyFood Support", app.config["MAIL_USERNAME"]),
+            recipients=["support@family-food.gr"],  # ΔΙΕΥΘΥΝΣΗ ΠΟΥ ΘΑ ΠΑΡΕΙ ΤΑ ΜΗΝΥΜΑΤΑ
+            body=body
+        )
+
+        mail.send(msg)
+        return jsonify({"success": True}), 200
+
+    except Exception as e:
+        print("Email error:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ----------- RATINGS για recipe -----------
 
@@ -1554,7 +1584,6 @@ def api_cooked_dish():
     force = data.get("force", False)  # <-- ΠΡΟΣΘΗΚΗ
 
     # Υπολογισμός ημερομηνίας βάσει day
-    from datetime import date, timedelta
     base_date = date.today()
     if day == "tomorrow":
         target_date = base_date + timedelta(days=1)
@@ -1596,7 +1625,6 @@ def api_cooked_dish_replace():
     method = data.get("method", "")
     servings = data.get("servings", None)
 
-    from datetime import date, timedelta
     base_date = date.today()
     if day == "tomorrow":
         target_date = base_date + timedelta(days=1)
@@ -1809,7 +1837,6 @@ def mark_recipe_seen():
     conn.close()
     return {"success": True}
 
-
 # ----------- SIMILAR DISHES -----------
 @app.route('/api/similar')
 def api_similar():
@@ -1898,98 +1925,85 @@ def api_similar():
 #    print("[DEBUG] /api/similar ->", data)
     return {"success": True, "recipes": data}
 
-
-
-
-@app.route("/test_openai")
-def test_openai():
-
-    try:
-        # Μπορείς να δηλώσεις το API key εδώ αν δεν το έχεις βάλει αλλού:
-        # openai.api_key = "your-openai-api-key"
-
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{
-                "role": "user",
-                "content": "Πόσο κάνουν 2 + 2;"
-            }],
-            temperature=0
-        )
-
-        reply = response.choices[0].message["content"].strip()
-        return f"<h3>✅ Επιτυχής σύνδεση με OpenAI!</h3><p><b>AI απάντηση:</b> {reply}</p>"
-
-    except Exception as e:
-        traceback_str = traceback.format_exc()
-        return f"<h3>❌ Σφάλμα κατά τη σύνδεση με OpenAI</h3><pre>{traceback_str}</pre>"
-
-@app.route("/ai_reply_test")
-def ai_reply_test():
-    print("[DEBUG] 🧪 Serving ai_reply_test.html")
-    return render_template("ai_reply_test.html")
-
-@app.route("/test_ai")
-def test_ai():
-    return render_template("test_ai.html")
-
-
+# ----------- DISH CATEGORIES in MAIN -----------
 @app.route('/api/dish_categories')
+@login_required
 def get_dish_categories():
-    import sqlite3
-    categories = set()
     try:
-        conn = sqlite3.connect(DB)
-        c = conn.cursor()
-        c.execute('SELECT dish_category FROM recipes WHERE dish_category IS NOT NULL AND dish_category != ""')
-        rows = c.fetchall()
+        user, _ = get_user()
+        user_diet = str(user["diet"]).strip().lower() if user and "diet" in user.keys() else ""
+
+        query = """
+            SELECT dish_category 
+            FROM recipes 
+            WHERE dish_category IS NOT NULL 
+            AND TRIM(dish_category) != ''
+        """
+        params = []
+
+        if user_diet in ("vegan", "pescetarian"):
+            query += " AND diet = ?"
+            params.append(user_diet)
+
+        with sqlite3.connect(DB) as conn:
+            conn.row_factory = sqlite3.Row
+            c = conn.cursor()
+            c.execute(query, params)
+            rows = c.fetchall()
+
+        categories = set()
         for row in rows:
-            for cat in str(row[0]).split(','):
+            dish_cats = str(row["dish_category"]).split(",")
+            for cat in dish_cats:
                 cleaned = cat.strip()
                 if cleaned:
                     categories.add(cleaned)
-        conn.close()
-        sorted_cats = sorted(categories, key=lambda x: x.lower())
-        return jsonify({'categories': sorted_cats})
+
+        sorted_cats = sorted(categories, key=str.casefold)
+
+        return jsonify({"categories": sorted_cats})
+
     except Exception as e:
-        print('[ERROR] get_dish_categories:', e)
-        return jsonify({'categories': []}), 500
+        print("[ERROR] get_dish_categories:", e)
+        return jsonify({"categories": []}), 500
 
 @app.route("/get_main_tags")
+@login_required
 def get_main_tags():
     category = request.args.get("category")
-    print("[DEBUG] 🔍 GET /get_main_tags called with category =", category)
 
     if not category:
-        print("[WARN] ❗ No category provided in request.args")
-        print("[DEBUG] ➡️ Returning: {'tags': []} (400)")
         return jsonify({"tags": []}), 400
 
-    conn = None
     try:
-        conn = sqlite3.connect(DB)
-        c = conn.cursor()
-        print("[DEBUG] 📋 Running SQL for main tags with category LIKE %{}%".format(category))
-        c.execute("""
+        user, _ = get_user()
+        user_diet = str(user["diet"]).strip().lower() if user and "diet" in user.keys() else ""
+
+        query = """
             SELECT DISTINCT main_ingredient
             FROM recipes
             WHERE dish_category LIKE ?
               AND main_ingredient IS NOT NULL
-              AND main_ingredient != ''
-        """, (f"%{category}%",))
-        rows = c.fetchall()
-        print(f"[DEBUG] 📥 Raw SQL rows:", rows)
+              AND TRIM(main_ingredient) != ''
+        """
+        params = [f"%{category}%"]
+
+        # Φίλτρο diet αν είναι vegan ή pescetarian
+        if user_diet in ("vegan", "pescetarian"):
+            query += " AND LOWER(TRIM(diet)) = ?"
+            params.append(user_diet)
+
+        with sqlite3.connect(DB) as conn:
+            conn.row_factory = sqlite3.Row
+            c = conn.cursor()
+            c.execute(query, params)
+            rows = c.fetchall()
+
         tags = sorted(set(r[0].strip() for r in rows if r[0] and r[0].strip()))
-        print(f"[DEBUG] ✅ Cleaned tags list:", tags)
-        print(f"[DEBUG] ➡️ Returning: {{'tags': {tags}}} (200)")
         return jsonify({"tags": tags})
+
     except Exception as e:
-        print("[ERROR] ❌ Exception while fetching main tags:", repr(e))
-        print("[DEBUG] ➡️ Returning: {'tags': []} (500)")
         return jsonify({"tags": []}), 500
-    finally:
-        if conn:
-            conn.close()
 
 
 @app.route("/ai_reply", methods=["POST"])
@@ -2397,7 +2411,7 @@ def ai_suggest_dish():
         print("[INPUT] Raw:", data)
         step = data.get("step")
         user_message = clean_message(data.get("message", "") or "")
-        print("[DEBUG] 🧹 Cleaned user input:", user_message)
+        print("[DEBUG] Cleaned user input:", user_message)
 
         max_time = data.get("max_time")
         main_ingredient = data.get("main_ingredient")
@@ -2414,12 +2428,20 @@ def ai_suggest_dish():
         conn.create_function("remove_tonos", 1, remove_tonos)
 
         # === Φέρε allergens ΠΑΝΤΑ από τον user της βάσης ===
-        user_id = session.get("user_id")
+        
+        user, _ = get_user()
+        user_id = user["id"]
         user_row = conn.execute("SELECT allergies FROM users WHERE id = ?", (user_id,)).fetchone()
         allergens = []
         if user_row and user_row["allergies"]:
             allergens = [a.strip() for a in user_row["allergies"].split(",") if a.strip()]
         print("[DEBUG] Allergens from user DB:", allergens)
+
+        # === πάρε diet ===
+        diet_row = conn.execute("SELECT diet FROM users WHERE id = ?", (user_id,)).fetchone()
+        user_diet = diet_row["diet"].strip().lower() if diet_row and diet_row["diet"] else None
+        print("[DEBUG] User diet:", user_diet)
+
 
         already_suggested = session.get("suggested_dish_ids", [])
         final_dishes = []
@@ -2455,7 +2477,10 @@ def ai_suggest_dish():
                     params.append(int(max_time))
                 except Exception as e:
                     print("[WARN] Invalid max_time (branch 0):", e)
-
+            # === DIET filter ===
+            if user_diet in ("vegan", "pescetarian"):
+                q_base += " AND (LOWER(diet) = ?)"
+                params.append(user_diet)
             if already_suggested:
                 placeholders = ",".join("?" * len(already_suggested))
                 q_base += f" AND recipes.id NOT IN ({placeholders})"
@@ -2540,7 +2565,12 @@ def ai_suggest_dish():
                 """
             print("[DEBUG] SQL Branch1:", sql)
 
-            candidates = conn.execute(sql, (session.get("user_id"),)).fetchall()
+            if user_diet in ("vegan", "pescetarian"):
+                sql += " WHERE LOWER(diet) = ?"
+                diet_param = user_diet
+                candidates = conn.execute(sql, (session.get("user_id"), diet_param)).fetchall()
+            else:
+                candidates = conn.execute(sql, (session.get("user_id"),)).fetchall()
 
             def normalize_token(s):
                 return remove_tonos(s.strip().lower()) if s else ""
@@ -2681,9 +2711,13 @@ def ai_suggest_dish():
                      ON fav.recipe_id = recipes.id AND fav.user_id = ?
                 WHERE 1=1
             """
-            # Αποκλείουμε ήδη προταθέντα πιάτα
             params = [session.get("user_id")]
+            
+            if user_diet in ("vegan", "pescetarian"):
+                sql += " AND LOWER(diet) = ?"
+                params.append(user_diet)
 
+            # Αποκλείουμε ήδη προταθέντα πιάτα
             if already_suggested:
                 placeholders = ",".join("?" * len(already_suggested))
                 sql += f" AND recipes.id NOT IN ({placeholders})"
