@@ -1,0 +1,36 @@
+<!-- ΠΕΡΙΕΧΟΜΕΝΟ ΑΡΧΕΙΟΥ /static/html/faq_modal.html -->
+
+<div id="faqModal" class="modal" style="display:none;">
+  <div class="faq-modal-content">
+    <button class="faq-close" onclick="closeFaqModal()" title="Κλείσιμο">&times;</button>
+    <div class="faq-modal-title">
+      <i class="fa fa-question-circle" style="color:var(--brand);margin-right:5px;font-size:1.2em;"></i>
+      Συχνές Ερωτήσεις (FAQ)
+    </div>
+    <div id="faqContent">
+      <div class="faq-accordion">
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">Πώς λειτουργεί η αναζήτηση συνταγής;</button>
+          <div class="faq-answer">Πληκτρολόγησε ή μίλησε το υλικό, χρόνο ή τύπο πιάτου που θέλεις και η εφαρμογή θα σου προτείνει συνταγές με βάση τις προτιμήσεις σου!</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">Πώς προσθέτω υλικά που έχω στο σπίτι;</button>
+          <div class="faq-answer">Πήγαινε στο "Διαχείριση Υλικών", αναζήτησε και πρόσθεσε όσα διαθέτεις ώστε να σου προτείνονται συνταγές που μπορείς να φτιάξεις τώρα.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">Ξέχασα τον κωδικό μου. Τι κάνω;</button>
+          <div class="faq-answer">Πάτα “Σύνδεση” → “Ξέχασα κωδικό” και θα λάβεις email για επαναφορά.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">Πώς λειτουργούν οι αγαπημένες συνταγές;</button>
+          <div class="faq-answer">Απλά πάτησε το ♥ σε μια συνταγή για να την προσθέσεις στις αγαπημένες σου και να τη βρίσκεις εύκολα!</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">Δεν βρίσκω αυτό που θέλω, πώς επικοινωνώ;</button>
+          <div class="faq-answer">Χρησιμοποίησε τη φόρμα επικοινωνίας για να επικοινωνήσεις μαζί μας άμεσα!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
