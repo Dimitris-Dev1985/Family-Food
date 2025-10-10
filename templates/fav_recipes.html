@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+{% block title %}Αγαπημένα Πιάτα • Family Food{% endblock %}
+{% block content %}
+
+
+
+
+<div class="recipe-topbar" id="topBar">
+  <button class="icon-btn" id="backBtn"><i class="fa fa-arrow-left"></i></button>
+  <div class="topbar-title" id="favTitle">Αγαπημένες Συνταγές</div>
+  <div style="width:44px;"></div>
+</div>
+
+<!-- =========== LIVE FILTERS SECTION =========== -->
+<div id="favorites-filters-section" style="margin: 24px 2vw 10px 2vw;">
+
+
+  <div class="glass-filter-row" id="glassFilterRow"></div>
+  
+  
+  
+  <div class="d-flex profile-search-row">
+    <input type="text" id="search-term" class="form-control form-control-sm voice-enabled" placeholder="Αναζήτησε... ή πάτα το μικρόφωνο:" data-voice-target="favorites">
+    <button class="btn btn-outline-secondary btn-sm ms-2" id="reset-filters-btn" type="button">
+      <i class="fa fa-rotate-left"></i>
+    </button>
+    <button class="btn btn-light btn-sm ms-2" type="button" id="voice-search-btn" title="Αναζήτηση με φωνή">
+      <i class="fa fa-microphone"></i>
+    </button>
+  </div>
+</div>
+
+<div class="fav-recipes-list" style="margin:0 2vw 0 2vw;" id="favoritesList"></div>
+
+{% endblock %}
+
+{% block modals %}
+<div id="favDeleteModal" class="modal-logout">
+  <div class="modal-logout-content">
+    <div class="modal-logout-title">
+      <i class="fa fa-trash"></i> Αφαίρεση από αγαπημένα;
+    </div>
+    <div class="modal-logout-msg" id="favDeleteModalMsg">
+      Θέλεις σίγουρα να αφαιρέσεις αυτό το πιάτο από τα αγαπημένα σου;
+    </div>
+    <div class="modal-logout-actions">
+      <button class="btn-logout-cancel" onclick="closeFavDeleteModal()">Ακύρωση</button>
+      <button class="btn-logout-confirm" id="favDeleteConfirmBtn">Αφαίρεση</button>
+    </div>
+  </div>
+</div>
+<div id="favDeleteModalBackdrop" class="modal-logout-backdrop" onclick="closeFavDeleteModal()"></div>
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn) {
+    backBtn.onclick = function() { window.history.back(); };
+  }
+});
+</script>
+
+<script>
+window.favorites = {{ favorite_recipes|tojson }};
+</script>
+
+<script>
+function normalize(str) {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
+    .replace(/[·.,;!?]/g, "")
+    .trim();
+}
+function populateFilter(selectId, values, defaultLabel) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.innerHTML = "";
+  const opt = document.createElement("option");
+  opt.value = "";
+  opt.textContent = defaultLabel;
+  select.appendChild(opt);
+  (values || []).forEach(function(v) {
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = v;
+    select.appendChild(o);
+  });
+}
+function populateTimeFilter(selectId, timeList) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.innerHTML = "";
+  const opt = document.createElement("option");
+  opt.value = "";
+  opt.textContent = "Όλοι οι χρόνοι";
+  select.appendChild(opt);
+  if (!timeList || !timeList.length) return;
+  const ranges = [
+    { label: "Έως 30'", max: 30 },
+    { label: "Έως 60'", max: 60 },
+    { label: "Έως 90'", max: 90 },
+    { label: "Έως 120'", max: 120 }
+  ];
+  let shownRanges = [];
+  timeList.forEach(function(t) {
+    for (let i = 0; i < ranges.length; i++) {
+      if (t <= ranges[i].max) {
+        shownRanges.push(ranges[i].max);
+        break;
+      }
+    }
+  });
+  shownRanges = [...new Set(shownRanges)];
+  ranges.forEach(function(r) {
+    if (shownRanges.includes(r.max)) {
+      const o = document.createElement("option");
+      o.value = r.max;
+      o.textContent = r.label;
+      select.appendChild(o);
+    }
+  });
+  if (timeList.some(function(t) { return t > 120; })) {
+    const o = document.createElement("option");
+    o.value = "over120";
+    o.textContent = "Άνω των 120'";
+    select.appendChild(o);
+  }
+}
+function getUnique(arr, key) {
+  return [...new Set(arr.map(x => (x[key] || '').trim()).filter(x => x && x !== "None"))];
+}
+function getUniqueMethods(arr) {
+  let all = [];
+  arr.forEach(x => {
+    if (x.method && x.method !== "None") {
+      x.method.split(",").forEach(m => {
+        m = m.trim();
+        if (m) all.push(m);
+      });
+    }
+  });
+  return [...new Set(all)];
+}
+function getUniqueTimes(arr) {
+  return arr
+    .map(x => parseInt(String(x.total_time).replace(/[^0-9]/g,"")))
+    .filter(x => !isNaN(x));
+}
+function filterFavorites() {
+  const chef = filterValues.chef;
+  const category = filterValues.category;
+  const method = filterValues.method;
+  const time = filterValues.time;
+  const term = document.getElementById("search-term").value.trim();
+  let filtered = window.favorites.filter(function(rec) {
+    if (chef && rec.chef !== chef) return false;
+    if (category) {
+	  const categories = (rec.dish_category || "").split(",").map(x => x.trim());
+	  if (!categories.includes(category)) return false;
+	}
+    if (method) {
+      if (!rec.method || !rec.method.split(",").map(x=>x.trim()).includes(method)) return false;
+    }
+    if (time) {
+      const tval = parseInt(String(rec.total_time).replace(/[^0-9]/g,""));
+      if (time === "over120") {
+        if (!tval || tval <= 120) return false;
+      } else {
+        if (!tval || tval > parseInt(time)) return false;
+      }
+    }
+    if (term) {
+      let inTitle = normalize(rec.title).includes(normalize(term));
+      let inTags = normalize(rec.dish_tags || "").includes(normalize(term));
+      let inChef = normalize(rec.chef || "").includes(normalize(term));
+      let inCat = normalize(rec.dish_category || "").includes(normalize(term));
+      let inMethod = normalize(rec.method || "").includes(normalize(term));
+      if (!(inTitle || inTags || inChef || inCat || inMethod)) return false;
+    }
+    return true;
+  });
+  renderFavoritesCards(filtered);
+}
+
+function renderFavoritesCards(favorites) {
+  const wrapper = document.getElementById('favoritesList');
+  wrapper.innerHTML = "";
+  if (!favorites || favorites.length === 0) {
+    wrapper.innerHTML = '<div class="no-favs">Δεν έχεις αποθηκεύσει αγαπημένα πιάτα ακόμα!</div>';
+    return;
+  }
+  favorites.forEach(rec => {
+    const card = document.createElement('div');
+    card.className = 'glass-fav-card';
+    card.style.position = "relative";
+    // === Glass Hero Card Content ===
+    const heroWrap = document.createElement('div');
+    heroWrap.className = "glass-img-hero-wrap";
+    heroWrap.innerHTML =
+      '<img src="/static/images/recipes/' + (rec.image_path || 'placeholder.jpg') + '"' +
+        ' class="glass-hero-img"' +
+        ' alt="' + rec.title + '"' +
+        ' onerror="this.onerror=null;this.src=\'/static/images/recipes/placeholder.jpg\';">' +
+      '<div class="glass-content-overlay"></div>' +
+      '<div class="glass-inner-info">' +
+        '<div class="glass-title">' + rec.title + '</div>' +
+        (rec.method && rec.method !== "None"
+          ? '<div class="glass-methods">' +
+              rec.method.split(",").map(function(m) {
+                return m.trim() ? '<span class="glass-method-badge">' + m.trim() + '</span>' : "";
+              }).join("") +
+            '</div>'
+          : ""
+        ) +
+        '<div class="glass-cat">' + (rec.dish_category || '-') + '</div>' +
+        '<div class="glass-meta-bar">' +
+          '<span class="glass-meta-icon"><i class="fa fa-clock"></i></span>' +
+          '<span class="glass-meta-time">' + (rec.total_time || '-') + '\'</span>' +
+          '<span class="glass-meta-by">by</span>' +
+          '<img class="glass-meta-chef" src="' + (rec.chef_avatar || '/static/images/avatars/default.jpg') + '" alt="Chef">' +
+        '</div>' +
+      '</div>';
+
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = "activity-action-btns";
+    actions.innerHTML = `
+      <button class="action-btn" title="Προβολή" onclick="hideActions(this); window.location.href='/recipe_page/${rec.id}';">
+        <i class="fa fa-eye"></i>
+      </button>
+      <button class="action-btn" title="Επεξεργασία" onclick="hideActions(this); window.location.href='/edit_recipe/${rec.id}';">
+        <i class="fa fa-pencil"></i>
+      </button>
+      <button class="action-btn" title="Διαγραφή" onclick="event.stopPropagation(); hideActions(this); openFavDeleteModal(${rec.id});">
+        <i class="fa fa-trash"></i>
+      </button>
+    `;
+    card.appendChild(heroWrap);
+    card.appendChild(actions);
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.action-btn')) return;
+      document.querySelectorAll('.activity-action-btns.active').forEach(function(btns){
+        if(btns !== actions) btns.classList.remove('active');
+      });
+      actions.classList.toggle('active');
+    });
+    wrapper.appendChild(card);
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.glass-fav-card')) {
+      document.querySelectorAll('.activity-action-btns.active').forEach(function(btns){
+        btns.classList.remove('active');
+      });
+    }
+  });
+}
+document.addEventListener("DOMContentLoaded", function () {
+  populateFilter("filter-chef", getUnique(window.favorites, "chef"), "Όλοι οι σεφ");
+  populateFilter("filter-category", getUnique(window.favorites, "dish_category"), "Όλες οι κατηγορίες");
+  populateFilter("filter-method", getUniqueMethods(window.favorites), "Όλες οι μέθοδοι");
+  populateTimeFilter("filter-time", getUniqueTimes(window.favorites));
+  ["filter-chef", "filter-category", "filter-method", "filter-time"].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener("change", filterFavorites);
+  });
+  var searchInput = document.getElementById("search-term");
+  if (searchInput) searchInput.addEventListener("input", function() {
+    if (this.value.trim().length === 0 || this.value.trim().length >= 2) {
+      filterFavorites();
+    }
+  });
+  var resetBtn = document.getElementById("reset-filters-btn");
+	if (resetBtn) resetBtn.addEventListener("click", function() {
+	  // Reset glass chips filters
+	  filterValues = { chef:"", time:"", category:"", method:"" };
+	  renderFilterChips();
+	  // Reset search bar
+	  var s = document.getElementById("search-term");
+	  if(s) s.value="";
+	  filterFavorites();
+	});
+
+  renderFavoritesCards(window.favorites);
+});
+function hideActions(btn) {
+  var parent = btn.closest('.glass-fav-card');
+  if (!parent) return;
+  var actions = parent.querySelector('.activity-action-btns');
+  if (actions) actions.classList.remove('active');
+}
+let favToDeleteId = null;
+function openFavDeleteModal(recipeId) {
+  favToDeleteId = recipeId;
+  document.getElementById("favDeleteModal").classList.add("open");
+  document.getElementById("favDeleteModalBackdrop").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeFavDeleteModal() {
+  document.getElementById("favDeleteModal").classList.remove("open");
+  document.getElementById("favDeleteModalBackdrop").classList.remove("open");
+  favToDeleteId = null;
+  document.body.style.overflow = "";
+}
+document.addEventListener("DOMContentLoaded", function() {
+  var btn = document.getElementById("favDeleteConfirmBtn");
+  if (btn) btn.onclick = function() {
+    if (!favToDeleteId) return;
+    fetch("/toggle_favorite_recipe", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({recipe_id: favToDeleteId})
+    }).then(() => location.reload());
+    closeFavDeleteModal();
+  };
+});
+</script>
+
+
+<script>
+const FILTERS = [
+  { key: "chef",   label: "Σεφ",     icon: "fa-user-tie", default: "Όλοι οι σεφ" },
+  { key: "category",label:"Κατηγορία",icon:"fa-utensils",default:"Όλες οι κατηγορίες" },
+  { key: "time",   label: "Χρόνοι",  icon: "fa-clock",    default: "Όλοι οι χρόνοι" },
+  { key: "method", label: "Μέθοδοι", icon: "fa-fire",     default: "Όλες οι μέθοδοι" }
+];
+let filterValues = {
+  chef: "",
+  time: "",
+  category: "",
+  method: ""
+};
+function createChipDropdown(items, key, current) {
+  const dd = document.createElement("div");
+  dd.className = "glass-chip-dropdown";
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "dropdown-item" + (item == current ? " selected" : "");
+    div.textContent = item;
+    div.onclick = function(e) {
+      e.stopPropagation();
+      filterValues[key] = item === FILTERS.find(f=>f.key==key).default ? "" : item;
+      document.querySelectorAll('.glass-chip-dropdown').forEach(x => x.style.display = "none");
+      renderFilterChips();
+      filterFavorites();
+    }
+    dd.appendChild(div);
+  });
+  return dd;
+}
+
+function getUniqueCategories(arr) {
+  let all = [];
+  arr.forEach(x => {
+    if (x.dish_category && x.dish_category !== "None") {
+      x.dish_category.split(",").forEach(cat => {
+        cat = cat.trim();
+        if (cat) all.push(cat);
+      });
+    }
+  });
+  return [...new Set(all)];
+}
+
+
+function renderFilterChips() {
+  const row = document.getElementById("glassFilterRow");
+  row.innerHTML = "";
+  FILTERS.forEach(filt => {
+    let allVals;
+    if (filt.key == "chef") allVals = getUnique(window.favorites, "chef");
+    else if (filt.key == "category") allVals = getUniqueCategories(window.favorites);
+    else if (filt.key == "method") allVals = getUniqueMethods(window.favorites);
+    else if (filt.key == "time") allVals = getUniqueTimes(window.favorites);
+    let vals;
+    if (filt.key == "time") {
+      vals = [];
+      if (allVals.some(x => x <= 30)) vals.push("Έως 30'");
+      if (allVals.some(x => x > 30 && x <= 60)) vals.push("Έως 60'");
+      if (allVals.some(x => x > 60 && x <= 90)) vals.push("Έως 90'");
+      if (allVals.some(x => x > 90 && x <= 120)) vals.push("Έως 120'");
+      if (allVals.some(x => x > 120)) vals.push("Άνω των 120'");
+    } else {
+      vals = [filt.default, ...allVals.filter(v=>!!v)];
+    }
+    const chip = document.createElement("div");
+    chip.className = "glass-filter-chip" + (filterValues[filt.key] ? " selected" : "");
+    chip.innerHTML = `<span class="chip-icon fa ${filt.icon}"></span>${filterValues[filt.key] || filt.default}`;
+	
+	chip.onclick = function(e) {
+	  e.stopPropagation();
+	  document.querySelectorAll('.glass-chip-dropdown').forEach(x => {
+		if (x !== chip.querySelector('.glass-chip-dropdown')) x.style.display = "none";
+	  });
+	  let dd = chip.querySelector('.glass-chip-dropdown');
+	  if (!dd) {
+		dd = createChipDropdown(vals, filt.key, filterValues[filt.key] || filt.default);
+		chip.appendChild(dd);
+	  }
+	  // === TOGGLE ===
+	  if (dd.style.display === "flex") {
+		dd.style.display = "none";
+		return;
+	  }
+	  dd.style.display = "flex";
+	  // === Smart position ===
+	  setTimeout(function() {
+		const rect = dd.getBoundingClientRect();
+		if (rect.right > (window.innerWidth-10)) {
+		  dd.style.left = "auto";
+		  dd.style.right = "0";
+		} else {
+		  dd.style.left = "0";
+		  dd.style.right = "auto";
+		}
+	  }, 1);
+	};
+
+
+    row.appendChild(chip);
+  });
+  document.body.onclick = function(e) {
+    if (!e.target.classList.contains('glass-filter-chip') && !e.target.classList.contains('dropdown-item')) {
+      document.querySelectorAll('.glass-chip-dropdown').forEach(x => x.style.display = "none");
+    }
+  }
+}
+document.addEventListener("DOMContentLoaded", function () {
+  renderFilterChips();
+});
+
+
+</script>
+
+
+
+<!-------------- Voice recognition ---------------->
+<script>
+// === Φωνητική αναζήτηση στο search-term για όλα τα tabs ===
+document.addEventListener('DOMContentLoaded', function () {
+  var voiceBtn = document.getElementById("voice-search-btn");
+  var input = document.getElementById("search-term");
+
+  if (voiceBtn && input && 'webkitSpeechRecognition' in window) {
+    voiceBtn.addEventListener("click", function () {
+      try {
+        var recognition = new webkitSpeechRecognition();
+        recognition.lang = 'el-GR';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onaudiostart = function () {
+          input.classList.add('listening');
+          input.placeholderBackup = input.placeholder;
+          input.placeholder = "🎙️ Μιλήστε τώρα…";
+        };
+
+        recognition.onresult = function (event) {
+          var transcript = event.results[0][0].transcript.trim();
+          input.value = transcript;
+          input.classList.remove('listening');
+          if (input.placeholderBackup) {
+            input.placeholder = input.placeholderBackup;
+            delete input.placeholderBackup;
+          }
+          if (typeof filterFavorites === "function") {
+            filterFavorites();
+          }
+        };
+
+        recognition.onend = function () {
+          input.classList.remove('listening');
+          if (input.placeholderBackup) {
+            input.placeholder = input.placeholderBackup;
+            delete input.placeholderBackup;
+          }
+        };
+
+        recognition.start();
+      } catch (e) {
+        alert("Το μικρόφωνο δεν υποστηρίζεται σε αυτόν τον browser.");
+      }
+    });
+  }
+});
+</script>
+
+
+{% endblock %}

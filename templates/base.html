@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+
+<title>{% block title %}FamilyFood{% endblock %}</title>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Indie+Flower&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400|Quicksand:500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">  
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#4CAF50">
+
+  <meta name="theme-color" content="#f44336">
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- Materialize CSS  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet"> 
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Roboto Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  
+<link rel="stylesheet" href="/static/css/styles1.css">
+<link rel="stylesheet" href="/static/css/styles.css">
+<link rel="stylesheet" href="/static/css/faq_modal.css">
+
+<style>
+html {font-size: 15px;}
+</style>
+
+<!-- =================== Design Tokens =================== -->
+<style>
+  :root {
+    --brand: #218e46;
+    --brand-hover: #1a6e38;
+    --surface: #fffaf5;
+    --text: #1b1b1b;
+    --text-dim: #666;
+    --outline: #ddd;
+    --bg-badge: #f5f5f5;
+    --servings-bg: #fff;
+    --servings-border: #e2e3e4;
+    --pink: #ef2d6a;
+	--red: #e73030f5;
+    --time-bg: #f4f7f6;
+    --shadow: 0 3px 14px rgba(33,142,70,0.1);
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    background: var(--surface);
+    font-family: 'Roboto', sans-serif;
+    color: var(--text);
+  }
+</style>
+
+<!-- =================== Topbar =================== -->
+<style>
+  .recipe-topbar {
+    position: sticky; top: 0; left: 0; right: 0; z-index: 99;
+    background: #fff;
+    border-bottom: 1.5px solid var(--outline);
+    min-height: 54px; height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 10px 0 6px;
+    box-shadow: 0 1px 8px rgba(33,142,70,0.05);
+    transition: box-shadow 0.16s;
+  }
+  .recipe-topbar .icon-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0; cursor: pointer;
+    background: none; color: var(--brand);
+    font-size: 1.32rem;
+    transition: background 0.13s;
+  }
+  .recipe-topbar .icon-btn:active { background: #f4f4f4; }
+  .topbar-title {
+    flex: 1;
+    margin-left: 7px;
+    font-size: 1.2rem; font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    text-align: left;
+  }
+  .topbar-actions { display: flex; align-items: center; gap: 7px; }
+</style>
+
+
+<!-- =================== Similar Recipes =================== -->
+<!-- =================== Dish Cards =================== -->
+<style>
+
+.chat-carousel-row {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  display: block;
+}
+
+.similar-swiper {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 10px !important;
+  width: max-content !important;      /* Αυτό βοηθά το swipe μόνο στα items */
+  min-width: 100px;
+  scroll-snap-type: x mandatory !important;
+  background: none !important;
+  margin: 12px 0 8px 0 !important;
+  padding: 5px 2px 9px 0 !important;
+  align-items: center;
+}
+.chat-carousel-row::-webkit-scrollbar {
+  display: none;  
+  height: 15px;
+  background: var(--brand);
+}
+.chat-carousel-row::-webkit-scrollbar-thumb {
+  display: none;  
+  height: 15px;
+  background: var(--brand);
+}
+
+.similar-card-item {
+  min-width: 122px !important;
+  max-width: 122px !important;
+  width: 122px !important;
+  height: fit-content;
+  background: var(--surface) !important;
+  border: 1.2px solid #eee !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 8px rgba(33,142,70,0.07) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  position: relative !important;
+  margin: 0 2px !important;
+  cursor: pointer !important;
+  overflow: visible !important;
+  padding: 0 0 7px 0 !important; /* ΚΑΘΟΛΟΥ πλάγιο padding */
+  scroll-snap-align: start !important;
+  box-sizing: border-box !important;
+}
+
+.similar-card-item img.card-main-img {
+  width: 100% !important;
+  max-width: 100% !important;
+  /* ΜΗΝ βάζεις height/min-height/max-height */
+  display: block !important;
+  object-fit: contain !important;  /* ή cover αν θες "γεμάτο" */
+  border-radius: 14px 14px 0 0 !important;
+  background: var(--surface) !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.similar-card-item img.chef-avatar-inline {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  max-width: 22px !important;
+  max-height: 22px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  background: #fff !important;
+  margin: 0 !important;
+  box-shadow: 0 2px 8px rgba(67,185,106,0.11) !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  padding: 0 !important;
+}
+
+.similar-card-item-title {
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 4px 0 !important;
+  text-align: center !important;
+  line-height: 1.22 !important;
+  word-break: break-word !important;
+  color: #17221b !important;
+  padding: 0 2px;
+}
+.similar-card-item-chef {
+  font-size: 0.89rem !important;
+  font-weight: 500 !important;
+  color: #767676 !important;
+  text-align: center !important;
+  margin-top: 2px !important;
+  margin-bottom: 1px !important;
+  padding: 0 2px;
+}
+.similar-card-item span[style*="position: absolute"] {
+  right: 7px !important;
+  top: 6px !important;
+}
+
+/* ======== Meta row: χρόνος, by, avatar ======== */
+.similar-card-item-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  max-width: 120px;
+  margin: 0 auto 2px auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-height: 20px;
+}
+.similar-card-item-meta .fa-clock {
+  font-size: 1.02rem;
+  color: var(--brand);
+  margin-right: 1px;
+  vertical-align: middle;
+  display: inline-block;
+  line-height: 1;
+}
+.similar-card-item-time-val {
+  font-size: 0.85rem;
+  color: #1a6e38;
+  font-weight: 500;
+  margin-right: 1px;
+  margin-left: 2px;
+  letter-spacing: 0.4px;
+  font-family: inherit;
+}
+.chef-by-label {
+  font-family: 'Indie Flower', cursive;
+  font-size: 0.85rem;
+  color: #bdbdbd;
+  margin-right: 2px;
+  margin-left: 5px;
+  font-style: italic;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  position: relative;
+  top: 0.5px;
+}
+
+</style>
+
+<!-- =================== Onboarding =================== -->
+<style>
+.onboarding-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-top: 30px;
+}
+.onboarding-back-btn {
+  background: #e0e1df;
+  color: var(--brand);
+  font-size: 1.15em;
+  border: none;
+  border-radius: 13px;
+  padding: 12px 30px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px #1a6e3812;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s, color 0.12s;
+}
+.onboarding-back-btn:hover,
+.onboarding-back-btn:active {
+  background: #e3f2e8;
+  color: #1a6e38;
+}
+.back-arrow {
+  font-size: 1.15em;
+  margin-right: 8px;
+  line-height: 1px;
+  margin-bottom: 2px;
+}
+.onboarding-next-btn {
+  background: var(--brand);
+  color: #fff;
+  font-size: 1.15em;
+  border: none;
+  border-radius: 13px;
+  padding: 12px 50px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px #1a6e3812;
+  transition: background 0.15s, color 0.12s;
+  cursor: pointer;
+}
+.onboarding-next-btn:hover,
+.onboarding-next-btn:active {
+  background: #1a6e38;
+}
+</style>
+
+<!-- =================== TIPS =================== -->
+<style>
+.tip {
+  max-width: 580px;
+  margin: 18px auto 18px auto;
+  padding: 12px 12px 12px 5px;
+  border-radius: 16px;
+  background: #f9f9f9;
+  border: 1.5px solid var(--outline);
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--text-dim);
+  line-height: 1.5;
+  display: flex;
+  align-items: center;   /* κάθετο κεντράρισμα */
+  gap: 10px;
+  text-align: justify;   /* justified text */
+}
+.tip-label {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-style: normal;
+  color: var(--text-dim);
+  border: 1px solid var(--outline);
+  border-radius: 50px;   /* πιο στρογγυλεμένο */
+  padding: 3px 8px;
+  background: #fff;
+  flex-shrink: 0;        /* να μη τεντώνει */
+}  
+</style>
+
+<!-- =================== Action buttons =================== -->
+<style>
+
+.activity-action-btns {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  flex-direction: row;
+  gap: 10px;
+  border-radius: 16px;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.18s;
+  transition: opacity 0.18s, visibility 0.18s;
+  display: flex;
+}
+.activity-action-btns.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+.action-btn {
+  width: 50px; height: 50px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.45em;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 11px #9fe4b880;
+  margin: 0 5px;
+  transition: background 0.13s, color 0.13s, transform 0.13s;
+  outline: none;
+}
+.action-btn:active {
+  background: var(--brand);
+  color: #fff;
+  transform: scale(0.93);
+}
+</style>
+
+<!-- =================== MODAL =================== -->
+<style>
+.modal-logout, .modal-logout-backdrop {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s;
+}
+.modal-logout.open, .modal-logout-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-logout {
+  display: block;
+  position: fixed;
+  z-index: 1000;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  background: #fffaf5;
+  border-radius: 15px;
+  box-shadow: 0 6px 24px rgba(33,142,70,0.17);
+  min-width: 288px; max-width: 95vw;
+  padding: 20px 20px 20px 20px;
+}
+.modal-logout-content { text-align: center; }
+.modal-logout-title {
+  font-size: 1.17rem;
+  font-weight: 700;
+  color: var(--brand, #218e46);
+  margin-bottom: 15px;
+}
+.modal-logout-title i { color: #e34056; margin-right: 7px; }
+.modal-logout-msg {
+  color: var(--text-dim, #444);
+  font-size: 1.04rem;
+  margin-bottom: 19px;
+  font-family: 'Inter', sans-serif;
+}
+.modal-logout-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+.btn-logout-cancel {
+  background: #f3f3f3;
+  color: #555;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.13s;
+}
+.btn-logout-cancel:hover { background: #eafbe7; color: var(--brand-hover, #1a6e38); }
+.btn-logout-confirm {
+  background: var(--pink, #ef2d6a);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.btn-logout-confirm:hover { background: #c5163e; }
+
+.modal-logout-backdrop {
+  display: block;
+  position: fixed; inset: 0;
+  z-index: 200;
+  background: rgba(44, 44, 44, 0.15);
+  backdrop-filter: blur(1.5px);
+}
+
+.btn-edit-cancel, .btn-edit-submit {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.btn-edit-cancel {
+  background: #f3f3f3;
+  color: #555;
+}
+.btn-edit-cancel:hover { background: #eafbe7; color: var(--brand-hover, #1a6e38); }
+.btn-edit-submit {
+  background: var(--brand, #218e46);
+  color: #fff;
+}
+.btn-edit-submit:hover { background: var(--brand-hover, #1a6e38); }
+</style>
+
+<!-- =================== FLASH MESSAGES =================== -->
+<style>
+
+.my-flash {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  background: #eaffef;
+  color: #229c57;
+  font-size: 1.12rem;
+  font-weight: 600;
+  padding: 18px 32px;
+  border-radius: 19px;
+  box-shadow: 0 4px 26px #51bf6a22;
+  border: 2px solid #229c57;
+  opacity: 0.96;
+  text-align: center;
+  transition: opacity 0.5s;
+  min-width: 210px;
+  max-width: 90vw;
+}
+.my-flash.success {
+  background: #eaffef;
+  color: #1a6e38;
+  border-color: #229c57;
+}
+.my-flash.danger {
+  background: #fff3f1;
+  color: #b3261e;
+  border-color: #ec4c3a;
+}
+.my-flash.warning {
+background: #fff8e1;
+color: #8a6d00;
+border-color: #ffcc00;
+}
+
+</style>
+
+<!-- =================== PREMIUM MODAL =================== -->
+<style>
+.upgrade-btn {
+  margin: 16px auto 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(270deg, #e9c891 0%, #b89c52 50%, #9c864a 100%);
+  color: #fff;
+  font-weight: 700;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 22px;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px rgba(33,142,70,0.14);
+  cursor: pointer;
+  transition: background 0.18s;
+  font-family: inherit;
+}
+
+.upgrade-btn:hover {
+  background: linear-gradient(90deg,#1a6e38,#218e46);
+}
+
+.upgrade-btn  .fa-gem,
+.upgrade-btn  .svg-inline--fa.fa-gem {
+  color: #40c4ff !important;
+  font-size: 1.1em;
+  margin-right: 7px;
+  filter: drop-shadow(0 1px 0 #fff4cc);
+  }
+
+.upgrade-modal {
+  position: fixed;
+  left: 0; top: 0;
+  width: 100vw; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1200;
+  background: rgba(0,0,0,0.18);
+  animation: fadeIn 0.23s;
+}
+.upgrade-modal-content {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 28px rgba(33,142,70,0.13);
+  padding: 32px 18px 24px 18px;
+  width: 96vw; max-width: 360px;
+  text-align: center;
+  position: relative;
+  animation: scaleIn 0.21s;
+}
+@keyframes scaleIn { from {transform:scale(0.92);} to{transform:scale(1);} }
+@keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(44,54,60,0.12);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  position: absolute;
+  right: 10px; top: 10px;
+  font-size: 1.3rem;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+.premium-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 16px 0;
+  color: #218e46;
+  font-size: 1.08rem;
+  text-align: left;
+}
+.premium-benefits li { margin-bottom: 12px; }
+
+.confirm-upgrade-btn {
+  background: linear-gradient(270deg, #e9c891 0%, #b89c52 50%, #9c864a 100%);
+  color: #222;
+  font-weight: 700;
+  padding: 12px 0;
+  width: 100%;
+  border: none;
+  border-radius: 18px;
+  font-size: 1.10rem;
+  margin-top: 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(255,174,66,0.11);
+  transition: background 0.17s;
+}
+.confirm-upgrade-btn:hover {
+  background: linear-gradient(90deg,#ffcb57,#ffae42);
+}
+</style>
+
+<!-- =================== GLASS CARDS =================== -->
+<style>
+.glass-fav-card {
+  background: linear-gradient(123deg, #f0fff4 60%, #c8f1d7 100%);
+  border-radius: 26px;
+  box-shadow: 0 3px 26px #218e4622, 0 1.5px 7px #1a6e3833;
+  padding: 0;
+  margin: 20px auto 32px auto;
+  max-width: 410px;
+  overflow: visible;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+.glass-img-hero-wrap {
+  width: 100%;
+  position: relative;
+  overflow: visible;
+  border-radius: 24px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+.glass-hero-img {
+  width: 100%;
+  max-width: 410px;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 24px;
+  display: block;
+  box-shadow: 0 6px 36px #1a6e3833;
+}
+.glass-content-overlay {
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgb(18 129 56 / 79%) 100%);
+  padding: 0;
+  pointer-events: none;
+}
+.glass-inner-info {
+  position: absolute;
+  z-index: 3;
+  padding: 20px 20px 14px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+.glass-title {
+  color: #fff;
+  font-size: 1.45rem;
+  font-weight: 800;
+  text-shadow: 0 2px 16px #15471a99, 0 1px 2px #1a6e384d;
+  line-height: 1.14;
+  margin-bottom: 15px;
+  letter-spacing: 0.05em;
+  max-width: 90vw;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+.glass-methods {
+  display: flex;
+  gap: 9px;
+  margin: 0 0 20px 0;
+  flex-wrap: wrap;
+}
+.glass-method-badge {
+  background: rgba(234, 255, 240, 0.76);
+  color: #218e46;
+  border-radius: 13px;
+  padding: 3px 14px 3px 14px;
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border: 1.2px solid #b8eec9;
+  box-shadow: 0 2px 6px #b2f0cc33;
+  backdrop-filter: blur(2px);
+  white-space: nowrap;
+}
+.glass-cat {
+  background: rgba(255,255,255,0.79);
+  color: #187b40;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1em;
+  letter-spacing: 0.01em;
+  padding: 2px 16px;
+  margin-bottom: 13px;
+  margin-top: 0;
+  border: 1.1px solid #d1ead6;
+  box-shadow: 0 1px 4px #e6ffe661;
+  display: inline-block;
+}
+.glass-meta-bar {
+  top: 165px;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(250,255,250,0.5);
+  backdrop-filter: blur(6px);
+  border-radius: 18px;
+  padding: 6px 17px 6px 10px;
+  box-shadow: 0 2px 7px #18381a33;
+  margin-top: 8px;
+}
+.glass-meta-icon {
+  color: var(--brand);
+  font-size: 1.13em;
+  margin-right: 1px;
+  line-height: 1;
+  text-shadow: 0 2px 8px #18381a33;
+}
+.glass-meta-time {
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.09em;
+  margin-right: 7px;
+}
+.glass-meta-by {
+  font-family: 'Indie Flower', cursive;
+  color: #eafbe7;
+  font-size: 0.99em;
+  margin-right: 9px;
+  margin-left: 11px;
+  letter-spacing: 0.1em;
+}
+.glass-meta-chef {
+  width: 27px; height: 27px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  background: #fff;
+  box-shadow: 0 2px 8px #eafbe766;
+  display: inline-block;
+}
+
+.no-favs {
+  margin: 36px 0 0 0;
+  text-align: center;
+  color: #90bfa7;
+  font-size: 1.16rem;
+  font-weight: 500;
+}
+/* ========== Filters styling ========== */
+
+.profile-search-row input[type="text"].form-control-sm {
+  font-size: 1em;
+  border-radius: 21px;
+  background: rgba(250,255,250,0.82);
+  color: #187b40;
+  border: none;
+  min-height: 44px;
+  box-shadow: 0 2px 16px #c6f2d299, 0 1.5px 4px #e4ffe3a9 inset;
+  padding-left: 10px;
+  padding-right: 5px;
+  outline: none;
+  transition: box-shadow 0.13s, background 0.18s;
+  backdrop-filter: blur(3px);
+}
+.profile-search-row input[type="text"].form-control-sm:focus {
+  background: rgba(240,255,249,0.98);
+  box-shadow: 0 4px 22px #b8eec9, 0 2px 8px #d2fad9a8 inset;
+}
+.profile-search-row .btn-sm {
+  font-size: 1.16em;
+  border-radius: 50%;
+  min-width: 42px;
+  min-height: 42px;
+  margin-left: 7px;
+  border: none;
+  background: rgba(240,255,249,0.8);
+  color: #1a6e38;
+  box-shadow: 0 2px 7px #eafbe788;
+  transition: background 0.18s, color 0.18s;
+}
+.profile-search-row .btn-sm:active,
+.profile-search-row .btn-sm:focus {
+  background: #bdf5cd;
+  color: #187b40;
+}
+
+.glass-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px 0;
+  align-items: center;
+  justify-content: center;
+}
+.glass-filter-chip {
+  background: rgba(240,255,249,0.76);
+  color: #218e46;
+  border: 1.2px solid #b8eec9;
+  border-radius: 19px;
+  font-weight: 700;
+  font-size: 1.07em;
+  padding: 7px 16px 7px 16px;
+  box-shadow: 0 2px 8px #d1ead666;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+  user-select: none;
+  min-width: 60px;
+  text-align: center;
+}
+.glass-filter-chip.selected,
+.glass-filter-chip.active {
+  background: #bdf5cd;
+  color: #155d30;
+  border-color: #218e46;
+}
+.glass-filter-chip .chip-icon {
+  font-size: 1.13em;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.glass-chip-dropdown {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  min-width: 150px;
+  background: rgba(250,255,250,0.96);
+  box-shadow: 0 6px 24px #218e4622;
+  border-radius: 15px;
+  padding: 6px 0;
+  z-index: 25;
+  border: 1px solid #c2edd4;
+  display: none;
+  flex-direction: column;
+}
+.glass-chip-dropdown .dropdown-item {
+  padding: 7px 18px;
+  cursor: pointer;
+  font-size: 1em;
+  color: #187b40;
+  border: none;
+  background: none;
+  text-align: left;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+}
+.glass-chip-dropdown .dropdown-item:hover {
+  background: #eafbe7;
+  color: #155d30;
+}
+.glass-chip-dropdown .dropdown-item.selected {
+  background: #bdf5cd;
+  color: #155d30;
+}
+
+
+</style>
+
+
+{% block head %}{% endblock %}
+
+</head>
+
+
+<body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="flashMessages">
+      {% for category, message in messages %}
+        <div class="my-flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+
+
+
+{% block content %}{% endblock %}
+
+<!-- MODAL για Αναβάθμιση -->
+<div id="upgradeModalBackdrop" class="modal-backdrop" style="display:none;"></div>
+<div id="upgradeModal" class="upgrade-modal" style="display:none;">
+  <div class="upgrade-modal-content">
+    <button class="close-modal-btn" id="closeUpgradeModalBtn"><i class="fa fa-times"></i></button>
+    <img src="/static/images/premium-crown.svg" alt="Premium" style="width:56px; margin:0 auto 12px; display:block;">
+    <h2>Αναβάθμισε το λογαριασμό σου σε Premium μόνο με 2,99€/μήνα!</h2>
+    <ul class="premium-benefits mt-4">
+      <li>🚀 <b>Απεριόριστη</b> χρήση AI</li>
+      <li>🗓️ Προβολή ιστορικού πιάτων</li>
+      <li>✨ Custom συνταγές αποκλειστικά για σένα</li>
+      <li>🔒 Χωρίς διαφημίσεις</li>
+      <li>+ και άλλα!</li>
+    </ul>
+    <button class="confirm-upgrade-btn">Ξεκίνα τώρα</button>
+    <p style="margin-top:10px; color:#888; font-size:14px;">Μπορείς να ακυρώσεις όποτε θες.</p>
+  </div>
+</div>
+
+
+{% block modals %}{% endblock %} 
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+
+<script>
+
+function normalize(str) {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "") // αφαιρεί τόνους
+    .replace(/[·.,;!?]/g, "") // αφαιρεί σημεία στίξης
+    .trim();
+}
+
+
+function openRecipePage(id) {
+  // π.χ. πάρε από local array ή fetch(`/api/recipe/${id}`)
+  const recipeData = recipesArr.find(r => r.id == id); // παράδειγμα με local array
+  // render δυναμικά το περιεχόμενο της συνταγής:
+  document.getElementById('recipePage').innerHTML = renderRecipeHTML(recipeData);
+  document.getElementById('mainPage').style.display = 'none';
+  document.getElementById('recipePage').style.display = 'block';
+
+  // Push state για να δουλεύει και το browser back!
+  history.pushState({page: 'recipe', id: id}, '', `#recipe-${id}`);
+}
+
+// Επιστροφή στο main
+function backToMain() {
+  document.getElementById('recipePage').style.display = 'none';
+  document.getElementById('mainPage').style.display = 'block';
+  history.pushState({page: 'main'}, '', '#main');
+}
+
+// Handle browser back/forward
+window.onpopstate = function(e) {
+  if (!e.state || e.state.page === 'main') {
+    backToMain();
+  } else if (e.state.page === 'recipe') {
+    openRecipePage(e.state.id);
+  }
+};
+
+// Σύνδεση κουμπιού "πίσω"
+document.body.addEventListener('click', function(e){
+  if (e.target.closest('.icon-btn[data-back]')) {
+    backToMain();
+  }
+});
+</script>
+
+
+<script>
+document.querySelector('.confirm-upgrade-btn').addEventListener('click', function() {
+  this.disabled = true;
+  this.innerHTML = 'Μεταφορά στη Stripe...';
+
+  fetch('/create_checkout_session', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({})
+  }).then(r => r.json())
+    .then(data => {
+      if(data.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Σφάλμα Stripe: ' + (data.error || 'Δοκιμάστε ξανά.'));
+        this.disabled = false;
+        this.innerHTML = 'Ξεκίνα τώρα';
+      }
+    });
+});
+</script>
+
+<script>
+function showFlash(category, msg) {
+  var el = document.createElement('div');
+  el.className = 'my-flash ' + category;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function() {
+    el.style.opacity = '0';
+    setTimeout(function(){ el.remove(); }, 500);
+  }, 2200);
+}
+</script>
+
+{% block scripts %}{% endblock %}
+
+
+
+</body>
+
+</html>

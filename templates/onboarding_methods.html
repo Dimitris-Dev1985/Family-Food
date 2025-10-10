@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Διαθέσιμες Μέθοδοι Μαγειρέματος{% endblock %}
+{% block content %}
+
+<style>
+.onboarding-screen {
+  max-width: 420px;
+  margin: 0;
+  padding: 30px 18px 0 18px;
+  background: var(--surface, #fffaf5);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.onboarding-header {
+  margin-bottom: 16px;
+  text-align: center;
+  position: relative;
+}
+.onboarding-logo {
+  display: block;
+  margin: 0 auto 40px;
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.onboarding-desc {
+  font-size: 1.1em;
+  color: #788484;
+  margin-bottom: 16px;
+}
+.badge-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  margin-bottom: 14px;
+  justify-content: center;
+}
+.badge-btn {
+  background: #f5f5f5;
+  color: #218e46;
+  border: 1.3px solid #dbdbdb;
+  border-radius: 15px;
+  font-size: 1em;
+  padding: 9px 19px;
+  cursor: pointer;
+  transition: background 0.13s, color 0.13s, border 0.13s;
+  outline: none;
+  font-weight: 500;
+  user-select: none;
+}
+.badge-btn.selected,
+.badge-btn:active {
+  background: #e4f6e8;
+  color: #1a6e38;
+  border: 1.8px solid #218e46;
+}
+
+</style>
+
+
+<div class="onboarding-screen">
+  <div class="onboarding-header">
+    <img src="/static/images/logo.png" class="onboarding-logo" alt="Family Food Logo">
+    <h2>Ποιες μεθόδους μαγειρέματος έχεις διαθέσιμες;</h2>
+    <p class="onboarding-desc">
+      Διάλεξε όσα έχεις. Έτσι θα βλέπεις μόνο συνταγές που μπορείς πραγματικά να ετοιμάσεις!
+    </p>
+  </div>
+
+  <form class="methods-form" method="post" autocomplete="off">
+    <div class="badge-options">
+      {% set methods = [
+        "Φούρνος", "Κατσαρόλα", "Χύτρα", "Τηγάνι", "Σχάρα", "Air-fryer"
+      ] %}
+      {% for m in methods %}
+        <button type="button"
+          class="badge-btn{% if cooking_methods and m in cooking_methods %} selected{% endif %}"
+          data-value="{{ m }}"
+        >{{ m }}</button>
+      {% endfor %}
+    </div>
+    <input type="hidden" name="cooking_methods" id="methods-input" value="{{ ','.join(cooking_methods or []) }}">
+
+    <div class="onboarding-tip">
+      Μπορείς να αλλάξεις αυτές τις προτιμήσεις αργότερα από το προφίλ σου!
+    </div>
+
+    <div class="onboarding-actions-row">
+      <button type="button" class="onboarding-back-btn" onclick="window.location='/onboarding_allergies'">
+        <span class="back-arrow">&#8592;</span>
+        Πίσω
+      </button>
+      <button class="onboarding-next-btn" type="submit">Ολοκλήρωση</button>
+    </div>
+  </form>
+</div>
+
+
+<script>
+let selected = new Set({% if cooking_methods %}{{ cooking_methods|tojson }}{% else %}[]{% endif %});
+document.querySelectorAll('.badge-btn').forEach(function(btn){
+  btn.addEventListener('click', function(e){
+    e.preventDefault();
+    const val = btn.getAttribute('data-value');
+    if (btn.classList.contains('selected')) {
+      btn.classList.remove('selected');
+      selected.delete(val);
+    } else {
+      btn.classList.add('selected');
+      selected.add(val);
+    }
+    document.getElementById('methods-input').value = Array.from(selected).join(',');
+  });
+});
+</script>
+
+{% endblock %}
